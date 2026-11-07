@@ -35,7 +35,7 @@ Rutas de salud: `GET /health` y `GET /ready`.
 - Roles `owner`, `admin`, `analyst` y `viewer`.
 - Gestión de miembros e invitaciones de un solo uso, con vencimiento, revocación y auditoría.
 - Investigaciones, competidores, productos/servicios, observaciones y registros de precios.
-- Informes comerciales con snapshots versionados, historial, verificación de integridad y exportación PDF.
+- Informes comerciales con snapshots versionados, historial, verificación de integridad y exportación PDF.\n- Comparación descriptiva de los dos precios más recientes por producto y moneda, sin extrapolación ni predicción; requiere fechas de observación distintas.
 - Aislamiento de datos por workspace y validación de relaciones entre entidades.
 
 Los análisis actuales son descriptivos y dependen de los datos y fuentes que se registren. No se presentan como predicciones verificadas ni como vigilancia automática de sitios externos.

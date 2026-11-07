@@ -30,14 +30,14 @@ Este porcentaje mide únicamente el trabajo de API, lógica de aplicación, vali
 - [x] Pruebas de integración del backend contra PostgreSQL en CI.
 
 ### Trabajo backend pendiente
-- [ ] Contrato OpenAPI completo y validado contra las rutas reales.
+- [x] Contrato OpenAPI 3.1 para rutas, autenticación Bearer, parámetros y payloads principales; pendiente automatizar validación formal del documento.
 - [ ] Matriz ampliada de pruebas HTTP para permisos, errores y aislamiento multiempresa en todos los módulos.
 - [ ] Pruebas de concurrencia para cambios simultáneos de roles y membresías.
 - [ ] Revisión de seguridad del backend y modelo de amenazas.
 - [ ] Métricas, trazas y observabilidad operativa.
 - [ ] Pruebas de carga y rendimiento con datos representativos.
 
-**Criterio del porcentaje:** 23 de 29 entregables backend completados = 79 %. Los seis pendientes siguen dentro del backend; no se descuentan tareas de frontend ni la configuración de la base de datos/Supabase.
+**Criterio del porcentaje:** 24 de 29 entregables backend completados = 83 %. Los cinco pendientes siguen dentro del backend; no se descuentan tareas de frontend ni la configuración de la base de datos/Supabase.
 
 ## Principios
 

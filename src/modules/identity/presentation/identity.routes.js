@@ -2,6 +2,7 @@ import { readBearerToken, verifySupabaseAccessToken } from "../infrastructure/su
 import { canAccessWorkspace, findWorkspaceAccess } from "../application/workspace-access.js";
 import { workspaceRoutes } from "./workspace.routes.js";
 import { workspaceMemberRoutes } from "./workspace-member.routes.js";
+import { workspaceInvitationRoutes } from "./workspace-invitation.routes.js";
 import { researchRoutes } from "../../research/presentation/research.routes.js";
 import { marketIntelligenceRoutes } from "../../market-intelligence/presentation/market-intelligence.routes.js";
 import { marketReportRoutes } from "../../market-intelligence/presentation/market-report.routes.js";

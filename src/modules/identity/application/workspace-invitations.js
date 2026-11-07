@@ -23,6 +23,7 @@ export async function createWorkspaceInvitation(database,{workspaceId,email,role
   await client.query("BEGIN");
   const workspace=await client.query("SELECT id FROM workspaces WHERE id=$1 AND status='active' FOR UPDATE",[workspaceId]);
   if(!workspace.rows[0]){await client.query("ROLLBACK");return null;}
+  await client.query("UPDATE workspace_invitations SET revoked_at=NOW() WHERE workspace_id=$1 AND accepted_at IS NULL AND revoked_at IS NULL AND expires_at<=NOW()",[workspaceId]);
   const result=await client.query(`INSERT INTO workspace_invitations(workspace_id,email,role,token_hash,invited_by,expires_at)
    VALUES($1,$2,$3,$4,$5,NOW()+INTERVAL '7 days')
    RETURNING id,email,role,expires_at,created_at`,

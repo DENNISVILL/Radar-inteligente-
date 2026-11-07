@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS market_observations (
  recorded_by UUID REFERENCES users(id) ON DELETE SET NULL,
  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
  FOREIGN KEY (research_id,workspace_id) REFERENCES researches(id,workspace_id) ON DELETE CASCADE,
- FOREIGN KEY (competitor_id,workspace_id) REFERENCES competitors(id,workspace_id) ON DELETE SET NULL
+ FOREIGN KEY (competitor_id,workspace_id) REFERENCES competitors(id,workspace_id)
 );
 CREATE INDEX IF NOT EXISTS idx_market_observations_research_date ON market_observations(workspace_id,research_id,observed_on DESC,created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_market_observations_competitor ON market_observations(workspace_id,competitor_id,observed_on DESC);

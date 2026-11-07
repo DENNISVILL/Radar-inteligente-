@@ -1,3 +1,4 @@
+CREATE UNIQUE INDEX IF NOT EXISTS idx_researches_id_workspace_unique ON researches(id,workspace_id);
 CREATE TABLE IF NOT EXISTS competitors (
  id UUID PRIMARY KEY DEFAULT gen_random_uuid(), workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
  name VARCHAR(160) NOT NULL, website_url TEXT, location VARCHAR(180), description VARCHAR(1000),

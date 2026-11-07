@@ -1,5 +1,44 @@
 # Plan de implementación de Radar Comercial
 
+## Avance exclusivo del backend (sin frontend ni despliegue de base de datos)
+
+Este porcentaje mide únicamente el trabajo de API, lógica de aplicación, validación, autorización, pruebas y operación del servicio. No incluye el frontend ni la conexión de un proyecto Supabase real.
+
+### Funcionalidad backend — completada
+- [x] Servidor Fastify, configuración, arranque y cierre ordenado.
+- [x] Manejo centralizado de errores, límites de cuerpo y timeout HTTP.
+- [x] Endpoints de salud y disponibilidad.
+- [x] Pool y acceso a PostgreSQL desde la aplicación.
+- [x] Módulo de verificación JWT/JWKS preparado para Supabase.
+- [x] Resolución de identidad local y aislamiento por workspace.
+- [x] Autorización por roles.
+- [x] Creación y consulta de workspaces.
+- [x] Gestión de miembros y restricciones del último owner.
+- [x] Ciclo de invitaciones y auditoría.
+- [x] CRUD de investigaciones.
+- [x] CRUD de competidores.
+- [x] CRUD de productos/servicios.
+- [x] Registro y consulta de precios.
+- [x] Registro y consulta de observaciones.
+- [x] Análisis descriptivo de mercado.
+- [x] Generación de informes comerciales.
+- [x] Snapshots versionados e historial.
+- [x] Exportación PDF.
+- [x] Auditoría de operaciones.
+- [x] Rate limiting configurable.
+- [x] Pruebas unitarias y HTTP de módulos principales.
+- [x] Pruebas de integración del backend contra PostgreSQL en CI.
+
+### Trabajo backend pendiente
+- [ ] Contrato OpenAPI completo y validado contra las rutas reales.
+- [ ] Matriz ampliada de pruebas HTTP para permisos, errores y aislamiento multiempresa en todos los módulos.
+- [ ] Pruebas de concurrencia para cambios simultáneos de roles y membresías.
+- [ ] Revisión de seguridad del backend y modelo de amenazas.
+- [ ] Métricas, trazas y observabilidad operativa.
+- [ ] Pruebas de carga y rendimiento con datos representativos.
+
+**Criterio del porcentaje:** 23 de 29 entregables backend completados = 79 %. Los seis pendientes siguen dentro del backend; no se descuentan tareas de frontend ni la configuración de la base de datos/Supabase.
+
 ## Principios
 
 - Monolito modular en Node.js 22+ y Fastify.

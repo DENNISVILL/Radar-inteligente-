@@ -110,6 +110,16 @@ test("HTTP revocation validates the invitation identifier before touching storag
  }finally{await app.close();}
 });
 
+test("HTTP invitation resource identifiers are rejected before workspace membership lookup",async()=>{
+ const {app,calls}=await buildApp();
+ try{
+  const response=await app.inject({method:"DELETE",url:`/api/v1/workspaces/${workspaceId}/invitations/not-a-uuid`});
+  assert.equal(response.statusCode,400);
+  assert.equal(response.json().error,"INVALID_INVITATION_ID");
+  assert.equal(calls.length,0);
+ }finally{await app.close();}
+});
+
 test("HTTP revocation is available to managers and returns a revoked state",async()=>{
  const {app,calls}=await buildApp();
  try{

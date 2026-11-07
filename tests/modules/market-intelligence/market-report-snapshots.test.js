@@ -9,9 +9,9 @@ test("report snapshots migration enforces workspace scope and immutable version 
 });
 test("report routes expose snapshot creation, history and retrieval",async()=>{
  const source=await readFile(new URL("../../../src/modules/market-intelligence/presentation/market-report.routes.js",import.meta.url),"utf8");
- assert.match(source,/app\.post\(base+"\\/reports"/);
- assert.match(source,/app\.get\(base+"\\/reports"/);
- assert.match(source,/app\.get\(base+"\\/reports\\/:reportId"/);
+ assert.ok(source.includes('app.post(base+"/reports"'));
+ assert.ok(source.includes('app.get(base+"/reports"'));
+ assert.ok(source.includes('app.get(base+"/reports/:reportId"'));
  assert.match(source,/pg_advisory_xact_lock/);
  assert.match(source,/workspace_id=\$1 AND research_id=\$2 AND id=\$3/);
 });

@@ -1,57 +1,21 @@
 # Radar Comercial
-
-Plataforma de investigación e inteligencia comercial para ayudar a emprendedores y pequeñas empresas a comprender mercados, comparar competidores, analizar productos y precios, identificar tendencias y documentar oportunidades con fuentes verificables.
-
-> **Nombre del producto:** Radar Comercial  
-> **Nombre del repositorio:** Radar-inteligente- (identificador técnico de GitHub)
-
-## Estado del proyecto
-
-**Etapa actual:** fundación del proyecto. El repositorio comienza con documentación y un primer módulo de dominio. Todavía no es una plataforma desplegada ni recopila datos reales de mercado.
-
-## Alcance inicial
-
-1. Investigaciones de mercado por país, ciudad y sector.
-2. Registro de competidores y comparación de información pública.
-3. Registro y análisis de productos y precios publicados.
-4. Seguimiento de tendencias con fecha y fuente.
-5. Identificación de oportunidades y riesgos.
-6. Informes con metodología, hallazgos, fuentes y fecha de consulta.
-7. Historial de investigaciones.
-
-## Principios de desarrollo
-
-- Modularidad: cada módulo mantiene responsabilidades claras.
-- Evidencia: los hallazgos deben distinguir datos observados, inferencias y recomendaciones.
-- Trazabilidad: registrar fuente, URL y fecha de consulta para cada dato externo.
-- Seguridad y privacidad desde el diseño.
-- No presentar datos estimados como datos verificados.
-- Probar cada módulo antes de integrarlo con los demás.
-
-## Estructura inicial
-
-```text
-docs/
-  architecture/
-  decisions/
-src/
-  modules/
-    research/
-      domain/
-tests/
-  modules/
-    research/
-```
-
-La estructura crecerá a medida que se implementen módulos reales; no se crearán carpetas vacías solo para aparentar avance.
-
+Plataforma de investigación e inteligencia comercial con fuentes verificables.
+## Estado
+Implementación del backend. Esta rama incorpora la fundación del servidor y el esquema inicial PostgreSQL. No es todavía una plataforma lista para producción.
+## Stack
+- Node.js 20+
+- Fastify 5
+- PostgreSQL mediante pg
+- Node.js Test Runner y GitHub Actions
 ## Desarrollo local
-
-Requisito: Node.js 20 o superior.
-
-- `npm test`: ejecuta las pruebas automatizadas.
-- `npm run check`: comprueba la sintaxis de los archivos JavaScript.
-
-## Límites de la primera entrega
-
-El módulo inicial define y valida investigaciones. Aún no incluye autenticación, base de datos, extracción automática de sitios web, análisis con IA, dashboard ni exportación PDF. Esas capacidades se implementarán después de definir y probar sus contratos y arquitectura.
+1. Instala Node.js 20+ y PostgreSQL.
+2. Copia .env.example a .env y configura DATABASE_URL.
+3. Ejecuta npm install.
+4. Ejecuta npm run db:migrate.
+5. Inicia con npm run dev.
+Rutas: GET /health (proceso) y GET /ready (PostgreSQL).
+Comandos: npm test, npm run check, npm start.
+## Seguridad y arquitectura
+Monolito modular. Las rutas de negocio no se expondrán hasta implementar autenticación y autorización multiempresa. Nunca subir .env ni credenciales.
+La conexión posterior con Supabase usará PostgreSQL estándar y Supabase Auth; las reglas del negocio no dependerán del SDK.
+Consulta docs/backend/implementation-plan.md para las fases.

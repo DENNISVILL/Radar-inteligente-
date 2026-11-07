@@ -1,14 +1,20 @@
 {
   "name": "radar-comercial",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Plataforma modular de investigación e inteligencia comercial",
   "type": "module",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
     "test": "node --test",
-    "check": "node --check src/modules/research/domain/research.js"
+    "check": "node --check src/server.js && node --check src/app.js && node --check src/config/env.js && node --check src/infrastructure/database/pool.js && node --check src/modules/health/presentation/health.routes.js",
+    "db:migrate": "node scripts/migrate.js"
+  },
+  "dependencies": {
+    "fastify": "^5.2.1",
+    "pg": "^8.13.1"
   }
 }

@@ -10,7 +10,7 @@ test("PostgreSQL migrations are executable, repeatable and enforce tenant relati
  let workspaceA,workspaceB,userId;
  try{
   const first=await applyMigrations(pool);
-  assert.equal(first.discovered,7);
+  assert.equal(first.discovered,8);
   const second=await applyMigrations(pool);
   assert.deepEqual(second.versions,first.versions);
   const tables=await pool.query("SELECT tablename FROM pg_tables WHERE schemaname=current_schema()");
@@ -29,6 +29,11 @@ test("PostgreSQL migrations are executable, repeatable and enforce tenant relati
   await pool.query("INSERT INTO price_observations(workspace_id,product_id,recorded_by,price,currency,observed_on) VALUES($1,$2,$3,12.50,'USD','2026-11-07')",[workspaceA,product.rows[0].id,userId]);
   const history=await pool.query("SELECT count(*)::int AS count FROM price_observations WHERE workspace_id=$1 AND product_id=$2",[workspaceA,product.rows[0].id]);
   assert.equal(history.rows[0].count,1);
+  const snapshot=await pool.query("INSERT INTO market_reports(workspace_id,research_id,version,report_data,generated_by) VALUES($1,$2,1,$3::jsonb,$4) RETURNING id,report_hash",[workspaceA,research.rows[0].id,JSON.stringify({title:"Snapshot de integración"}),userId]);
+  assert.match(snapshot.rows[0].report_hash,/^[0-9a-f]{64}$/);
+  const integrity=await pool.query("SELECT encode(digest(report_data::text,'sha256'),'hex')=report_hash AS verified FROM market_reports WHERE id=$1",[snapshot.rows[0].id]);
+  assert.equal(integrity.rows[0].verified,true);
+  await assert.rejects(()=>pool.query("UPDATE market_reports SET report_data='{}'::jsonb WHERE id=$1",[snapshot.rows[0].id]),/immutable/i);
   const membership=await pool.query("INSERT INTO workspace_members(workspace_id,user_id,role) VALUES($1,$2,'owner')",[workspaceA,userId]);
   assert.equal(membership.rowCount,1);
  }finally{

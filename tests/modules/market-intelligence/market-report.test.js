@@ -9,7 +9,7 @@ test("returns null when research is not in the requested workspace",async()=>{
 
 test("builds a traceable report and keeps price currencies separate",async()=>{
  const calls=[];
- const priceEvidence=[{id:"price-1",price:2,currency:"USD",observedOn:"2026-11-07",sourceName:"Store",sourceUrl:"https://example.com/price"}];
+ const priceEvidence=[{id:"price-2",price:2.5,currency:"USD",observedOn:"2026-11-07",sourceName:"Store",sourceUrl:"https://example.com/price"},{id:"price-1",price:2,currency:"USD",observedOn:"2026-11-06",sourceName:"Store",sourceUrl:"https://example.com/price-old"}];
  const db={query:async(sql,values)=>{
   calls.push({sql,values});
   if(sql.includes("FROM researches"))return {rows:[{id:"r1",title:"Estudio",country:"Ecuador",sector:"Retail"}]};
@@ -29,6 +29,9 @@ test("builds a traceable report and keeps price currencies separate",async()=>{
  assert.equal(report.priceComparisons.length,2);
  assert.deepEqual(report.priceComparisons.map(group=>group.currency).sort(),["EUR","USD"]);
  assert.deepEqual(report.priceComparisons.find(group=>group.currency==="USD").items[0].price_evidence,priceEvidence);
+ const usdProduct=report.priceComparisons.find(group=>group.currency==="USD").items[0];
+ assert.deepEqual(usdProduct.priceTrend,{status:"calculated",direction:"increased",changePercent:25,fromObservedOn:"2026-11-06",toObservedOn:"2026-11-07"});
+ assert.equal(report.priceComparisons.find(group=>group.currency==="EUR").items[0].priceTrend.status,"insufficient_history");
  assert.equal(report.indicators.priceObservations,2);
  assert.equal(report.indicators.sourcedPriceObservations,1);
  assert.equal(report.indicators.priceSourceCoveragePercent,50);
@@ -66,4 +69,18 @@ test("states when the research has insufficient observations",async()=>{
  assert.match(report.executiveSummary,/no contiene observaciones/);
  assert.match(report.conclusions[0],/Información insuficiente/);
  assert.ok(report.recommendations.some(item=>item.text.includes("Registrar precios")));
+});
+
+test("does not calculate price variation for two observations on the same date",async()=>{
+ const db={query:async(sql)=>{
+  if(sql.includes("FROM researches"))return {rows:[{id:"r1",title:"Estudio"}]};
+  if(sql.includes("COUNT(*)::int AS total"))return {rows:[{total:0,sourced:0,opportunities:0,risks:0}]};
+  if(sql.includes("FROM competitors c"))return {rows:[]};
+  if(sql.includes("FROM market_products p"))return {rows:[{product_id:"p1",product_name:"A",currency:"USD",observations:2,sourced_observations:2,min_price:"2",max_price:"2.5",average_price:"2.25",latest_price:"2.5",price_evidence:[{price:2.5,observedOn:"2026-11-07"},{price:2,observedOn:"2026-11-07"}]}]};
+  return {rows:[]};
+ }};
+ const report=await buildMarketReport(db,"w1","r1");
+ const trend=report.priceComparisons[0].items[0].priceTrend;
+ assert.equal(trend.status,"insufficient_history");
+ assert.equal(trend.changePercent,null);
 });

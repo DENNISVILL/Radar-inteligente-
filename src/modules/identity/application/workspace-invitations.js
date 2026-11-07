@@ -41,7 +41,7 @@ export async function createWorkspaceInvitation(database,{workspaceId,email,role
  }finally{client.release();}
 }
 
-export async function acceptWorkspaceInvitation(database,{token,userId,email}){
+export async function acceptWorkspaceInvitation(database,{token,identity}){
  if(typeof token!=="string"||token.length<32||token.length>128)return {error:"INVALID_INVITATION"};
  const client=await database.connect();
  try{
@@ -53,7 +53,14 @@ export async function acceptWorkspaceInvitation(database,{token,userId,email}){
   if(invitation.accepted_at){await client.query("ROLLBACK");return {error:"INVITATION_ALREADY_USED"};}
   if(invitation.revoked_at){await client.query("ROLLBACK");return {error:"INVITATION_REVOKED"};}
   if(new Date(invitation.expires_at).getTime()<=Date.now()){await client.query("ROLLBACK");return {error:"INVITATION_EXPIRED"};}
-  if(normalizeEmail(email)!==normalizeEmail(invitation.email)){await client.query("ROLLBACK");return {error:"INVITATION_EMAIL_MISMATCH"};}
+  if(typeof identity?.email!=="string"||normalizeEmail(identity.email)!==normalizeEmail(invitation.email)){await client.query("ROLLBACK");return {error:"INVITATION_EMAIL_MISMATCH"};}
+  const account=await client.query(`INSERT INTO users(auth_subject,email)
+   VALUES($1,$2) ON CONFLICT(auth_subject) DO UPDATE
+   SET email=COALESCE(EXCLUDED.email,users.email),updated_at=NOW()
+   RETURNING id,status`,[identity.subject,identity.email]);
+  const user=account.rows[0];
+  if(!user||user.status!=="active"){await client.query("ROLLBACK");return {error:"ACCOUNT_DISABLED"};}
+  const userId=user.id;
   const workspace=await client.query("SELECT id FROM workspaces WHERE id=$1 AND status='active' FOR UPDATE",[invitation.workspace_id]);
   if(!workspace.rows[0]){await client.query("ROLLBACK");return {error:"WORKSPACE_NOT_FOUND"};}
   const member=await client.query(`INSERT INTO workspace_members(workspace_id,user_id,role)

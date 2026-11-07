@@ -20,7 +20,8 @@ const messages={
  INVITATION_EXPIRED:[410,"INVITATION_EXPIRED","Esta invitación ha vencido."],
  INVITATION_EMAIL_MISMATCH:[403,"INVITATION_EMAIL_MISMATCH","La invitación no corresponde al correo de la sesión."],
  WORKSPACE_NOT_FOUND:[404,"WORKSPACE_NOT_FOUND","El espacio ya no está disponible."],
- ALREADY_MEMBER:[409,"ALREADY_MEMBER","Esta cuenta ya pertenece al espacio."]
+ ALREADY_MEMBER:[409,"ALREADY_MEMBER","Esta cuenta ya pertenece al espacio."],
+ ACCOUNT_DISABLED:[403,"ACCOUNT_DISABLED","La cuenta no está habilitada para utilizar Radar Comercial."]
 };
 function fail(reply,error){
  const [status,code,message]=messages[error]??[400,"INVITATION_FAILED","No se pudo completar la operación."];
@@ -53,8 +54,7 @@ export async function workspaceInvitationRoutes(app,options){
  app.post("/api/v1/invitations/accept",auth,async(r,p)=>{
   if(typeof r.identity.email!=="string"||!r.identity.email.trim())return p.code(403).send({error:"EMAIL_REQUIRED",message:"La sesión debe incluir un correo para aceptar la invitación."});
   const token=typeof r.body?.token==="string"?r.body.token:"";
-  const user=await ensureIdentityUser(options.database,r.identity);
-  const result=await acceptWorkspaceInvitation(options.database,{token,userId:user.id,email:r.identity.email});
+  const result=await acceptWorkspaceInvitation(options.database,{token,identity:r.identity});
   if(result?.error)return fail(p,result.error);
   return {data:result};
  });

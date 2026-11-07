@@ -46,11 +46,12 @@ test("lists only active invitations without exposing token hashes",async()=>{
 test("accepts an unexpired invitation only for the invited email and writes membership plus audit atomically",async()=>{
  const {calls,database}=setup(sql=>{
   if(sql.includes("FROM workspace_invitations WHERE token_hash"))return {rows:[invitation]};
+  if(sql.includes("INSERT INTO users(auth_subject,email)"))return {rows:[{id:"user-1",status:"active"}]};
   if(sql.includes("SELECT id FROM workspaces"))return {rows:[{id:"workspace-1"}]};
   if(sql.includes("INSERT INTO workspace_members"))return {rows:[{workspace_id:"workspace-1",user_id:"user-1",role:"analyst"}]};
   return {rows:[]};
  });
- const result=await acceptWorkspaceInvitation(database,{token,userId:"user-1",email:"NEW@example.test"});
+ const result=await acceptWorkspaceInvitation(database,{token,identity:{subject:"auth-user-1",email:"NEW@example.test"}});
  assert.equal(result.accepted,true);
  assert.equal(result.role,"analyst");
  assert.ok(calls.some(call=>call.sql.includes("UPDATE workspace_invitations SET accepted_at")));
@@ -63,7 +64,7 @@ test("accepts an unexpired invitation only for the invited email and writes memb
 
 test("rejects an invitation when the authenticated email does not match",async()=>{
  const {calls,database}=setup(sql=>sql.includes("FROM workspace_invitations WHERE token_hash")?{rows:[invitation]}:{rows:[]});
- const result=await acceptWorkspaceInvitation(database,{token,userId:"user-1",email:"attacker@example.test"});
+ const result=await acceptWorkspaceInvitation(database,{token,identity:{subject:"auth-attacker",email:"attacker@example.test"}});
  assert.equal(result.error,"INVITATION_EMAIL_MISMATCH");
  assert.ok(calls.some(call=>call.sql==="ROLLBACK"));
  assert.ok(!calls.some(call=>call.sql.includes("INSERT INTO workspace_members")));

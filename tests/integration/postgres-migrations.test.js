@@ -10,12 +10,12 @@ test("PostgreSQL migrations are executable, repeatable and enforce tenant relati
  let workspaceA,workspaceB,userId;
  try{
   const first=await applyMigrations(pool);
-  assert.equal(first.discovered,8);
+  assert.equal(first.discovered,9);
   const second=await applyMigrations(pool);
   assert.deepEqual(second.versions,first.versions);
   const tables=await pool.query("SELECT tablename FROM pg_tables WHERE schemaname=current_schema()");
   const names=new Set(tables.rows.map(row=>row.tablename));
-  for(const name of ["workspaces","users","workspace_members","researches","competitors","market_products","price_observations","market_observations","market_reports","audit_logs","schema_migrations"])assert.ok(names.has(name),`missing table ${name}`);
+  for(const name of ["workspaces","users","workspace_members","researches","competitors","market_products","price_observations","market_observations","market_reports","audit_logs","workspace_invitations","schema_migrations"])assert.ok(names.has(name),`missing table ${name}`);
   const a=await pool.query("INSERT INTO workspaces(name,slug) VALUES('Integration A',$1) RETURNING id",[`integration-a-${Date.now()}`]);
   workspaceA=a.rows[0].id;
   const b=await pool.query("INSERT INTO workspaces(name,slug) VALUES('Integration B',$1) RETURNING id",[`integration-b-${Date.now()}`]);

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import Fastify from "fastify";
-import {marketIntelligenceRoutes} from "../../src/modules/market-intelligence/presentation/market-intelligence.routes.js";
+import {marketIntelligenceRoutes} from "../../../src/modules/market-intelligence/presentation/market-intelligence.routes.js";
 
 const workspaceId="11111111-1111-4111-8111-111111111111";
 const productId="22222222-2222-4222-8222-222222222222";

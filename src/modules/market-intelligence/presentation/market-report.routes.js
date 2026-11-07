@@ -28,12 +28,30 @@ export async function marketReportRoutes(app,o){
    ), next_version AS (
     SELECT COALESCE(MAX(version),0)+1 AS version FROM market_reports,lock_key
     WHERE workspace_id=$1 AND research_id=$2
+   ), saved_report AS (
+    INSERT INTO market_reports(workspace_id,research_id,version,report_data,generated_by)
+    SELECT $1,$2,version,$3::jsonb,$4 FROM next_version
+    RETURNING id,version,generated_at
+   ), audit_event AS (
+    INSERT INTO audit_logs(workspace_id,actor_user_id,event_type,resource_type,resource_id,metadata)
+    SELECT $1,$4,'market_report.snapshot_created','market_report',id,
+      jsonb_build_object('research_id',$2::uuid,'version',version)
+    FROM saved_report
+    RETURNING id
    )
-   INSERT INTO market_reports(workspace_id,research_id,version,report_data,generated_by)
-   SELECT $1,$2,version,$3::jsonb,$4 FROM next_version
-   RETURNING id,version,generated_at`,
+   SELECT saved_report.* FROM saved_report CROSS JOIN audit_event`,
    [r.params.workspaceId,r.params.researchId,JSON.stringify(report),user.id]);
   return p.code(201).send({data:{...saved.rows[0],report}});
+ });
+ app.get("/api/v1/workspaces/:workspaceId/audit-logs",{preHandler:(r,p)=>o.requireIdentity(r,p)},async(r,p)=>{
+  if(!uuid.test(r.params.workspaceId))return p.code(400).send({error:"INVALID_WORKSPACE_ID",message:"El identificador del espacio no es válido."});
+  const membership=await findWorkspaceAccess(o.database,r.identity.subject,r.params.workspaceId);
+  if(!canAccessWorkspace(membership,["owner","admin"]))return p.code(403).send({error:"FORBIDDEN",message:"Solo owner o admin pueden consultar la auditoría."});
+  const limit=Math.min(Math.max(Number.parseInt(r.query?.limit??"50",10)||50,1),100);
+  const result=await o.database.query(`SELECT id,event_type,resource_type,resource_id,metadata,created_at
+   FROM audit_logs WHERE workspace_id=$1 ORDER BY created_at DESC,id DESC LIMIT $2`,
+   [r.params.workspaceId,limit]);
+  return {data:result.rows};
  });
  app.get(base+"/reports",{preHandler:(r,p)=>o.requireIdentity(r,p)},async(r,p)=>{
   if(await authorize(r,p,o)!==true)return;

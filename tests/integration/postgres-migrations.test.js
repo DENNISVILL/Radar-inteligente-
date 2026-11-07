@@ -125,3 +125,57 @@ test("PostgreSQL persists, lists, rejects duplicates and revokes workspace invit
   await pool.end();
  }
 });
+
+
+test("PostgreSQL serializes concurrent member additions and owner role changes",{
+ skip:!process.env.TEST_DATABASE_URL
+},async()=>{
+ const {randomUUID}=await import("node:crypto");
+ const {addWorkspaceMember,updateWorkspaceMemberRole}=await import("../../src/modules/identity/application/workspace-members.js");
+ const pool=new pg.Pool({connectionString:process.env.TEST_DATABASE_URL});
+ const suffix=randomUUID();
+ const ownerASubject=`owner-a-${suffix}`;
+ const ownerBSubject=`owner-b-${suffix}`;
+ const emailA=`owner-a-${suffix}@example.test`;
+ const emailB=`owner-b-${suffix}@example.test`;
+ const memberEmail=`member-${suffix}@example.test`;
+ let workspaceId,ownerAId,ownerBId,memberId;
+ try{
+  await applyMigrations(pool);
+  const workspace=await pool.query("INSERT INTO workspaces(name,slug) VALUES('Member concurrency',$1) RETURNING id",[`member-concurrency-${suffix}`]);
+  workspaceId=workspace.rows[0].id;
+  const ownerA=await pool.query("INSERT INTO users(auth_subject,email) VALUES($1,$2) RETURNING id",[ownerASubject,emailA]);
+  ownerAId=ownerA.rows[0].id;
+  const ownerB=await pool.query("INSERT INTO users(auth_subject,email) VALUES($1,$2) RETURNING id",[ownerBSubject,emailB]);
+  ownerBId=ownerB.rows[0].id;
+  const member=await pool.query("INSERT INTO users(auth_subject,email) VALUES($1,$2) RETURNING id",[`member-${suffix}`,memberEmail]);
+  memberId=member.rows[0].id;
+  await pool.query("INSERT INTO workspace_members(workspace_id,user_id,role) VALUES($1,$2,'owner'),($1,$3,'owner')",[workspaceId,ownerAId,ownerBId]);
+
+  const roleChanges=await Promise.all([
+   updateWorkspaceMemberRole(pool,{workspaceId,userId:ownerAId,role:"analyst",actorRole:"owner",actorSubject:ownerASubject}),
+   updateWorkspaceMemberRole(pool,{workspaceId,userId:ownerBId,role:"analyst",actorRole:"owner",actorSubject:ownerBSubject})
+  ]);
+  assert.equal(roleChanges.filter(result=>result?.role==="analyst").length,1);
+  assert.equal(roleChanges.filter(result=>result?.error==="LAST_OWNER").length,1);
+  const remainingOwners=await pool.query("SELECT count(*)::int AS total FROM workspace_members WHERE workspace_id=$1 AND role='owner'",[workspaceId]);
+  assert.equal(remainingOwners.rows[0].total,1);
+
+  const remainingOwner=await pool.query("SELECT u.auth_subject FROM workspace_members wm JOIN users u ON u.id=wm.user_id WHERE wm.workspace_id=$1 AND wm.role='owner'",[workspaceId]);
+  const actorSubject=remainingOwner.rows[0].auth_subject;
+  const additions=await Promise.all([
+   addWorkspaceMember(pool,{workspaceId,email:memberEmail,role:"viewer",actorRole:"owner",actorSubject}),
+   addWorkspaceMember(pool,{workspaceId,email:memberEmail,role:"viewer",actorRole:"owner",actorSubject})
+  ]);
+  assert.equal(additions.filter(result=>result?.user_id===memberId).length,1);
+  assert.equal(additions.filter(result=>result?.error==="ALREADY_MEMBER").length,1);
+  const membership=await pool.query("SELECT count(*)::int AS total FROM workspace_members WHERE workspace_id=$1 AND user_id=$2",[workspaceId,memberId]);
+  assert.equal(membership.rows[0].total,1);
+  const audit=await pool.query("SELECT count(*)::int AS total FROM audit_logs WHERE workspace_id=$1 AND event_type IN ('workspace_member.role_changed','workspace_member.added')",[workspaceId]);
+  assert.equal(audit.rows[0].total,3);
+ }finally{
+  if(workspaceId)await pool.query("DELETE FROM workspaces WHERE id=$1",[workspaceId]);
+  for(const id of [ownerAId,ownerBId,memberId])if(id)await pool.query("DELETE FROM users WHERE id=$1",[id]);
+  await pool.end();
+ }
+});

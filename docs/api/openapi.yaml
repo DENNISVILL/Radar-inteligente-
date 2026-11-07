@@ -8,23 +8,32 @@ info:
     están aislados por workspace. Los análisis son descriptivos y no son
     predicciones verificadas.
 servers:
-  - url: http://localhost:3000
-    description: Desarrollo local
+  - url: /
+    description: Host que sirve la API
 security:
   - bearerAuth: []
 tags:
   - name: Health
+    description: Estado del proceso y disponibilidad de dependencias.
   - name: Identity
+    description: Identidad autenticada del usuario.
   - name: Workspaces
+    description: Espacios de trabajo y permisos de acceso.
   - name: Members
+    description: Miembros, roles y permisos de workspace.
   - name: Invitations
+    description: Invitaciones de acceso a espacios de trabajo.
   - name: Research
+    description: Investigaciones comerciales.
   - name: Market intelligence
+    description: Competidores, productos, precios y observaciones de mercado.
   - name: Reports
+    description: Análisis, snapshots, exportaciones y auditoría.
 paths:
   /health:
     get:
       tags: [Health]
+      summary: Comprobar estado del servicio
       operationId: health
       security: []
       responses:
@@ -41,6 +50,7 @@ paths:
   /ready:
     get:
       tags: [Health]
+      summary: Comprobar disponibilidad de dependencias
       operationId: readiness
       security: []
       responses:
@@ -51,6 +61,7 @@ paths:
   /api/v1/me:
     get:
       tags: [Identity]
+      summary: Consultar identidad autenticada
       operationId: getCurrentIdentity
       responses:
         '200':
@@ -67,12 +78,14 @@ paths:
   /api/v1/workspaces:
     get:
       tags: [Workspaces]
+      summary: Listar espacios de trabajo
       operationId: listWorkspaces
       responses:
         '200': { $ref: '#/components/responses/WorkspaceList' }
         '401': { $ref: '#/components/responses/Unauthorized' }
     post:
       tags: [Workspaces]
+      summary: Crear espacio de trabajo
       operationId: createWorkspace
       requestBody:
         required: true
@@ -91,6 +104,7 @@ paths:
   /api/v1/workspaces/{workspaceId}/access:
     get:
       tags: [Workspaces]
+      summary: Consultar acceso al espacio de trabajo
       operationId: getWorkspaceAccess
       parameters: [{ $ref: '#/components/parameters/workspaceId' }]
       responses:
@@ -102,6 +116,7 @@ paths:
     parameters: [{ $ref: '#/components/parameters/workspaceId' }]
     get:
       tags: [Members]
+      summary: Listar miembros del espacio de trabajo
       operationId: listWorkspaceMembers
       description: Solo owner y admin.
       responses:
@@ -109,6 +124,7 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
     post:
       tags: [Members]
+      summary: Añadir miembro al espacio de trabajo
       operationId: addWorkspaceMember
       description: Añade una cuenta activa existente; no crea cuentas de autenticación.
       requestBody:
@@ -134,6 +150,7 @@ paths:
       - { $ref: '#/components/parameters/userId' }
     patch:
       tags: [Members]
+      summary: Actualizar rol de un miembro
       operationId: updateWorkspaceMemberRole
       requestBody:
         required: true
@@ -153,6 +170,7 @@ paths:
         '409': { $ref: '#/components/responses/Conflict' }
     delete:
       tags: [Members]
+      summary: Eliminar miembro del espacio de trabajo
       operationId: removeWorkspaceMember
       responses:
         '200': { $ref: '#/components/responses/GenericData' }
@@ -163,6 +181,7 @@ paths:
     parameters: [{ $ref: '#/components/parameters/workspaceId' }]
     get:
       tags: [Invitations]
+      summary: Listar invitaciones pendientes
       operationId: listWorkspaceInvitations
       description: Solo owner y admin; no expone hashes de tokens.
       responses:
@@ -170,6 +189,7 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
     post:
       tags: [Invitations]
+      summary: Crear invitación de acceso
       operationId: createWorkspaceInvitation
       description: Devuelve el token una sola vez. La entrega por correo no está configurada.
       requestBody:
@@ -194,6 +214,7 @@ paths:
       - { $ref: '#/components/parameters/invitationId' }
     delete:
       tags: [Invitations]
+      summary: Revocar invitación de acceso
       operationId: revokeWorkspaceInvitation
       responses:
         '200': { $ref: '#/components/responses/GenericData' }
@@ -202,6 +223,7 @@ paths:
   /api/v1/invitations/accept:
     post:
       tags: [Invitations]
+      summary: Aceptar invitación de acceso
       operationId: acceptWorkspaceInvitation
       requestBody:
         required: true
@@ -223,6 +245,7 @@ paths:
     parameters: [{ $ref: '#/components/parameters/workspaceId' }]
     get:
       tags: [Research]
+      summary: Listar investigaciones
       operationId: listResearches
       parameters:
         - name: status
@@ -235,6 +258,7 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
     post:
       tags: [Research]
+      summary: Crear investigación
       operationId: createResearch
       requestBody:
         required: true
@@ -251,6 +275,7 @@ paths:
       - { $ref: '#/components/parameters/researchId' }
     get:
       tags: [Research]
+      summary: Consultar investigación
       operationId: getResearch
       responses:
         '200': { $ref: '#/components/responses/GenericData' }
@@ -258,6 +283,7 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
     patch:
       tags: [Research]
+      summary: Actualizar investigación
       operationId: updateResearch
       requestBody:
         required: true
@@ -271,6 +297,7 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
     delete:
       tags: [Research]
+      summary: Archivar investigación
       operationId: archiveResearch
       responses:
         '204': { description: Investigación archivada }
@@ -280,6 +307,7 @@ paths:
     parameters: [{ $ref: '#/components/parameters/workspaceId' }]
     get:
       tags: [Market intelligence]
+      summary: Listar competidores
       operationId: listCompetitors
       parameters: [{ $ref: '#/components/parameters/limit100' }]
       responses:
@@ -287,6 +315,7 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
     post:
       tags: [Market intelligence]
+      summary: Crear competidor
       operationId: createCompetitor
       requestBody:
         required: true
@@ -303,6 +332,7 @@ paths:
       - { $ref: '#/components/parameters/competitorId' }
     patch:
       tags: [Market intelligence]
+      summary: Actualizar competidor
       operationId: updateCompetitor
       requestBody:
         required: true
@@ -316,6 +346,7 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
     delete:
       tags: [Market intelligence]
+      summary: Archivar competidor
       operationId: archiveCompetitor
       responses:
         '200': { $ref: '#/components/responses/GenericData' }
@@ -325,6 +356,7 @@ paths:
     parameters: [{ $ref: '#/components/parameters/workspaceId' }]
     get:
       tags: [Market intelligence]
+      summary: Listar productos y servicios
       operationId: listProducts
       parameters:
         - { $ref: '#/components/parameters/limit100' }
@@ -340,6 +372,7 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
     post:
       tags: [Market intelligence]
+      summary: Crear producto o servicio
       operationId: createProduct
       requestBody:
         required: true
@@ -356,6 +389,7 @@ paths:
       - { $ref: '#/components/parameters/productId' }
     patch:
       tags: [Market intelligence]
+      summary: Actualizar producto o servicio
       operationId: updateProduct
       requestBody:
         required: true
@@ -369,6 +403,7 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
     delete:
       tags: [Market intelligence]
+      summary: Archivar producto o servicio
       operationId: archiveProduct
       responses:
         '200': { $ref: '#/components/responses/GenericData' }
@@ -380,6 +415,7 @@ paths:
       - { $ref: '#/components/parameters/productId' }
     get:
       tags: [Market intelligence]
+      summary: Consultar historial de precios
       operationId: listPriceObservations
       parameters: [{ $ref: '#/components/parameters/limit100' }]
       responses:
@@ -388,6 +424,7 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
     post:
       tags: [Market intelligence]
+      summary: Registrar observación de precio
       operationId: createPriceObservation
       requestBody:
         required: true
@@ -404,6 +441,7 @@ paths:
       - { $ref: '#/components/parameters/researchId' }
     get:
       tags: [Market intelligence]
+      summary: Listar observaciones de mercado
       operationId: listMarketObservations
       parameters:
         - { $ref: '#/components/parameters/limit100' }
@@ -419,6 +457,7 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
     post:
       tags: [Market intelligence]
+      summary: Registrar observación de mercado
       operationId: createMarketObservation
       requestBody:
         required: true
@@ -432,6 +471,7 @@ paths:
   /api/v1/workspaces/{workspaceId}/researches/{researchId}/analysis:
     get:
       tags: [Market intelligence]
+      summary: Consultar análisis de mercado
       operationId: getMarketAnalysis
       parameters:
         - { $ref: '#/components/parameters/workspaceId' }
@@ -443,6 +483,7 @@ paths:
   /api/v1/workspaces/{workspaceId}/researches/{researchId}/report:
     get:
       tags: [Reports]
+      summary: Previsualizar informe comercial
       operationId: previewMarketReport
       parameters:
         - { $ref: '#/components/parameters/workspaceId' }
@@ -457,6 +498,7 @@ paths:
       - { $ref: '#/components/parameters/researchId' }
     get:
       tags: [Reports]
+      summary: Listar versiones guardadas del informe
       operationId: listReportSnapshots
       parameters:
         - name: limit
@@ -467,6 +509,7 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
     post:
       tags: [Reports]
+      summary: Crear versión inmutable del informe
       operationId: createReportSnapshot
       responses:
         '201': { $ref: '#/components/responses/GenericData' }
@@ -479,6 +522,7 @@ paths:
       - { $ref: '#/components/parameters/reportId' }
     get:
       tags: [Reports]
+      summary: Consultar versión del informe
       operationId: getReportSnapshot
       responses:
         '200': { $ref: '#/components/responses/GenericData' }
@@ -487,6 +531,7 @@ paths:
   /api/v1/workspaces/{workspaceId}/researches/{researchId}/reports/{reportId}/pdf:
     get:
       tags: [Reports]
+      summary: Exportar informe en PDF
       operationId: exportReportPdf
       parameters:
         - { $ref: '#/components/parameters/workspaceId' }
@@ -504,6 +549,7 @@ paths:
   /api/v1/workspaces/{workspaceId}/audit-logs:
     get:
       tags: [Reports]
+      summary: Consultar registro de auditoría
       operationId: listAuditLogs
       description: Solo owner y admin.
       parameters:

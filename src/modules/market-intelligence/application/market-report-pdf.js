@@ -22,7 +22,7 @@ function addBullet(doc,value){
 
 export function generateMarketReportPdf(report,metadata={}){
  return new Promise((resolve,reject)=>{
-  const doc=new PDFDocument({size:"A4",margins:{top:48,bottom:48,left:52,right:52},info:{
+  const doc=new PDFDocument({bufferPages:true,size:"A4",margins:{top:48,bottom:48,left:52,right:52},info:{
    Title:"Informe de inteligencia comercial",
    Subject:clean(report?.research?.title),
    Author:"Radar Comercial",

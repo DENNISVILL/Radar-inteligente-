@@ -27,17 +27,17 @@ Este porcentaje mide únicamente el trabajo de API, lógica de aplicación, vali
 - [x] Auditoría de operaciones.
 - [x] Rate limiting configurable.
 - [x] Pruebas unitarias y HTTP de módulos principales.
-- [x] Pruebas de integración del backend contra PostgreSQL en CI.
+- [x] Pruebas de integración del backend contra PostgreSQL en CI, incluidas pruebas concurrentes de roles y membresías.
 
 ### Trabajo backend pendiente
 - [x] Contrato OpenAPI 3.1 para rutas, autenticación Bearer, parámetros y payloads principales; pendiente automatizar validación formal del documento.
 - [ ] Matriz ampliada de pruebas HTTP para permisos, errores y aislamiento multiempresa en todos los módulos.
-- [ ] Pruebas de concurrencia para cambios simultáneos de roles y membresías.
+- [x] Pruebas de concurrencia PostgreSQL para cambios simultáneos de roles y altas de membresías.
 - [ ] Revisión de seguridad del backend y modelo de amenazas.
 - [ ] Métricas, trazas y observabilidad operativa.
 - [ ] Pruebas de carga y rendimiento con datos representativos.
 
-**Criterio del porcentaje:** 24 de 29 entregables backend completados = 83 %. Los cinco pendientes siguen dentro del backend; no se descuentan tareas de frontend ni la configuración de la base de datos/Supabase.
+**Criterio del porcentaje:** 25 de 29 entregables backend completados = 86 %. Los cuatro pendientes siguen dentro del backend; no se descuentan tareas de frontend ni la configuración de la base de datos/Supabase.
 
 ## Principios
 

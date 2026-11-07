@@ -2,6 +2,7 @@ import { readBearerToken, verifySupabaseAccessToken } from "../infrastructure/su
 import { canAccessWorkspace, findWorkspaceAccess } from "../application/workspace-access.js";
 import { workspaceRoutes } from "./workspace.routes.js";
 import { researchRoutes } from "../../research/presentation/research.routes.js";
+import { marketIntelligenceRoutes } from "../../market-intelligence/presentation/market-intelligence.routes.js";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -20,6 +21,7 @@ export async function identityRoutes(app, options) {
   const routeOptions = { database: options.database, requireIdentity: (request, reply) => requireIdentity(request, reply, options) };
   app.register(workspaceRoutes, routeOptions);
   app.register(researchRoutes, routeOptions);
+  app.register(marketIntelligenceRoutes, routeOptions);
   app.get("/api/v1/me", { preHandler: (request, reply) => requireIdentity(request, reply, options) }, async request => ({
     subject: request.identity.subject,
     email: request.identity.email

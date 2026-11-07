@@ -62,7 +62,7 @@ test("HTTP add-member endpoint validates and creates an existing account members
   const response=await app.inject({method:"POST",url:`/api/v1/workspaces/${workspaceId}/members`,payload:{email:"person@example.test",role:"analyst"}});
   assert.equal(response.statusCode,201);
   assert.equal(response.json().data.user_id,userId);
-  assert.ok(calls.some(call=>call.sql?.includes("workspace_member.added")));
+  assert.ok(calls.some(call=>call.sql?.includes("INSERT INTO audit_logs")&&call.values?.includes("workspace_member.added")));
  }finally{await app.close();}
 });
 
@@ -82,7 +82,7 @@ test("HTTP role changes persist and return the new member role",async()=>{
   const response=await app.inject({method:"PATCH",url:`/api/v1/workspaces/${workspaceId}/members/${userId}`,payload:{role:"viewer"}});
   assert.equal(response.statusCode,200);
   assert.equal(response.json().data.role,"viewer");
-  assert.ok(calls.some(call=>call.sql?.includes("workspace_member.role_changed")));
+  assert.ok(calls.some(call=>call.sql?.includes("INSERT INTO audit_logs")&&call.values?.includes("workspace_member.role_changed")));
  }finally{await app.close();}
 });
 
@@ -92,7 +92,7 @@ test("HTTP member removal records an audit event",async()=>{
   const response=await app.inject({method:"DELETE",url:`/api/v1/workspaces/${workspaceId}/members/${userId}`});
   assert.equal(response.statusCode,200);
   assert.deepEqual(response.json().data,{workspaceId,userId,removed:true});
-  assert.ok(calls.some(call=>call.sql?.includes("workspace_member.removed")));
+  assert.ok(calls.some(call=>call.sql?.includes("INSERT INTO audit_logs")&&call.values?.includes("workspace_member.removed")));
  }finally{await app.close();}
 });
 

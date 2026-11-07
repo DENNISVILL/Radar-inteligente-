@@ -77,3 +77,45 @@ test("HTTP acceptance rejects a different authenticated email without creating a
   assert.equal(calls.filter(call=>call.sql?.includes("INSERT INTO users(auth_subject,email)")).length,0);
  }finally{await app.close();}
 });
+
+test("HTTP listing exposes only pending invitations to workspace managers",async()=>{
+ const {app,calls}=await buildApp();
+ try{
+  const response=await app.inject({method:"GET",url:`/api/v1/workspaces/${workspaceId}/invitations`});
+  assert.equal(response.statusCode,200);
+  assert.ok(Array.isArray(response.json().data));
+  const query=calls.find(call=>call.sql?.includes("FROM workspace_invitations")&&call.sql.includes("accepted_at IS NULL"));
+  assert.ok(query);
+  assert.match(query.sql,/revoked_at IS NULL/);
+  assert.match(query.sql,/expires_at>NOW\(\)/);
+ }finally{await app.close();}
+});
+
+test("HTTP listing rejects members without invitation-management privileges",async()=>{
+ const {app,calls}=await buildApp({role:"analyst"});
+ try{
+  const response=await app.inject({method:"GET",url:`/api/v1/workspaces/${workspaceId}/invitations`});
+  assert.equal(response.statusCode,403);
+  assert.equal(calls.filter(call=>call.sql?.includes("FROM workspace_invitations")).length,0);
+ }finally{await app.close();}
+});
+
+test("HTTP revocation validates the invitation identifier before touching storage",async()=>{
+ const {app,calls}=await buildApp();
+ try{
+  const response=await app.inject({method:"DELETE",url:`/api/v1/workspaces/${workspaceId}/invitations/not-a-uuid`});
+  assert.equal(response.statusCode,400);
+  assert.equal(response.json().error,"INVALID_INVITATION_ID");
+  assert.equal(calls.filter(call=>call.sql?.includes("UPDATE workspace_invitations")).length,0);
+ }finally{await app.close();}
+});
+
+test("HTTP revocation is available to managers and returns a revoked state",async()=>{
+ const {app,calls}=await buildApp();
+ try{
+  const response=await app.inject({method:"DELETE",url:`/api/v1/workspaces/${workspaceId}/invitations/${invitationId}`});
+  assert.equal(response.statusCode,200);
+  assert.deepEqual(response.json().data,{id:invitationId,revoked:true});
+  assert.ok(calls.some(call=>call.sql?.includes("workspace_invitation.revoked")));
+ }finally{await app.close();}
+});

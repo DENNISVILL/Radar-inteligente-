@@ -80,7 +80,7 @@ test("malformed report identifiers are rejected before querying snapshots",async
   const response=await app.inject({method:"GET",url:`/api/v1/workspaces/${workspaceA}/researches/${researchId}/reports/not-a-uuid/pdf`});
   assert.equal(response.statusCode,400);
   assert.equal(response.json().error,"INVALID_REPORT_ID");
-  assert.equal(calls.some(call=>call.sql.includes("FROM market_reports")),false);
+  assert.equal(calls.length,0);
  }finally{await app.close();}
 });
 

@@ -43,3 +43,44 @@ test("PostgreSQL migrations are executable, repeatable and enforce tenant relati
   await pool.end();
  }
 });
+
+test("PostgreSQL accepts a workspace invitation only once under concurrent requests",{
+ skip:!process.env.TEST_DATABASE_URL
+},async()=>{
+ const {createHash,randomUUID}=await import("node:crypto");
+ const {acceptWorkspaceInvitation}=await import("../../src/modules/identity/application/workspace-invitations.js");
+ const pool=new pg.Pool({connectionString:process.env.TEST_DATABASE_URL});
+ const suffix=randomUUID();
+ const authSubject=`ci-inviter-${suffix}`;
+ const invitedEmail=`invitee-${suffix}@example.test`;
+ const token=`concurrency-${suffix}-one-time-token`;
+ let workspaceId,inviterId;
+ try{
+  await applyMigrations(pool);
+  const workspace=await pool.query("INSERT INTO workspaces(name,slug) VALUES('Invitation concurrency',$1) RETURNING id",[`invite-concurrency-${suffix}`]);
+  workspaceId=workspace.rows[0].id;
+  const inviter=await pool.query("INSERT INTO users(auth_subject,email) VALUES($1,$2) RETURNING id",[authSubject,`inviter-${suffix}@example.test`]);
+  inviterId=inviter.rows[0].id;
+  await pool.query("INSERT INTO workspace_members(workspace_id,user_id,role) VALUES($1,$2,'owner')",[workspaceId,inviterId]);
+  const tokenHash=createHash("sha256").update(token,"utf8").digest("hex");
+  await pool.query("INSERT INTO workspace_invitations(workspace_id,email,role,token_hash,invited_by,expires_at) VALUES($1,$2,'analyst',$3,$4,NOW()+INTERVAL '1 day')",[workspaceId,invitedEmail,tokenHash,inviterId]);
+  const [first,second]=await Promise.all([
+   acceptWorkspaceInvitation(pool,{token,identity:{subject:`invitee-a-${suffix}`,email:invitedEmail}}),
+   acceptWorkspaceInvitation(pool,{token,identity:{subject:`invitee-b-${suffix}`,email:invitedEmail}})
+  ]);
+  const outcomes=[first,second];
+  assert.equal(outcomes.filter(result=>result.accepted===true).length,1);
+  assert.equal(outcomes.filter(result=>result.error==="INVITATION_ALREADY_USED").length,1);
+  const membership=await pool.query("SELECT count(*)::int AS count FROM workspace_members WHERE workspace_id=$1 AND role='analyst'",[workspaceId]);
+  assert.equal(membership.rows[0].count,1);
+  const invitation=await pool.query("SELECT accepted_at FROM workspace_invitations WHERE token_hash=$1",[tokenHash]);
+  assert.ok(invitation.rows[0].accepted_at);
+  const audit=await pool.query("SELECT count(*)::int AS count FROM audit_logs WHERE workspace_id=$1 AND event_type='workspace_invitation.accepted'",[workspaceId]);
+  assert.equal(audit.rows[0].count,1);
+ }finally{
+  if(workspaceId)await pool.query("DELETE FROM workspaces WHERE id=$1",[workspaceId]);
+  await pool.query("DELETE FROM users WHERE auth_subject LIKE $1",[ `invitee-%-${suffix}` ]).catch(()=>{});
+  if(inviterId)await pool.query("DELETE FROM users WHERE id=$1",[inviterId]);
+  await pool.end();
+ }
+});

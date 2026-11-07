@@ -643,7 +643,7 @@ components:
       required: [price, currency, observedOn]
       additionalProperties: false
       properties:
-        price: { oneOf: [{ type: number, minimum: 0 }, { type: string, pattern: '^[0-9]+(\\.[0-9]+)?
+        price: { oneOf: [{ type: number, minimum: 0 }, { type: string, pattern: '^[0-9]+(\\.[0-9]+)?$' }] }
         currency: { type: string, pattern: '^[A-Z]{3}$' }
         observedOn: { type: string, format: date }
         sourceName: { type: [string, 'null'], maxLength: 160 }

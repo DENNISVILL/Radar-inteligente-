@@ -1,0 +1,14 @@
+{
+  "name": "radar-comercial",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plataforma modular de investigación e inteligencia comercial",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check src/modules/research/domain/research.js"
+  }
+}

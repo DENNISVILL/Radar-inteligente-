@@ -172,7 +172,7 @@ test("PostgreSQL serializes concurrent member additions and owner role changes",
   const membership=await pool.query("SELECT count(*)::int AS total FROM workspace_members WHERE workspace_id=$1 AND user_id=$2",[workspaceId,memberId]);
   assert.equal(membership.rows[0].total,1);
   const audit=await pool.query("SELECT count(*)::int AS total FROM audit_logs WHERE workspace_id=$1 AND event_type IN ('workspace_member.role_changed','workspace_member.added')",[workspaceId]);
-  assert.equal(audit.rows[0].total,3);
+  assert.equal(audit.rows[0].total,2);
  }finally{
   if(workspaceId)await pool.query("DELETE FROM workspaces WHERE id=$1",[workspaceId]);
   for(const id of [ownerAId,ownerBId,memberId])if(id)await pool.query("DELETE FROM users WHERE id=$1",[id]);

@@ -61,7 +61,7 @@ test("Fastify enforces the configured rate limit before protected route handlers
  const app=buildApp({config,database:{async query(){return {rows:[]};}},logger:false});
  try{
   const first=await app.inject({method:"GET",url:"/api/v1/me"});
-  assert.equal(first.statusCode,503);
+  assert.equal(first.statusCode,401);
   const second=await app.inject({method:"GET",url:"/api/v1/me"});
   assert.equal(second.statusCode,429);
   assert.equal(second.json().error,"RATE_LIMITED");

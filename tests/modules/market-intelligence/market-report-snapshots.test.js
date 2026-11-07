@@ -39,3 +39,14 @@ test("snapshot writes an audit event atomically and exposes restricted audit his
  assert.match(source,/canAccessWorkspace\(membership,\["owner","admin"\]\)/);
  assert.match(source,/FROM audit_logs WHERE workspace_id=\$1/);
 });
+
+test("snapshot versioning uses one checked-out PostgreSQL client and explicit transaction",async()=>{
+ const source=await readFile(new URL("../../../src/modules/market-intelligence/presentation/market-report.routes.js",import.meta.url),"utf8");
+ assert.match(source,/const client=await o\.database\.connect\(\)/);
+ assert.match(source,/await client\.query\("BEGIN"\)/);
+ assert.match(source,/pg_advisory_xact_lock\(hashtextextended/);
+ assert.match(source,/SELECT COALESCE\(MAX\(version\),0\)\+1 AS version/);
+ assert.match(source,/await client\.query\("COMMIT"\)/);
+ assert.match(source,/await client\.query\("ROLLBACK"\)/);
+ assert.match(source,/client\.release\(\)/);
+});

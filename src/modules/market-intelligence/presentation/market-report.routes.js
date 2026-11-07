@@ -23,25 +23,30 @@ export async function marketReportRoutes(app,o){
   const report=await buildMarketReport(o.database,r.params.workspaceId,r.params.researchId);
   if(!report)return p.code(404).send({error:"RESEARCH_NOT_FOUND",message:"No se encontró la investigación activa en este espacio."});
   const user=await ensureIdentityUser(o.database,r.identity);
-  const saved=await o.database.query(`WITH lock_key AS (
-    SELECT pg_advisory_xact_lock(hashtext($1),hashtext($2))
-   ), next_version AS (
-    SELECT COALESCE(MAX(version),0)+1 AS version FROM market_reports,lock_key
-    WHERE workspace_id=$1 AND research_id=$2
-   ), saved_report AS (
-    INSERT INTO market_reports(workspace_id,research_id,version,report_data,generated_by)
-    SELECT $1,$2,version,$3::jsonb,$4 FROM next_version
-    RETURNING id,version,generated_at
-   ), audit_event AS (
-    INSERT INTO audit_logs(workspace_id,actor_user_id,event_type,resource_type,resource_id,metadata)
-    SELECT $1,$4,'market_report.snapshot_created','market_report',id,
-      jsonb_build_object('research_id',$2::uuid,'version',version)
-    FROM saved_report
-    RETURNING id
-   )
-   SELECT saved_report.* FROM saved_report CROSS JOIN audit_event`,
-   [r.params.workspaceId,r.params.researchId,JSON.stringify(report),user.id]);
-  return p.code(201).send({data:{...saved.rows[0],report}});
+  const client=await o.database.connect();
+  let saved;
+  try{
+   await client.query("BEGIN");
+   await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1 || ':' || $2,0))",[r.params.workspaceId,r.params.researchId]);
+   const versionResult=await client.query(`SELECT COALESCE(MAX(version),0)+1 AS version
+    FROM market_reports WHERE workspace_id=$1 AND research_id=$2`,
+    [r.params.workspaceId,r.params.researchId]);
+   const inserted=await client.query(`INSERT INTO market_reports(workspace_id,research_id,version,report_data,generated_by)
+    VALUES($1,$2,$3,$4::jsonb,$5) RETURNING id,version,generated_at`,
+    [r.params.workspaceId,r.params.researchId,versionResult.rows[0].version,JSON.stringify(report),user.id]);
+   saved=inserted.rows[0];
+   await client.query(`INSERT INTO audit_logs(workspace_id,actor_user_id,event_type,resource_type,resource_id,metadata)
+    VALUES($1,$2,'market_report.snapshot_created','market_report',$3,
+     jsonb_build_object('research_id',$4::uuid,'version',$5))`,
+    [r.params.workspaceId,user.id,saved.id,r.params.researchId,saved.version]);
+   await client.query("COMMIT");
+  }catch(error){
+   await client.query("ROLLBACK");
+   throw error;
+  }finally{
+   client.release();
+  }
+  return p.code(201).send({data:{...saved,report}});
  });
  app.get("/api/v1/workspaces/:workspaceId/audit-logs",{preHandler:(r,p)=>o.requireIdentity(r,p)},async(r,p)=>{
   if(!uuid.test(r.params.workspaceId))return p.code(400).send({error:"INVALID_WORKSPACE_ID",message:"El identificador del espacio no es válido."});

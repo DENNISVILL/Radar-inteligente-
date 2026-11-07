@@ -84,3 +84,44 @@ test("PostgreSQL accepts a workspace invitation only once under concurrent reque
   await pool.end();
  }
 });
+
+test("PostgreSQL persists, lists, rejects duplicates and revokes workspace invitations",{
+ skip:!process.env.TEST_DATABASE_URL
+},async()=>{
+ const {createHash,randomUUID}=await import("node:crypto");
+ const {
+  createWorkspaceInvitation,listWorkspaceInvitations,revokeWorkspaceInvitation
+ }=await import("../../src/modules/identity/application/workspace-invitations.js");
+ const pool=new pg.Pool({connectionString:process.env.TEST_DATABASE_URL});
+ const suffix=randomUUID();
+ const email=`lifecycle-${suffix}@example.test`;
+ let workspaceId,ownerId;
+ try{
+  await applyMigrations(pool);
+  const workspace=await pool.query("INSERT INTO workspaces(name,slug) VALUES('Invitation lifecycle',$1) RETURNING id",[`invite-lifecycle-${suffix}`]);
+  workspaceId=workspace.rows[0].id;
+  const owner=await pool.query("INSERT INTO users(auth_subject,email) VALUES($1,$2) RETURNING id",[`owner-${suffix}`,`owner-${suffix}@example.test`]);
+  ownerId=owner.rows[0].id;
+  const first=await createWorkspaceInvitation(pool,{workspaceId,email,role:"analyst",actorRole:"owner",actorUserId:ownerId});
+  assert.equal(first.email,email);
+  assert.equal(typeof first.token,"string");
+  const stored=await pool.query("SELECT token_hash FROM workspace_invitations WHERE id=$1",[first.id]);
+  assert.equal(stored.rows[0].token_hash,createHash("sha256").update(first.token,"utf8").digest("hex"));
+  assert.equal((await listWorkspaceInvitations(pool,workspaceId)).length,1);
+  const duplicate=await createWorkspaceInvitation(pool,{workspaceId,email,role:"viewer",actorRole:"owner",actorUserId:ownerId});
+  assert.equal(duplicate.error,"INVITATION_ALREADY_PENDING");
+  const revoked=await revokeWorkspaceInvitation(pool,{workspaceId,invitationId:first.id,actorUserId:ownerId});
+  assert.deepEqual(revoked,{id:first.id,revoked:true});
+  assert.equal((await listWorkspaceInvitations(pool,workspaceId)).length,0);
+  const replacement=await createWorkspaceInvitation(pool,{workspaceId,email,role:"viewer",actorRole:"owner",actorUserId:ownerId});
+  assert.equal(replacement.email,email);
+  const events=await pool.query("SELECT event_type,count(*)::int AS count FROM audit_logs WHERE workspace_id=$1 AND event_type IN ('workspace_invitation.created','workspace_invitation.revoked') GROUP BY event_type",[workspaceId]);
+  const counts=Object.fromEntries(events.rows.map(row=>[row.event_type,row.count]));
+  assert.equal(counts["workspace_invitation.created"],2);
+  assert.equal(counts["workspace_invitation.revoked"],1);
+ }finally{
+  if(workspaceId)await pool.query("DELETE FROM workspaces WHERE id=$1",[workspaceId]);
+  if(ownerId)await pool.query("DELETE FROM users WHERE id=$1",[ownerId]);
+  await pool.end();
+ }
+});

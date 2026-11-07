@@ -30,7 +30,7 @@ export async function createWorkspaceInvitation(database,{workspaceId,email,role
    [workspaceId,normalizedEmail,role,tokenHash,actorUserId]);
   const invitation=result.rows[0];
   await client.query(`INSERT INTO audit_logs(workspace_id,actor_user_id,event_type,resource_type,resource_id,metadata)
-   VALUES($1,$2,'workspace_invitation.created','workspace_invitation',$3,jsonb_build_object('email',$4,'role',$5,'expires_at',$6))`,
+   VALUES($1,$2,'workspace_invitation.created','workspace_invitation',$3,jsonb_build_object('email',$4::text,'role',$5::text,'expires_at',$6::timestamptz))`,
    [workspaceId,actorUserId,invitation.id,invitation.email,invitation.role,invitation.expires_at]);
   await client.query("COMMIT");
   return {...invitation,token};
@@ -69,7 +69,7 @@ export async function acceptWorkspaceInvitation(database,{token,identity}){
   if(!member.rows[0]){await client.query("ROLLBACK");return {error:"ALREADY_MEMBER"};}
   await client.query("UPDATE workspace_invitations SET accepted_at=NOW() WHERE id=$1",[invitation.id]);
   await client.query(`INSERT INTO audit_logs(workspace_id,actor_user_id,event_type,resource_type,resource_id,metadata)
-   VALUES($1,$2,'workspace_invitation.accepted','workspace_invitation',$3,jsonb_build_object('role',$4))`,
+   VALUES($1,$2,'workspace_invitation.accepted','workspace_invitation',$3,jsonb_build_object('role',$4::text))`,
    [invitation.workspace_id,userId,invitation.id,invitation.role]);
   await client.query("COMMIT");
   return {workspaceId:invitation.workspace_id,userId,role:invitation.role,accepted:true};
@@ -86,7 +86,7 @@ export async function revokeWorkspaceInvitation(database,{workspaceId,invitation
    RETURNING id,email,role`,[workspaceId,invitationId]);
   if(!result.rows[0]){await client.query("ROLLBACK");return null;}
   await client.query(`INSERT INTO audit_logs(workspace_id,actor_user_id,event_type,resource_type,resource_id,metadata)
-   VALUES($1,$2,'workspace_invitation.revoked','workspace_invitation',$3,jsonb_build_object('email',$4,'role',$5))`,
+   VALUES($1,$2,'workspace_invitation.revoked','workspace_invitation',$3,jsonb_build_object('email',$4::text,'role',$5::text))`,
    [workspaceId,actorUserId,result.rows[0].id,result.rows[0].email,result.rows[0].role]);
   await client.query("COMMIT");
   return {id:result.rows[0].id,revoked:true};

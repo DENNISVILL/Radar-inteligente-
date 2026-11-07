@@ -63,22 +63,25 @@ export async function marketIntelligenceRoutes(app,o){
   return p.code(201).send({data});
  });
  app.get("/api/v1/workspaces/:workspaceId/products/:productId/prices",auth,async(r,p)=>{
-  if(!workspace(r,p)||!await access(o,r,p))return;
+  if(!workspace(r,p))return;
   if(!uuid.test(r.params.productId))return p.code(400).send({error:"INVALID_PRODUCT_ID",message:"El identificador del producto no es válido."});
+  if(!await access(o,r,p))return;
   const n=limit(r.query,p);if(!n)return;
   return {data:await listPriceObservations(o.database,r.params.workspaceId,r.params.productId,{limit:n})};
  });
  app.post("/api/v1/workspaces/:workspaceId/products/:productId/prices",auth,async(r,p)=>{
-  if(!workspace(r,p)||!await access(o,r,p,true))return;
+  if(!workspace(r,p))return;
   if(!uuid.test(r.params.productId))return p.code(400).send({error:"INVALID_PRODUCT_ID",message:"El identificador del producto no es válido."});
+  if(!await access(o,r,p,true))return;
   const e=validatePriceObservation(r.body);if(e)return p.code(400).send({error:"INVALID_PRICE_OBSERVATION",message:e});
   const u=await ensureIdentityUser(o.database,r.identity);
   const data=await audited(o,r,u,"market_price_observation.created","price_observation",{productId:r.params.productId,currency:r.body.currency},db=>createPriceObservation(db,r.params.workspaceId,u.id,r.params.productId,r.body));
   return p.code(201).send({data});
  });
  app.patch("/api/v1/workspaces/:workspaceId/competitors/:competitorId",auth,async(r,p)=>{
-  if(!workspace(r,p)||!await access(o,r,p,true))return;
+  if(!workspace(r,p))return;
   if(!uuid.test(r.params.competitorId))return p.code(400).send({error:"INVALID_COMPETITOR_ID",message:"El identificador del competidor no es válido."});
+  if(!await access(o,r,p,true))return;
   const e=validateCompetitorUpdate(r.body);if(e)return p.code(400).send({error:"INVALID_COMPETITOR",message:e});
   const u=await ensureIdentityUser(o.database,r.identity);
   const data=await audited(o,r,u,"market_competitor.updated","competitor",{changedFields:Object.keys(r.body)},db=>updateCompetitor(db,r.params.workspaceId,r.params.competitorId,r.body));
@@ -86,16 +89,18 @@ export async function marketIntelligenceRoutes(app,o){
   return {data};
  });
  app.delete("/api/v1/workspaces/:workspaceId/competitors/:competitorId",auth,async(r,p)=>{
-  if(!workspace(r,p)||!await access(o,r,p,true))return;
+  if(!workspace(r,p))return;
   if(!uuid.test(r.params.competitorId))return p.code(400).send({error:"INVALID_COMPETITOR_ID",message:"El identificador del competidor no es válido."});
+  if(!await access(o,r,p,true))return;
   const u=await ensureIdentityUser(o.database,r.identity);
   const data=await audited(o,r,u,"market_competitor.archived","competitor",{},db=>archiveCompetitor(db,r.params.workspaceId,r.params.competitorId));
   if(!data)return p.code(404).send({error:"NOT_FOUND",message:"No se encontró un competidor activo en este espacio."});
   return {data};
  });
  app.patch("/api/v1/workspaces/:workspaceId/products/:productId",auth,async(r,p)=>{
-  if(!workspace(r,p)||!await access(o,r,p,true))return;
+  if(!workspace(r,p))return;
   if(!uuid.test(r.params.productId))return p.code(400).send({error:"INVALID_PRODUCT_ID",message:"El identificador del producto no es válido."});
+  if(!await access(o,r,p,true))return;
   const e=validateMarketProductUpdate(r.body);if(e)return p.code(400).send({error:"INVALID_PRODUCT",message:e});
   const u=await ensureIdentityUser(o.database,r.identity);
   const data=await audited(o,r,u,"market_product.updated","market_product",{changedFields:Object.keys(r.body)},db=>updateMarketProduct(db,r.params.workspaceId,r.params.productId,r.body));
@@ -103,16 +108,18 @@ export async function marketIntelligenceRoutes(app,o){
   return {data};
  });
  app.delete("/api/v1/workspaces/:workspaceId/products/:productId",auth,async(r,p)=>{
-  if(!workspace(r,p)||!await access(o,r,p,true))return;
+  if(!workspace(r,p))return;
   if(!uuid.test(r.params.productId))return p.code(400).send({error:"INVALID_PRODUCT_ID",message:"El identificador del producto no es válido."});
+  if(!await access(o,r,p,true))return;
   const u=await ensureIdentityUser(o.database,r.identity);
   const data=await audited(o,r,u,"market_product.archived","market_product",{},db=>archiveMarketProduct(db,r.params.workspaceId,r.params.productId));
   if(!data)return p.code(404).send({error:"NOT_FOUND",message:"No se encontró un producto activo en este espacio."});
   return {data};
  });
  app.get("/api/v1/workspaces/:workspaceId/researches/:researchId/observations",auth,async(r,p)=>{
-  if(!workspace(r,p)||!await access(o,r,p))return;
+  if(!workspace(r,p))return;
   if(!uuid.test(r.params.researchId))return p.code(400).send({error:"INVALID_RESEARCH_ID",message:"El identificador de investigación no es válido."});
+  if(!await access(o,r,p))return;
   const n=limit(r.query,p);if(!n)return;
   if(r.query?.competitorId&&!uuid.test(r.query.competitorId))return p.code(400).send({error:"INVALID_FILTER",message:"El filtro de competidor no es válido."});
   const allowed=["strength","weakness","promotion","customer_experience","strategy","opportunity","risk","other"];
@@ -120,8 +127,9 @@ export async function marketIntelligenceRoutes(app,o){
   return {data:await listMarketObservations(o.database,r.params.workspaceId,r.params.researchId,{competitorId:r.query?.competitorId,type:r.query?.type,limit:n})};
  });
  app.post("/api/v1/workspaces/:workspaceId/researches/:researchId/observations",auth,async(r,p)=>{
-  if(!workspace(r,p)||!await access(o,r,p,true))return;
+  if(!workspace(r,p))return;
   if(!uuid.test(r.params.researchId))return p.code(400).send({error:"INVALID_RESEARCH_ID",message:"El identificador de investigación no es válido."});
+  if(!await access(o,r,p,true))return;
   if(r.body?.competitorId&&!uuid.test(r.body.competitorId))return p.code(400).send({error:"INVALID_COMPETITOR_ID",message:"El identificador de competidor no es válido."});
   const e=validateMarketObservation(r.body);if(e)return p.code(400).send({error:"INVALID_OBSERVATION",message:e});
   const u=await ensureIdentityUser(o.database,r.identity);
@@ -129,8 +137,9 @@ export async function marketIntelligenceRoutes(app,o){
   return p.code(201).send({data});
  });
  app.get("/api/v1/workspaces/:workspaceId/researches/:researchId/analysis",auth,async(r,p)=>{
-  if(!workspace(r,p)||!await access(o,r,p))return;
+  if(!workspace(r,p))return;
   if(!uuid.test(r.params.researchId))return p.code(400).send({error:"INVALID_RESEARCH_ID",message:"El identificador de investigación no es válido."});
+  if(!await access(o,r,p))return;
   return {data:await getMarketAnalysis(o.database,r.params.workspaceId,r.params.researchId)};
  });
 }

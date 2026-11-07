@@ -26,12 +26,17 @@ test("OpenAPI contract documents the API version, bearer auth and core backend r
 
 test("OpenAPI patch schemas allow partial payloads without requiring create fields",async()=>{
  const spec=await readFile(new URL("../../docs/api/openapi.yaml",import.meta.url),"utf8");
+ const lines=spec.split("\n");
  for(const schema of ["ResearchPatch","CompetitorPatch","ProductPatch"]){
-  const start=spec.indexOf(`    ${schema}:`);
+  const start=lines.findIndex(line=>line===`    ${schema}:`);
   assert.notEqual(start,-1);
-  const end=spec.indexOf("\n    ",start+5);
-  const block=spec.slice(start,end===-1?undefined:end);
-  assert.match(block,/minProperties: 1/);
-  assert.doesNotMatch(block,/required:/);
+  const block=[];
+  for(let index=start;index<lines.length;index++){
+   if(index>start&&/^    [A-Z][A-Za-z]+:$/.test(lines[index]))break;
+   block.push(lines[index]);
+  }
+  const schemaBlock=block.join("\n");
+  assert.match(schemaBlock,/minProperties: 1/);
+  assert.doesNotMatch(schemaBlock,/required:/);
  }
 });

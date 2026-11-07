@@ -14,7 +14,7 @@ test("creates a workspace and owner membership in one transaction", async () => 
   const statements = [];
   const client = {
     query: async (sql, params) => {
-      statements.push(sql.trim().split(/\\s+/).slice(0, 3).join(" "));
+      statements.push(sql.trim().split(/\s+/).slice(0, 3).join(" "));
       if (sql.includes("RETURNING id, name, slug")) return { rows: [{ id: "w1", name: params[0], slug: params[1] }] };
       return { rows: [] };
     },

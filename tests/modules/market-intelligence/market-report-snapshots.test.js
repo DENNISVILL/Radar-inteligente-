@@ -15,3 +15,11 @@ test("report routes expose snapshot creation, history and retrieval",async()=>{
  assert.match(source,/pg_advisory_xact_lock/);
  assert.match(source,/workspace_id=\$1 AND research_id=\$2 AND id=\$3/);
 });
+
+test("snapshot creation requires a writer role and stores the internal user id",async()=>{
+ const source=await readFile(new URL("../../../src/modules/market-intelligence/presentation/market-report.routes.js",import.meta.url),"utf8");
+ assert.match(source,/const writers=\["owner","admin","analyst"\]/);
+ assert.match(source,/authorize\(r,p,o,true\)/);
+ assert.match(source,/ensureIdentityUser\(o\.database,r\.identity\)/);
+ assert.match(source,/JSON\.stringify\(report\),user\.id/);
+});

@@ -43,14 +43,14 @@ export async function getMarketAnalysis(db,workspaceId,researchId){
    WHERE c.workspace_id=$1 AND c.status='active'
    GROUP BY c.id,c.name ORDER BY observations_count DESC,c.name`,[workspaceId,researchId]),
   db.query(`SELECT p.id AS product_id,p.competitor_id,c.name AS competitor_name,p.name AS product_name,p.category,
-   COUNT(po.id)::int AS price_points,MIN(po.price)::numeric AS min_price,
+   po.currency,COUNT(po.id)::int AS price_points,MIN(po.price)::numeric AS min_price,
    MAX(po.price)::numeric AS max_price,AVG(po.price)::numeric(14,2) AS average_price,
    (ARRAY_AGG(po.price ORDER BY po.observed_on DESC,po.created_at DESC) FILTER (WHERE po.id IS NOT NULL))[1] AS latest_price,
    MAX(po.observed_on) AS last_price_date
    FROM market_products p LEFT JOIN competitors c ON c.id=p.competitor_id AND c.workspace_id=p.workspace_id
    LEFT JOIN price_observations po ON po.product_id=p.id AND po.workspace_id=p.workspace_id
    WHERE p.workspace_id=$1 AND p.research_id=$2 AND p.status='active'
-   GROUP BY p.id,p.competitor_id,c.name,p.name,p.category ORDER BY p.name`,[workspaceId,researchId]),
+   GROUP BY p.id,p.competitor_id,c.name,p.name,p.category,po.currency ORDER BY p.name,po.currency`,[workspaceId,researchId]),
   db.query(`SELECT COUNT(*)::int AS total_observations,
    COUNT(*) FILTER (WHERE observation_type='strength')::int AS strengths,
    COUNT(*) FILTER (WHERE observation_type='weakness')::int AS weaknesses,
@@ -69,8 +69,18 @@ export async function getMarketAnalysis(db,workspaceId,researchId){
  if(Number(summary.promotions)>0)suggestions.push({code:"PROMOTION_PRESSURE",priority:"review",title:"Evaluar presión promocional",detail:`Hay ${summary.promotions} observaciones de promociones. Compara su vigencia, condiciones y precios antes de reaccionar.`});
  if(Number(summary.opportunities)>0)suggestions.push({code:"RECORDED_OPPORTUNITIES",priority:"high",title:"Validar oportunidades registradas",detail:`Hay ${summary.opportunities} oportunidades anotadas. Priorízalas según demanda, coste y capacidad operativa.`});
  if(Number(summary.risks)>0)suggestions.push({code:"RECORDED_RISKS",priority:"high",title:"Revisar riesgos identificados",detail:`Se registraron ${summary.risks} riesgos que conviene evaluar y asignar a un responsable.`});
- const priceComparable=products.rows.filter(x=>x.latest_price!==null&&x.latest_price!==undefined);
- if(priceComparable.length>=2){const sorted=[...priceComparable].sort((a,b)=>Number(a.latest_price)-Number(b.latest_price));suggestions.push({code:"PRICE_SPREAD",priority:"review",title:"Comparar precios registrados",detail:`Entre los ${priceComparable.length} productos con precios observados, el menor último precio es ${sorted[0].latest_price} y el mayor es ${sorted.at(-1).latest_price} ${"USD"}. Verifica que sean productos comparables.`});}
+ const pricesByCurrency=new Map();
+ for(const product of products.rows){
+  if(product.latest_price===null||product.latest_price===undefined||!product.currency)continue;
+  const group=pricesByCurrency.get(product.currency)??[];
+  group.push(product);
+  pricesByCurrency.set(product.currency,group);
+ }
+ for(const [currency,items] of pricesByCurrency){
+  if(items.length<2)continue;
+  const sorted=[...items].sort((a,b)=>Number(a.latest_price)-Number(b.latest_price));
+  suggestions.push({code:"PRICE_SPREAD",priority:"review",title:`Comparar precios registrados (${currency})`,detail:`Entre los ${items.length} productos con precios observados en ${currency}, el menor último precio es ${sorted[0].latest_price} y el mayor es ${sorted.at(-1).latest_price} ${currency}. Verifica que sean productos comparables.`});
+ }
  if(Number(summary.total_observations)>0&&Number(summary.sourced_observations)<Number(summary.total_observations))suggestions.push({code:"SOURCE_COVERAGE",priority:"review",title:"Completar fuentes verificables",detail:`${Number(summary.total_observations)-Number(summary.sourced_observations)} observaciones no tienen un enlace de fuente registrado.`});
  return {summary,competitors:competitors.rows,products:products.rows,suggestions,methodology:"Análisis descriptivo basado únicamente en los registros guardados en esta investigación. Las sugerencias son reglas de revisión, no predicciones ni conclusiones automáticas sobre el mercado."};
 }

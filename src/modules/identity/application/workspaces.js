@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-const slugify = value => value.normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 100);
+const slugify = value => value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 100);
 
 export async function listUserWorkspaces(database, userId) {
   const result = await database.query(

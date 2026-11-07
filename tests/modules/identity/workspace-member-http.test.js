@@ -96,6 +96,19 @@ test("HTTP member removal records an audit event",async()=>{
  }finally{await app.close();}
 });
 
+test("HTTP member resource identifiers are rejected before workspace membership lookup",async()=>{
+ const {app,calls}=await buildApp();
+ try{
+  const patch=await app.inject({method:"PATCH",url:`/api/v1/workspaces/${workspaceId}/members/not-a-uuid`,payload:{role:"viewer"}});
+  assert.equal(patch.statusCode,400);
+  assert.equal(patch.json().error,"INVALID_USER_ID");
+  const remove=await app.inject({method:"DELETE",url:`/api/v1/workspaces/${workspaceId}/members/not-a-uuid`});
+  assert.equal(remove.statusCode,400);
+  assert.equal(remove.json().error,"INVALID_USER_ID");
+  assert.equal(calls.length,0);
+ }finally{await app.close();}
+});
+
 test("HTTP member removal cannot remove the last owner",async()=>{
  const {app,calls}=await buildApp({memberRole:"owner",owners:1});
  try{

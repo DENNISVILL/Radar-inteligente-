@@ -80,6 +80,27 @@ test("invalid workspace product UUID is rejected before access lookup",async()=>
   const response=await app.inject({method:"GET",url:`/api/v1/workspaces/${workspaceId}/products/not-a-uuid/prices`});
   assert.equal(response.statusCode,400);
   assert.equal(response.json().error,"INVALID_PRODUCT_ID");
-  assert.equal(calls.length,1); // workspace membership is checked before the product identifier on this route
+  assert.equal(calls.length,0); // malformed resource IDs are rejected before membership lookup
+ }finally{await app.close();}
+});
+
+
+test("invalid competitor identifiers are rejected before workspace membership lookup",async()=>{
+ const {app,calls}=await buildApp();
+ try{
+  const response=await app.inject({method:"PATCH",url:`/api/v1/workspaces/${workspaceId}/competitors/not-a-uuid`,payload:{name:"Cambio"}});
+  assert.equal(response.statusCode,400);
+  assert.equal(response.json().error,"INVALID_COMPETITOR_ID");
+  assert.equal(calls.length,0);
+ }finally{await app.close();}
+});
+
+test("invalid research identifiers are rejected before workspace membership lookup",async()=>{
+ const {app,calls}=await buildApp();
+ try{
+  const response=await app.inject({method:"GET",url:`/api/v1/workspaces/${workspaceId}/researches/not-a-uuid/observations`});
+  assert.equal(response.statusCode,400);
+  assert.equal(response.json().error,"INVALID_RESEARCH_ID");
+  assert.equal(calls.length,0);
  }finally{await app.close();}
 });

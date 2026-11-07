@@ -29,16 +29,18 @@ export async function workspaceMemberRoutes(app,options){
   return p.code(201).send({data:result});
  });
  app.patch("/api/v1/workspaces/:workspaceId/members/:userId",auth,async(r,p)=>{
-  const actor=await authorize(options,r,p);if(!actor)return;
+  if(!uuid.test(r.params.workspaceId)){p.code(400).send({error:"INVALID_WORKSPACE_ID",message:"El identificador del espacio no es válido."});return;}
   if(!uuid.test(r.params.userId))return p.code(400).send({error:"INVALID_USER_ID",message:"El identificador de usuario no es válido."});
+  const actor=await authorize(options,r,p);if(!actor)return;
   const result=await updateWorkspaceMemberRole(options.database,{workspaceId:r.params.workspaceId,userId:r.params.userId,role:r.body?.role,actorRole:actor.role,actorSubject:r.identity.subject});
   if(result?.error)return respondError(p,result.error);
   if(!result)return p.code(404).send({error:"MEMBER_NOT_FOUND",message:"No se encontró el miembro."});
   return {data:result};
  });
  app.delete("/api/v1/workspaces/:workspaceId/members/:userId",auth,async(r,p)=>{
-  const actor=await authorize(options,r,p);if(!actor)return;
+  if(!uuid.test(r.params.workspaceId)){p.code(400).send({error:"INVALID_WORKSPACE_ID",message:"El identificador del espacio no es válido."});return;}
   if(!uuid.test(r.params.userId))return p.code(400).send({error:"INVALID_USER_ID",message:"El identificador de usuario no es válido."});
+  const actor=await authorize(options,r,p);if(!actor)return;
   const result=await removeWorkspaceMember(options.database,{workspaceId:r.params.workspaceId,userId:r.params.userId,actorRole:actor.role,actorSubject:r.identity.subject});
   if(result?.error)return respondError(p,result.error);
   if(!result)return p.code(404).send({error:"MEMBER_NOT_FOUND",message:"No se encontró el miembro."});

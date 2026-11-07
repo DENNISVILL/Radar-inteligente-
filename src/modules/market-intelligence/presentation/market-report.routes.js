@@ -66,8 +66,10 @@ export async function marketReportRoutes(app,o){
   return {data:result.rows};
  });
  app.get(base+"/reports/:reportId/pdf",{preHandler:(r,p)=>o.requireIdentity(r,p)},async(r,p)=>{
-  if(await authorize(r,p,o)!==true)return;
+  if(!uuid.test(r.params.workspaceId))return p.code(400).send({error:"INVALID_WORKSPACE_ID",message:"El identificador del espacio no es válido."});
+  if(!uuid.test(r.params.researchId))return p.code(400).send({error:"INVALID_RESEARCH_ID",message:"El identificador de investigación no es válido."});
   if(!uuid.test(r.params.reportId))return p.code(400).send({error:"INVALID_REPORT_ID",message:"El identificador del informe no es válido."});
+  if(await authorize(r,p,o)!==true)return;
   const result=await o.database.query(`SELECT id,version,generated_at,report_data,report_hash,
    encode(digest(report_data::text,'sha256'),'hex')=report_hash AS integrity_verified
    FROM market_reports WHERE workspace_id=$1 AND research_id=$2 AND id=$3`,
@@ -79,8 +81,10 @@ export async function marketReportRoutes(app,o){
   return p.type("application/pdf").header("Content-Disposition",`attachment; filename="radar-${snapshot.id}-v${snapshot.version}.pdf"`).send(pdf);
  });
  app.get(base+"/reports/:reportId",{preHandler:(r,p)=>o.requireIdentity(r,p)},async(r,p)=>{
-  if(await authorize(r,p,o)!==true)return;
+  if(!uuid.test(r.params.workspaceId))return p.code(400).send({error:"INVALID_WORKSPACE_ID",message:"El identificador del espacio no es válido."});
+  if(!uuid.test(r.params.researchId))return p.code(400).send({error:"INVALID_RESEARCH_ID",message:"El identificador de investigación no es válido."});
   if(!uuid.test(r.params.reportId))return p.code(400).send({error:"INVALID_REPORT_ID",message:"El identificador del informe no es válido."});
+  if(await authorize(r,p,o)!==true)return;
   const result=await o.database.query("SELECT id,version,generated_at,generated_by,report_data,report_hash,encode(digest(report_data::text,'sha256'),'hex')=report_hash AS integrity_verified FROM market_reports WHERE workspace_id=$1 AND research_id=$2 AND id=$3",[r.params.workspaceId,r.params.researchId,r.params.reportId]);
   if(!result.rows[0])return p.code(404).send({error:"REPORT_NOT_FOUND",message:"No se encontró esa versión del informe."});
   return {data:result.rows[0]};

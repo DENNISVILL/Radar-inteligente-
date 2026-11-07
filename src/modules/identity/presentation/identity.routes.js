@@ -17,6 +17,7 @@ export async function identityRoutes(app,options){
  const routeOptions={database:options.database,requireIdentity:(request,reply)=>requireIdentity(request,reply,options)};
  app.register(workspaceRoutes,routeOptions);
  app.register(workspaceMemberRoutes,routeOptions);
+ app.register(workspaceInvitationRoutes,routeOptions);
  app.register(researchRoutes,routeOptions);
  app.register(marketIntelligenceRoutes,routeOptions);
  app.register(marketReportRoutes,routeOptions);

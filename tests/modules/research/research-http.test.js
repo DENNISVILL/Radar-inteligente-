@@ -84,3 +84,50 @@ test("research list rejects invalid status and pagination before querying resear
   assert.equal(calls.filter(call=>call.sql.includes("FROM researches")).length,0);
  }finally{await app.close();}
 });
+
+
+test("viewer cannot update or archive a research",async()=>{
+ const {app,calls}=await buildApp({role:"viewer"});
+ try{
+  const update=await app.inject({method:"PATCH",url:`/api/v1/workspaces/${workspaceA}/researches/${researchId}`,payload:{title:"Cambio no permitido"}});
+  assert.equal(update.statusCode,403);
+  assert.equal(update.json().error,"FORBIDDEN");
+  const archive=await app.inject({method:"DELETE",url:`/api/v1/workspaces/${workspaceA}/researches/${researchId}`});
+  assert.equal(archive.statusCode,403);
+  assert.equal(archive.json().error,"FORBIDDEN");
+  assert.equal(calls.some(call=>call.sql.includes("UPDATE researches")),false);
+ }finally{await app.close();}
+});
+
+test("authenticated non-members cannot create research in another workspace",async()=>{
+ const {app,calls}=await buildApp({accessibleWorkspaces:[]});
+ try{
+  const response=await app.inject({method:"POST",url:`/api/v1/workspaces/${workspaceB}/researches`,payload:{
+   title:"Estudio",country:"Ecuador",sector:"Retail",objective:"Analizar el mercado"
+  }});
+  assert.equal(response.statusCode,403);
+  assert.equal(response.json().error,"FORBIDDEN");
+  assert.equal(calls.some(call=>call.sql.includes("INSERT INTO researches")),false);
+ }finally{await app.close();}
+});
+
+test("malformed workspace identifiers are rejected before membership lookup",async()=>{
+ const {app,calls}=await buildApp();
+ try{
+  const response=await app.inject({method:"GET",url:"/api/v1/workspaces/not-a-uuid/researches"});
+  assert.equal(response.statusCode,400);
+  assert.equal(response.json().error,"INVALID_ID");
+  assert.equal(calls.length,0);
+ }finally{await app.close();}
+});
+
+test("invalid research payload is rejected before creating a local identity or research",async()=>{
+ const {app,calls}=await buildApp();
+ try{
+  const response=await app.inject({method:"POST",url:`/api/v1/workspaces/${workspaceA}/researches`,payload:{title:""}});
+  assert.equal(response.statusCode,400);
+  assert.equal(response.json().error,"INVALID_RESEARCH");
+  assert.equal(calls.some(call=>call.sql.includes("INSERT INTO users")),false);
+  assert.equal(calls.some(call=>call.sql.includes("INSERT INTO researches")),false);
+ }finally{await app.close();}
+});

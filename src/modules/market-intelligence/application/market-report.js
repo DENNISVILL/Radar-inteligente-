@@ -102,11 +102,31 @@ export async function buildMarketReport(db,workspaceId,researchId){
    price_evidence:item.price_evidence??[]
   });
  }
- const priceComparisons=Object.entries(priceGroups).map(([currency,items])=>({
-  currency,items,
-  comparableProducts:items.filter(item=>item.latest_price!==null).length,
-  comparisonNote:"Los valores se agrupan por moneda. La comparabilidad comercial entre productos requiere revisar presentación, calidad, tamaño y condiciones."
- }));
+ const priceComparisons=Object.entries(priceGroups).map(([currency,items])=>{
+  const enrichedItems=items.map(item=>{
+   const points=item.price_evidence??[];
+   const latest=points[0];
+   const previous=points[1];
+   let priceTrend={status:"insufficient_history",direction:"unknown",changePercent:null,fromObservedOn:null,toObservedOn:null};
+   if(points.length>=2&&Number(previous.price)>0&&latest.observedOn!==previous.observedOn){
+    const changePercent=Math.round(((Number(latest.price)-Number(previous.price))/Number(previous.price))*10000)/100;
+    priceTrend={
+     status:"calculated",
+     direction:changePercent>0?"increased":changePercent<0?"decreased":"stable",
+     changePercent,
+     fromObservedOn:previous.observedOn,
+     toObservedOn:latest.observedOn
+    };
+   }
+   return {...item,priceTrend};
+  });
+  return {
+   currency,items:enrichedItems,
+   comparableProducts:enrichedItems.filter(item=>item.latest_price!==null).length,
+   productsWithPriceTrend:enrichedItems.filter(item=>item.priceTrend.status==="calculated").length,
+   comparisonNote:"Los valores se agrupan por moneda. La variación compara los dos registros más recientes de cada producto y solo se calcula si corresponden a fechas distintas. La comparabilidad comercial requiere revisar presentación, calidad, tamaño y condiciones."
+  };
+ });
 
  const evidenceTruncated=total>observations.length;
  const executiveSummary=total===0
@@ -141,7 +161,7 @@ export async function buildMarketReport(db,workspaceId,researchId){
    ?["Los hallazgos se limitan a las observaciones y fuentes registradas.","Las diferencias de precios solo se presentan dentro de la misma moneda."]
    :["Información insuficiente para establecer conclusiones."],
   recommendations,
-  methodology:"Informe descriptivo generado a partir de los registros de esta investigación. No realiza predicciones ni verifica de forma independiente las fuentes externas. La cobertura de fuentes cuenta únicamente observaciones con URL. Se muestran hasta 200 observaciones recientes y hasta 25 registros de precio recientes por producto y moneda; los indicadores agregados consideran el total de registros.",
+  methodology:"Informe descriptivo generado a partir de los registros de esta investigación. No realiza predicciones ni verifica de forma independiente las fuentes externas. La cobertura de fuentes cuenta únicamente observaciones con URL. La variación de precio compara los dos registros más recientes del mismo producto y moneda, únicamente si tienen fechas distintas; no constituye una predicción. Se muestran hasta 200 observaciones recientes y hasta 25 registros de precio recientes por producto y moneda; los indicadores agregados consideran el total de registros.",
   limitations:[
    "La presencia de una URL no garantiza que el contenido siga disponible ni que sea correcto.",
    "La comparación de precios no ajusta diferencias de tamaño, calidad, impuestos, envío o condiciones comerciales.",

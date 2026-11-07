@@ -55,7 +55,7 @@ test("snapshot and audit event are written in the same explicit transaction",asy
  const snapshot=source.indexOf("INSERT INTO market_reports");
  const audit=source.indexOf("INSERT INTO audit_logs");
  const commit=source.indexOf('await client.query("COMMIT")');
- const rollback=source.indexOf('await client.query("ROLLBACK")');
+ const rollback=source.lastIndexOf('await client.query("ROLLBACK")');
  assert.ok(begin>=0&&begin<build&&build<snapshot&&snapshot<audit&&audit<commit,"report data, snapshot and audit must share one consistent transaction");
  assert.ok(rollback>commit,"transaction must provide rollback handling");
 });

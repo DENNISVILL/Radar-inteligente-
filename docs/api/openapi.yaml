@@ -643,7 +643,179 @@ components:
       required: [price, currency, observedOn]
       additionalProperties: false
       properties:
-        price: { oneOf: [{ type: number, minimum: 0 }, { type: string, pattern: '^[0-9]+(\.[0-9]+)? }] }
+        price: { oneOf: [{ type: number, minimum: 0 }, { type: string, pattern: '^[0-9]+(\\.[0-9]+)?
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        observedOn: { type: string, format: date }
+        sourceName: { type: [string, 'null'], maxLength: 160 }
+        sourceUrl: { type: [string, 'null'], format: uri }
+        notes: { type: [string, 'null'], maxLength: 1000 }
+    ObservationInput:
+      type: object
+      required: [type, title, content, observedOn]
+      additionalProperties: false
+      properties:
+        competitorId: { oneOf: [{ $ref: '#/components/schemas/UUID' }, { type: 'null' }] }
+        type: { type: string, enum: [strength, weakness, promotion, customer_experience, strategy, opportunity, risk, other] }
+        title: { type: string, minLength: 1, maxLength: 180 }
+        content: { type: string, minLength: 1, maxLength: 3000 }
+        sourceName: { type: [string, 'null'], maxLength: 180 }
+        sourceUrl: { type: [string, 'null'], format: uri }
+        observedOn: { type: string, format: date }
+        confidence: { type: string, enum: [low, medium, high], default: medium }
+  responses:
+    BadRequest:
+      description: Solicitud inválida
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthorized:
+      description: Token ausente, inválido o expirado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    AuthNotConfigured:
+      description: La autenticación no está configurada en el servidor
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Sin permisos para esta operación
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Conflict:
+      description: Conflicto de estado o duplicado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    GenericData:
+      description: Resultado de una operación
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data: {}
+    GenericList:
+      description: Colección de resultados
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data:
+                type: array
+                items: {}
+    Workspace:
+      description: Workspace creado
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { type: object }
+    WorkspaceList:
+      description: Workspaces del usuario autenticado
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { type: array, items: { type: object } }
+ }] }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        observedOn: { type: string, format: date }
+        sourceName: { type: [string, 'null'], maxLength: 160 }
+        sourceUrl: { type: [string, 'null'], format: uri }
+        notes: { type: [string, 'null'], maxLength: 1000 }
+    ObservationInput:
+      type: object
+      required: [type, title, content, observedOn]
+      additionalProperties: false
+      properties:
+        competitorId: { oneOf: [{ $ref: '#/components/schemas/UUID' }, { type: 'null' }] }
+        type: { type: string, enum: [strength, weakness, promotion, customer_experience, strategy, opportunity, risk, other] }
+        title: { type: string, minLength: 1, maxLength: 180 }
+        content: { type: string, minLength: 1, maxLength: 3000 }
+        sourceName: { type: [string, 'null'], maxLength: 180 }
+        sourceUrl: { type: [string, 'null'], format: uri }
+        observedOn: { type: string, format: date }
+        confidence: { type: string, enum: [low, medium, high], default: medium }
+  responses:
+    BadRequest:
+      description: Solicitud inválida
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthorized:
+      description: Token ausente, inválido o expirado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    AuthNotConfigured:
+      description: La autenticación no está configurada en el servidor
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Sin permisos para esta operación
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Conflict:
+      description: Conflicto de estado o duplicado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    GenericData:
+      description: Resultado de una operación
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data: {}
+    GenericList:
+      description: Colección de resultados
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data:
+                type: array
+                items: {}
+    Workspace:
+      description: Workspace creado
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { type: object }
+    WorkspaceList:
+      description: Workspaces del usuario autenticado
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { type: array, items: { type: object } }
+ }] }
         currency: { type: string, pattern: '^[A-Z]{3}$' }
         observedOn: { type: string, format: date }
         sourceName: { type: [string, 'null'], maxLength: 160 }

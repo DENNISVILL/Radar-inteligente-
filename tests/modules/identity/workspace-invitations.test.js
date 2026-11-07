@@ -21,7 +21,7 @@ test("creates an invitation with a one-time token and stores only its SHA-256 ha
  const result=await createWorkspaceInvitation(database,{workspaceId:"workspace-1",email:" New@Example.Test ",role:"analyst",actorRole:"owner",actorUserId:"owner-1"});
  assert.equal(result.email,"new@example.test");
  assert.equal(typeof result.token,"string");
- assert.ok(!calls.some(call=>call.values.includes(result.token)),"raw token must never be persisted");
+ assert.ok(!calls.some(call=>call.values?.includes(result.token)),"raw token must never be persisted");
  assert.match(calls.find(call=>call.sql.includes("INSERT INTO workspace_invitations")).values[3],/^[a-f0-9]{64}$/);
  assert.ok(calls.some(call=>call.sql.includes("INSERT INTO audit_logs")));
  assert.ok(calls.some(call=>call.sql==="COMMIT"));

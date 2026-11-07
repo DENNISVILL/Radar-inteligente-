@@ -1,21 +1,51 @@
 # Radar Comercial
-Plataforma de investigación e inteligencia comercial con fuentes verificables.
-## Estado
-Implementación del backend. Esta rama incorpora la fundación del servidor y el esquema inicial PostgreSQL. No es todavía una plataforma lista para producción.
+
+Plataforma de investigación e inteligencia comercial para organizar evidencia, comparar competidores y generar informes trazables.
+
+## Estado del proyecto
+
+El backend está en desarrollo y cuenta con una base funcional: autenticación mediante JWT de Supabase (pendiente de conectar un proyecto real), espacios de trabajo multiempresa, roles y membresías, invitaciones, investigaciones, registros de mercado, informes versionados y exportación PDF.
+
+**Todavía no es un producto listo para producción.** No hay frontend, despliegue productivo ni proveedor de correo conectado.
+
 ## Stack
-- Node.js 20+
+
+- Node.js 22+
 - Fastify 5
-- PostgreSQL mediante pg
+- PostgreSQL 16 o compatible
+- `pg` para persistencia y migraciones SQL
+- Supabase Auth/JWKS como proveedor de identidad, cuando se configure el proyecto
 - Node.js Test Runner y GitHub Actions
+
 ## Desarrollo local
-1. Instala Node.js 20+ y PostgreSQL.
-2. Copia .env.example a .env y configura DATABASE_URL.
-3. Ejecuta npm install.
-4. Ejecuta npm run db:migrate.
-5. Inicia con npm run dev.
-Rutas: GET /health (proceso) y GET /ready (PostgreSQL).
-Comandos: npm test, npm run check, npm start.
-## Seguridad y arquitectura
-Monolito modular. Las rutas de negocio no se expondrán hasta implementar autenticación y autorización multiempresa. Nunca subir .env ni credenciales.
-La conexión posterior con Supabase usará PostgreSQL estándar y Supabase Auth; las reglas del negocio no dependerán del SDK.
-Consulta docs/backend/implementation-plan.md para las fases.
+
+1. Instala Node.js 22+ y PostgreSQL.
+2. Copia `.env.example` a `.env` y configura `DATABASE_URL`.
+3. Ejecuta `npm install`.
+4. Ejecuta `npm run db:migrate`.
+5. Inicia con `npm run dev`.
+
+Comandos disponibles: `npm test`, `npm run check`, `npm start`.
+
+Rutas de salud: `GET /health` y `GET /ready`.
+
+## Capacidades del backend
+
+- Identidad y autorización por workspace.
+- Roles `owner`, `admin`, `analyst` y `viewer`.
+- Gestión de miembros e invitaciones de un solo uso, con vencimiento, revocación y auditoría.
+- Investigaciones, competidores, productos/servicios, observaciones y registros de precios.
+- Informes comerciales con snapshots versionados, historial, verificación de integridad y exportación PDF.
+- Aislamiento de datos por workspace y validación de relaciones entre entidades.
+
+Los análisis actuales son descriptivos y dependen de los datos y fuentes que se registren. No se presentan como predicciones verificadas ni como vigilancia automática de sitios externos.
+
+## Seguridad y límites conocidos
+
+- Nunca subas archivos `.env`, contraseñas, claves privadas ni tokens.
+- La API valida JWT mediante JWKS, pero requiere configurar `SUPABASE_URL` y un proyecto Supabase real.
+- Las invitaciones devuelven el token una sola vez al usuario que las crea. Sin proveedor de correo, su entrega es manual y debe realizarse por un canal seguro.
+- No hay todavía rate limiting distribuido, frontend, despliegue productivo ni políticas RLS configuradas en un proyecto Supabase.
+- Los hashes de integridad ayudan a detectar cambios, pero no equivalen a firmas digitales ni sustituyen controles de acceso.
+
+Consulta `docs/backend/implementation-plan.md` para ver el avance y los pendientes.

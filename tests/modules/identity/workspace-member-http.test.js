@@ -96,6 +96,19 @@ test("HTTP member removal records an audit event",async()=>{
  }finally{await app.close();}
 });
 
+test("HTTP admins cannot change or remove an owner",async()=>{
+ const {app,calls}=await buildApp({role:"admin",memberRole:"owner",owners:2});
+ try{
+  const patch=await app.inject({method:"PATCH",url:`/api/v1/workspaces/${workspaceId}/members/${userId}`,payload:{role:"analyst"}});
+  assert.equal(patch.statusCode,403);
+  assert.equal(patch.json().error,"FORBIDDEN_ROLE");
+  const remove=await app.inject({method:"DELETE",url:`/api/v1/workspaces/${workspaceId}/members/${userId}`});
+  assert.equal(remove.statusCode,403);
+  assert.equal(remove.json().error,"FORBIDDEN_ROLE");
+  assert.equal(calls.some(call=>call.sql?.includes("UPDATE workspace_members SET role")||call.sql?.includes("DELETE FROM workspace_members")),false);
+ }finally{await app.close();}
+});
+
 test("HTTP member resource identifiers are rejected before workspace membership lookup",async()=>{
  const {app,calls}=await buildApp();
  try{

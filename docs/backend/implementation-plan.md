@@ -47,7 +47,7 @@
 - [x] Snapshots versionados, historial y recuperación.
 - [x] Huella SHA-256 y bloqueo de modificaciones de snapshots.
 - [x] Exportación PDF y pruebas HTTP de autorización e integridad.
-- [ ] Ampliar análisis de tendencias, oportunidades y riesgos con reglas explícitas y evidencia suficiente.
+- [x] Calcular variación descriptiva entre los dos precios más recientes del mismo producto y moneda, exigiendo fechas distintas y evitando presentarla como predicción.\n- [ ] Ampliar análisis de oportunidades y riesgos con reglas explícitas, evidencia suficiente y validación de contexto.
 
 ### 6. Seguridad y operación — parcial
 
@@ -57,7 +57,7 @@
 - [x] Rate limiting fijo por IP y ruta (120 solicitudes por 60 s por defecto; 10 para aceptar invitaciones), con límites configurables, cabeceras y respuesta 429.
 - [ ] Sustituir el almacenamiento en memoria por un backend compartido antes de escalar a múltiples instancias.
 - [ ] Ajustar la confianza en IP de cliente solo al configurar proxies de confianza.
-- [ ] Completar pruebas HTTP de gestión de miembros.
+- [x] Completar pruebas HTTP de gestión de miembros (listado, alta, cambio de rol, baja, protección del último owner y auditoría).
 - [ ] Observabilidad, alertas, copias de seguridad y restauración probada.
 - [ ] Revisión de seguridad antes de producción.
 

@@ -53,8 +53,11 @@
 
 - [x] Autorización multiempresa en servidor.
 - [x] Auditoría de operaciones relevantes.
-- [x] Pruebas de migraciones, relaciones, integridad y concurrencia.
-- [ ] Rate limiting y controles contra abuso.
+- [x] Pruebas de migraciones, relaciones, integridad, concurrencia y rutas HTTP de invitaciones.
+- [x] Rate limiting fijo por IP y ruta (120 solicitudes por 60 s por defecto; 10 para aceptar invitaciones), con límites configurables, cabeceras y respuesta 429.
+- [ ] Sustituir el almacenamiento en memoria por un backend compartido antes de escalar a múltiples instancias.
+- [ ] Ajustar la confianza en IP de cliente solo al configurar proxies de confianza.
+- [ ] Completar pruebas HTTP de gestión de miembros.
 - [ ] Observabilidad, alertas, copias de seguridad y restauración probada.
 - [ ] Revisión de seguridad antes de producción.
 

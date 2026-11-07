@@ -30,14 +30,14 @@ Este porcentaje mide únicamente el trabajo de API, lógica de aplicación, vali
 - [x] Pruebas de integración del backend contra PostgreSQL en CI, incluidas pruebas concurrentes de roles y membresías.
 
 ### Trabajo backend pendiente
-- [x] Contrato OpenAPI 3.1 para rutas, autenticación Bearer, parámetros y payloads principales; pendiente automatizar validación formal del documento.
+- [x] Contrato OpenAPI 3.1 y validación formal automatizada en CI con Redocly.
 - [ ] Matriz ampliada de pruebas HTTP para permisos, errores y aislamiento multiempresa en todos los módulos.
 - [x] Pruebas de concurrencia PostgreSQL para cambios simultáneos de roles y altas de membresías.
-- [ ] Revisión de seguridad del backend y modelo de amenazas.
+- [x] Revisión estática de seguridad y modelo de amenazas documentados en `docs/security/threat-model.md`; quedan acciones de cierre antes de producción.
 - [ ] Métricas, trazas y observabilidad operativa.
 - [ ] Pruebas de carga y rendimiento con datos representativos.
 
-**Criterio del porcentaje:** 25 de 29 entregables backend completados = 86 %. Los cuatro pendientes siguen dentro del backend; no se descuentan tareas de frontend ni la configuración de la base de datos/Supabase.
+**Criterio del porcentaje:** 26 de 29 entregables backend completados = 90 %. Los tres pendientes siguen dentro del backend; no se descuentan tareas de frontend ni la configuración de la base de datos/Supabase.
 
 ## Principios
 
@@ -98,7 +98,7 @@ Este porcentaje mide únicamente el trabajo de API, lógica de aplicación, vali
 - [ ] Ajustar la confianza en IP de cliente solo al configurar proxies de confianza.
 - [x] Completar pruebas HTTP de gestión de miembros (listado, alta, cambio de rol, baja, protección del último owner y auditoría).
 - [ ] Observabilidad, alertas, copias de seguridad y restauración probada.
-- [ ] Revisión de seguridad antes de producción.
+- [x] Revisión estática documentada; pendiente cerrar los riesgos preproducción indicados en `docs/security/threat-model.md` y ejecutar pruebas externas antes del despliegue.
 
 ### 7. Producto y despliegue — pendiente
 

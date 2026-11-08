@@ -7,15 +7,15 @@
 
 ## 1. Evidencia verificada
 
-- CI #259: [ejecución aprobada](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42447656974).
-- 189 pruebas aprobadas y 0 fallidas.
+- CI #272: [ejecución aprobada](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42448430308).
+- 190 pruebas aprobadas y 0 fallidas.
 - PostgreSQL 16 de servicio en CI.
 - Benchmark escalonado con 1, 5, 20 y 50 trabajadores; todos los escenarios cumplieron el umbral P95 de 1.000 ms.
 - OpenAPI validado y comprobación de sintaxis aprobada.
 - Health y readiness implementados; readiness ejecuta `SELECT 1` y responde 503 si PostgreSQL no está disponible.
 - Cierre ordenado del servidor y pool ante SIGINT/SIGTERM.
 - Migraciones serializadas con advisory lock y transacción individual por migración.
-- Rate limiting actual por IP/ruta en memoria, no compartido entre instancias.
+- Rate limiting por IP/ruta en memoria, no compartido entre instancias. Al alcanzar `maxBuckets`, elimina únicamente buckets expirados; si la capacidad sigue llena, conserva las ventanas activas y responde 503 `RATE_LIMIT_CAPACITY` con `Retry-After` en lugar de expulsar clientes activos.
 - Métricas HTTP Prometheus y correlación básica de trazas; no hay exportador OpenTelemetry ni sistema de alertas configurado.
 
 ## 2. Hallazgos y acciones
@@ -48,7 +48,7 @@ Referencias oficiales:
 - Pool PostgreSQL con timeout de conexión de 5 segundos y cierre ordenado.
 - SSL de PostgreSQL configurable con validación de certificado cuando se activa.
 - Fastify no confía por defecto en cabeceras de proxy.
-- Rate limit por IP/ruta con cabeceras RateLimit y respuesta 429.
+- Rate limit por IP/ruta con cabeceras RateLimit y respuesta 429; capacidad acotada, limpieza de ventanas expiradas y rechazo temporal 503 cuando no hay espacio para un cliente nuevo sin alterar ventanas activas. Prueba de regresión incluida.
 - Logs estructurados con redacción de Authorization y Cookie.
 - Endpoint de métricas con rutas registradas como etiquetas para limitar cardinalidad.
 - Migraciones protegidas con advisory lock y transacciones.
@@ -69,4 +69,4 @@ No se deben inventar ni simular estas decisiones: proveedor de hosting, servicio
 
 ## 6. Conclusión
 
-El cierre de 29/29 entregables describe la fase principal de construcción del backend, no la preparación integral para producción. La validación CI #259 confirma la calidad automatizada del código actual, pero no sustituye la configuración de infraestructura, recuperación, seguridad externa ni pruebas de staging.
+El cierre de 29/29 entregables describe la fase principal de construcción del backend, no la preparación integral para producción. La validación CI #272 (190 pruebas, 0 fallidas) confirma la calidad automatizada del código actual, pero no sustituye la configuración de infraestructura, recuperación, seguridad externa ni pruebas de staging.

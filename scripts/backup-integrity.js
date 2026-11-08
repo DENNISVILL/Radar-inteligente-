@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { createReadStream, createWriteStream } from "node:fs";
-import { lstat, readFile, writeFile, unlink, mkdtemp, rm } from "node:fs/promises";
+import { lstat, readFile, writeFile, unlink, mkdtemp, rm, open } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { Transform } from "node:stream";
@@ -48,16 +48,16 @@ export async function writeBackupManifest(backupPath) {
     ...await calculateBackupDigest(backupPath)
   };
   const path = backupManifestPath(backupPath);
+  const handle = await open(path, "wx", 0o600);
   try {
-    await writeFile(path, JSON.stringify(manifest, null, 2) + "\n", {
-      encoding: "utf8",
-      flag: "wx",
-      mode: 0o600
-    });
+    await handle.writeFile(JSON.stringify(manifest, null, 2) + "\n", "utf8");
+    await handle.sync();
   } catch (error) {
+    await handle.close().catch(() => {});
     await unlink(path).catch(() => {});
     throw error;
   }
+  await handle.close();
   return manifest;
 }
 

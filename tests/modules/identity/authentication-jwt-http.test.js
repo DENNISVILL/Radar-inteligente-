@@ -171,6 +171,7 @@ test("live Supabase session introspection detects revoked sessions and requires 
   const jwk = await exportJWK(publicKey);
   const keyId = "radar-session-lifecycle-key";
   let userStatus = 200;
+  let emailConfirmedAt = null;
   let disabledLocalAccount = false;
   const seenHeaders = [];
   const server = createServer((request, response) => {
@@ -190,7 +191,7 @@ test("live Supabase session introspection detects revoked sessions and requires 
       response.end(JSON.stringify({
         id: "auth-user-session",
         email: "confirmed@example.test",
-        email_confirmed_at: null
+        email_confirmed_at: emailConfirmedAt
       }));
       return;
     }
@@ -252,6 +253,16 @@ test("live Supabase session introspection detects revoked sessions and requires 
     });
     assert.equal(invitation.statusCode, 403);
     assert.equal(invitation.json().error, "EMAIL_NOT_CONFIRMED");
+
+    emailConfirmedAt = new Date().toISOString();
+    const confirmedInvitation = await app.inject({
+      method: "POST",
+      url: "/api/v1/invitations/accept",
+      headers,
+      payload: { token: "a".repeat(48) }
+    });
+    assert.equal(confirmedInvitation.statusCode, 400);
+    assert.equal(confirmedInvitation.json().error, "INVALID_INVITATION");
 
     disabledLocalAccount = true;
     const disabled = await app.inject({ method: "GET", url: "/api/v1/me", headers });

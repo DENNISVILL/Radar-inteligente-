@@ -22,7 +22,7 @@ async function requireIdentity(request,reply,options){
    "ERR_JWKS_NO_MATCHING_KEY"
   ]);
   if(error.statusCode===503)return reply.code(503).send({error:"AUTH_NOT_CONFIGURED",message:"La autenticación todavía no está configurada."});
-  if(invalidTokenCodes.has(error.code))return reply.code(401).send({error:"INVALID_TOKEN",message:"El token no es válido o ha expirado."});
+  if(error.statusCode===401||invalidTokenCodes.has(error.code))return reply.code(401).send({error:"INVALID_TOKEN",message:"El token no es válido o ha expirado."});
   request.log?.error?.({err:error},"No se pudo verificar el token con el proveedor de identidad");
   return reply.code(503).send({error:"AUTH_PROVIDER_UNAVAILABLE",message:"El servicio de autenticación no está disponible temporalmente."});
  }

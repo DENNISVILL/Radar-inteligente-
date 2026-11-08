@@ -2,7 +2,8 @@ import { stat } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import pg from "pg";
 import { resolve } from "node:path";
-import { withPostgresCliEnv, postgresClientSsl } from "./postgres-cli.js";
+import { withPostgresCliEnv } from "./postgres-cli.js";
+import { postgresSslConfig } from "../src/infrastructure/database/postgres-ssl.js";
 
 function run(command, args, extraEnv = {}) {
   return new Promise((resolvePromise, reject) => {
@@ -28,7 +29,7 @@ if (!database || process.env.RESTORE_CONFIRM_DATABASE !== database) {
 
 const client = new pg.Client({
   connectionString: connection,
-  ssl: postgresClientSsl(connection, process.env.DB_SSL === "true")
+  ssl: postgresSslConfig(connection, process.env.DB_SSL === "true" || process.env.DB_SSL === "1" || process.env.DB_SSL === "yes"
 });
 await client.connect();
 try {

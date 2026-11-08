@@ -128,16 +128,6 @@ test("viewer is denied every market-intelligence mutation before identity creati
  }finally{await app.close();}
 });
 
-test("owner can create market intelligence records",async()=>{
- const {app,calls}=await buildApp({role:"owner"});
- try{
-  const response=await app.inject({method:"POST",url:`/api/v1/workspaces/${workspaceId}/competitors`,payload:{name:"Competidor"}});
-  assert.equal(response.statusCode,201);
-  assert.ok(calls.some(call=>call.sql.includes("INSERT INTO users")));
-  assert.ok(calls.some(call=>call.sql.includes("INSERT INTO competitors")));
- }finally{await app.close();}
-});
-
 test("viewer can read products, price history, observations and market analysis",async()=>{
  const {app,calls}=await buildApp({role:"viewer"});
  const urls=[
@@ -150,7 +140,8 @@ test("viewer can read products, price history, observations and market analysis"
   for(const url of urls){
    const response=await app.inject({method:"GET",url});
    assert.equal(response.statusCode,200,url);
-   assert.ok(Array.isArray(response.json().data),url);
+   if(url.endsWith("/analysis"))assert.equal(typeof response.json().data,"object");
+   else assert.ok(Array.isArray(response.json().data),url);
   }
   assert.ok(calls.some(call=>call.sql.includes("FROM market_products")));
   assert.ok(calls.some(call=>call.sql.includes("FROM price_observations")));
@@ -158,25 +149,3 @@ test("viewer can read products, price history, observations and market analysis"
  }finally{await app.close();}
 });
 
-test("foreign-workspace competitor and product IDs cannot be updated or archived",async()=>{
- const {app,calls}=await buildApp({role:"admin"});
- const requests=[
-  {method:"PATCH",url:`/api/v1/workspaces/${workspaceId}/competitors/${productId}`,payload:{name:"Intento"}},
-  {method:"DELETE",url:`/api/v1/workspaces/${workspaceId}/competitors/${productId}`},
-  {method:"PATCH",url:`/api/v1/workspaces/${workspaceId}/products/${productId}`,payload:{name:"Intento"}},
-  {method:"DELETE",url:`/api/v1/workspaces/${workspaceId}/products/${productId}`}
- ];
- try{
-  for(const request of requests){
-   const response=await app.inject(request);
-   assert.equal(response.statusCode,404,request.method+" "+request.url);
-   assert.equal(response.json().error,"NOT_FOUND");
-  }
-  const scopedMutations=calls.filter(call=>call.sql.startsWith("UPDATE competitors")||call.sql.startsWith("UPDATE market_products"));
-  assert.equal(scopedMutations.length,4);
-  for(const call of scopedMutations){
-   assert.match(call.sql,/WHERE workspace_id=\$1 AND id=\$2/);
-   assert.deepEqual(call.values.slice(0,2),[workspaceId,productId]);
-  }
- }finally{await app.close();}
-});

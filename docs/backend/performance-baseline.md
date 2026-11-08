@@ -61,3 +61,16 @@ El script crea y elimina sus propios datos de prueba. No debe apuntarse a una ba
 ## Siguiente validación operativa
 
 Antes de declarar capacidad productiva, ejecutar pruebas con red real y staging, ampliar gradualmente el dataset, observar conexiones del pool y recursos de PostgreSQL, y establecer objetivos SLO acordes al hosting contratado.
+
+
+## Validación más reciente — CI #275
+
+- [CI #275 aprobada](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42478835207).
+- 191 pruebas aprobadas, 0 fallidas.
+- Dataset: 500 productos y 2.500 observaciones de precios; 5 iteraciones por trabajador.
+- Concurrencia 1: 5 solicitudes; P95 2,39 ms; 618,52 req/s.
+- Concurrencia 5: 25 solicitudes; P95 21,91 ms; 649,26 req/s.
+- Concurrencia 20: 100 solicitudes; P95 26,06 ms; 906,73 req/s.
+- Concurrencia 50: 250 solicitudes; P95 46,60 ms; 1.199,74 req/s.
+- Todos los escenarios cumplieron el umbral automatizado P95 de 1.000 ms.
+- Medición en CI con Fastify.inject() y PostgreSQL 16; no representa latencia de red ni capacidad garantizada de producción.

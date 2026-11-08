@@ -7,7 +7,9 @@ import { backupManifestPath, writeBackupManifest } from "./backup-integrity.js";
 
 function run(command, args, extraEnv = {}) {
   return new Promise((resolvePromise, reject) => {
-    const child = spawn(command, args, { stdio: "inherit", env: { ...process.env, ...extraEnv } });
+    const childEnv = { ...process.env, ...extraEnv };
+    delete childEnv.BACKUP_SIGNING_PRIVATE_KEY;
+    const child = spawn(command, args, { stdio: "inherit", env: childEnv });
     child.once("error", reject);
     child.once("close", code => code === 0 ? resolvePromise() : reject(new Error(command + " terminó con código " + code)));
   });

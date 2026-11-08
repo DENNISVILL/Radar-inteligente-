@@ -80,7 +80,7 @@ El 100 % de los 29 entregables principales no incluye el cierre de infraestructu
 - [x] Roles `owner`, `admin`, `analyst` y `viewer`.
 - [x] Gestión de miembros, cambios de rol y restricciones de privilegios.
 - [x] Invitaciones de un solo uso, hash SHA-256, expiración, revocación y auditoría.
-- [x] Prueba PostgreSQL de aceptación concurrente: solo una solicitud puede consumir la invitación.
+- [x] Prueba PostgreSQL de aceptación concurrente: solo una solicitud puede consumir la invitación; prueba concurrente de aceptación contra revocación confirma que solo una transición puede completarse.
 - [x] Revalidación de permisos dentro de la transacción tras bloquear el workspace; creación/revocación de invitaciones y cambios de miembros no confían únicamente en el rol leído por el pre-handler.
 - [x] Orden de bloqueos uniforme para aceptación y revocación de invitaciones: workspace antes de invitación.
 - [ ] Conectar un proyecto Supabase real y validar el flujo completo de Auth.

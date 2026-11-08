@@ -8,6 +8,30 @@
 - CI crea una copia real de la base PostgreSQL de pruebas, la restaura en otra base vacía y vuelve a ejecutar el runner para aplicar los permisos runtime. Verifica el historial y las tablas restauradas.
 - Cada migración SQL se ejecuta dentro de su propia transacción. Si una migración falla, se revierte esa migración; las anteriores que ya hicieron COMMIT permanecen aplicadas. El bloque de grants runtime también se aplica en una transacción.
 
+## Firma digital Ed25519 de manifiestos
+
+El manifiesto SHA-256 puede incluir una firma Ed25519 para autenticar su contenido. La firma cubre una representación canónica de `version`, `algorithm`, `digest` y `size`. No cifra el respaldo: el archivo y su manifiesto siguen necesitando almacenamiento cifrado y controles de acceso.
+
+Variables de entorno:
+
+- `BACKUP_SIGNING_PRIVATE_KEY`: clave privada Ed25519 en formato PEM, usada únicamente por `npm run db:backup` para firmar.
+- `BACKUP_SIGNING_PUBLIC_KEY`: clave pública Ed25519 en formato PEM, usada por `npm run db:restore` para verificar.
+- `BACKUP_REQUIRE_SIGNATURE=true`: exige firma al crear y restaurar. Si está activo, backup falla sin clave privada y restore bloquea manifiestos sin firma.
+
+Ejemplo de configuración en un entorno que admita secretos multilínea:
+
+```bash
+export BACKUP_SIGNING_PRIVATE_KEY="$(cat /ruta/segura/backup-ed25519-private.pem)"
+export BACKUP_SIGNING_PUBLIC_KEY="$(cat /ruta/segura/backup-ed25519-public.pem)"
+export BACKUP_REQUIRE_SIGNATURE=true
+```
+
+La clave privada debe generarse y custodiarse fuera del repositorio, preferiblemente en un gestor de secretos o KMS. No debe incluirse en Git, en archivos `.env` versionados, en logs ni en este chat. La clave pública no es secreta, pero debe distribuirse por un canal confiable para que el verificador no acepte una clave sustituida.
+
+El modo compatible permite restaurar respaldos históricos sin firma si `BACKUP_REQUIRE_SIGNATURE` no está activo. Los manifiestos que sí incluyen firma siempre requieren `BACKUP_SIGNING_PUBLIC_KEY` y una firma válida. Antes de activar el modo estricto en un entorno real, configura ambas claves y ejecuta un ciclo completo de backup y restore en un entorno aislado.
+
+Para rotar claves, conserva las claves públicas anteriores mientras existan respaldos firmados con ellas; los respaldos nuevos se firman con la nueva clave privada. La retirada de una clave pública requiere confirmar primero que ya no se necesite para recuperar respaldos retenidos.
+
 ## Crear un respaldo
 
 Requisitos: herramientas cliente PostgreSQL compatibles (`pg_dump` y `pg_restore`) instaladas y accesibles en PATH.

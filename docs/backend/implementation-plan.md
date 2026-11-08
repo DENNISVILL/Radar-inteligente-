@@ -35,7 +35,7 @@ Este porcentaje mide únicamente el trabajo de API, lógica de aplicación, vali
 - [x] Pruebas de concurrencia PostgreSQL para cambios simultáneos de roles y altas de membresías.
 - [x] Revisión estática de seguridad y modelo de amenazas documentados en `docs/security/threat-model.md`; quedan acciones de cierre antes de producción.
 - [x] Métricas HTTP Prometheus, histogramas de latencia, correlación W3C traceparent, identificadores de traza y logs estructurados; validados en CI.
-- [ ] Pruebas de carga y rendimiento con datos representativos.
+- [x] Baseline de rendimiento HTTP con PostgreSQL 16, 500 productos, 2.500 observaciones, 20 solicitudes simultáneas y umbral P95; resultados en `docs/backend/performance-baseline.md`.
 
 **Criterio del porcentaje:** 29 de 29 entregables principales de esta fase backend completados = 100 %. Este cierre no significa que el producto esté listo para producción: siguen pendientes alertas, recuperación probada, integraciones externas, frontend y despliegue.
 

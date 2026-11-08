@@ -20,16 +20,16 @@ El backend está en desarrollo y cuenta con una base funcional: autenticación m
 ## Desarrollo local
 
 1. Instala Node.js 22+ y PostgreSQL.
-2. Copia `.env.example` a `.env` y configura `DATABASE_URL`.
+2. Copia `.env.example` a `.env` y configura `DATABASE_URL`. Para desarrollo local puedes usar la misma base en `MIGRATION_DATABASE_URL`; en producción deben ser credenciales distintas.
 3. Ejecuta `npm install`.
-4. Ejecuta `npm run db:migrate`.
-5. Inicia con `npm run dev`.
+4. Ejecuta `npm run db:migrate` con `MIGRATION_DATABASE_URL`.
+5. Inicia con `npm run dev`; el servidor usa únicamente `DATABASE_URL`.
 
 Comandos disponibles: `npm test`, `npm run check`, `npm run perf` (baseline de rendimiento con `TEST_DATABASE_URL`) y `npm start`.
 
 Rutas de salud: `GET /health` y `GET /ready`. Métricas Prometheus: `GET /metrics` (deshabilitado por defecto; habilitar explícitamente con `METRICS_ENABLED=true` solo en una red privada o tras restringir el acceso en el proxy/firewall).
 
-## Observabilidad
+## PostgreSQL y privilegios\n\nLa API usa `DATABASE_URL` con el rol `radar_runtime`; el comando `npm run db:migrate` usa `MIGRATION_DATABASE_URL` con el rol `radar_migration_owner`. En producción la credencial de migraciones es obligatoria y no se permite reutilizar la conexión de runtime. El rol runtime no puede crear objetos, leer/modificar auditoría ni consultar el historial de migraciones. Consulta `docs/backend/postgresql-roles.md` y `database/roles/production-roles.sql` para el aprovisionamiento de una base nueva.\n\n## Observabilidad
 
 - Logs JSON estructurados de Fastify con redacción de `Authorization` y cookies.
 - Cada respuesta incluye `x-trace-id`; acepta `traceparent` W3C válido y genera un span ID de servidor para correlación. No sustituye todavía una integración OpenTelemetry/exportador distribuido.

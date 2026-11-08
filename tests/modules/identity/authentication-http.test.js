@@ -38,3 +38,41 @@ test("anonymous requests are rejected consistently across protected API modules"
   assert.equal(calls.length,0,"database must not be queried for anonymous requests");
  } finally {await app.close();}
 });
+
+
+
+test("malformed authorization headers are rejected consistently without database access",async()=>{
+ const {app,calls}=await buildApp();
+ const protectedRequests=[
+  ["GET","/api/v1/me"],
+  ["GET","/api/v1/workspaces"],
+  ["GET",`/api/v1/workspaces/${workspaceId}/members`],
+  ["GET",`/api/v1/workspaces/${workspaceId}/invitations`],
+  ["GET",`/api/v1/workspaces/${workspaceId}/researches`],
+  ["GET",`/api/v1/workspaces/${workspaceId}/competitors`],
+  ["GET",`/api/v1/workspaces/${workspaceId}/products`],
+  ["GET",`/api/v1/workspaces/${workspaceId}/researches/${researchId}/reports`],
+  ["GET",`/api/v1/workspaces/${workspaceId}/audit-logs`]
+ ];
+ const headersList=[{authorization:"Basic abc"},{authorization:"Bearer"},{authorization:"Bearer token with-spaces"}];
+ try{
+  for(const [method,url] of protectedRequests){
+   for(const headers of headersList){
+    const response=await app.inject({method,url,headers});
+    assert.equal(response.statusCode,401,`${method} ${url} ${headers.authorization}`);
+    assert.equal(response.json().error,"UNAUTHORIZED");
+   }
+  }
+  assert.equal(calls.length,0);
+ }finally{await app.close();}
+});
+
+test("a bearer token is not accepted as authenticated when Supabase is not configured",async()=>{
+ const {app,calls}=await buildApp();
+ try{
+  const response=await app.inject({method:"GET",url:"/api/v1/me",headers:{authorization:"Bearer syntactically-present-token"}});
+  assert.equal(response.statusCode,503);
+  assert.equal(response.json().error,"AUTH_NOT_CONFIGURED");
+  assert.equal(calls.length,0);
+ }finally{await app.close();}
+});

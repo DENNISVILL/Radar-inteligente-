@@ -10,7 +10,7 @@ test("PostgreSQL migrations are executable, repeatable and enforce tenant relati
  let workspaceA,workspaceB,userId,auditId;
  try{
   const first=await applyMigrations(pool);
-  assert.equal(first.discovered,10);
+  assert.equal(first.discovered,11);
   const second=await applyMigrations(pool);
   assert.deepEqual(second.versions,first.versions);
   const tables=await pool.query("SELECT tablename FROM pg_tables WHERE schemaname=current_schema()");

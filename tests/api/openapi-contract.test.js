@@ -29,7 +29,8 @@ test("OpenAPI contract documents the API version, bearer auth and core backend r
   "/api/v1/workspaces/{workspaceId}/researches/{researchId}/reports",
   "/api/v1/workspaces/{workspaceId}/researches/{researchId}/reports/{reportId}",
   "/api/v1/workspaces/{workspaceId}/researches/{researchId}/reports/{reportId}/pdf",
-  "/api/v1/workspaces/{workspaceId}/audit-logs"
+  "/api/v1/workspaces/{workspaceId}/audit-logs",
+  "/api/v1/workspaces/{workspaceId}/audit-logs/export"
  ])assert.ok(spec.includes(path+":"),`OpenAPI path missing: ${path}`);
 });
 
@@ -57,7 +58,8 @@ test("OpenAPI documents every implemented HTTP method for each route",async()=>{
   "/api/v1/workspaces/{workspaceId}/researches/{researchId}/reports":["get","post"],
   "/api/v1/workspaces/{workspaceId}/researches/{researchId}/reports/{reportId}":["get"],
   "/api/v1/workspaces/{workspaceId}/researches/{researchId}/reports/{reportId}/pdf":["get"],
-  "/api/v1/workspaces/{workspaceId}/audit-logs":["get"]
+  "/api/v1/workspaces/{workspaceId}/audit-logs":["get"],
+  "/api/v1/workspaces/{workspaceId}/audit-logs/export":["get"]
  };
  for(const [path,methods] of Object.entries(operations)){
   const start=spec.indexOf(`  ${path}:\n`);

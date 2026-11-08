@@ -4,11 +4,11 @@ const manageableRoles=["admin","analyst","viewer"];
 const hashToken=token=>createHash("sha256").update(token,"utf8").digest("hex");
 const normalizeEmail=email=>String(email??"").trim().toLowerCase();
 
-export async function listWorkspaceInvitations(database,workspaceId){
+export async function listWorkspaceInvitations(database,workspaceId,{limit=50}={}){
  const result=await database.query(`SELECT id,email,role,expires_at,created_at,invited_by
  FROM workspace_invitations
  WHERE workspace_id=$1 AND accepted_at IS NULL AND revoked_at IS NULL AND expires_at>NOW()
- ORDER BY created_at DESC`,[workspaceId]);
+ ORDER BY created_at DESC LIMIT $2`,[workspaceId,limit]);
  return result.rows;
 }
 

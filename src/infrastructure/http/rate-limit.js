@@ -7,7 +7,7 @@ export function createRateLimiter({
 }={}){
  const buckets=new Map();
  return async function rateLimit(request,reply){
-  const route=request.routeOptions?.url??request.url?.split("?")[0]??"/";
+  const route=request.routeOptions?.url??"__unmatched__";
   if(route==="/health"||route==="/ready")return;
   const limit=route==="/api/v1/invitations/accept"?authMaxRequests:maxRequests;
   const key=`${request.ip??"unknown"}:${route}`;

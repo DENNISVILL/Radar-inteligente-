@@ -79,7 +79,7 @@ test("rejects expired, revoked and previously accepted invitations",async t=>{
   ["used",{accepted_at:new Date()},"INVITATION_ALREADY_USED"]
  ]){
   await t.test(name,async()=>{
-   const {database}=setup(sql=>sql.includes("FROM workspace_invitations WHERE token_hash")?{rows:[{...invitation,...patch}]}:{rows:[]});
+   const {database}=setup(sql=>sql.includes("FROM workspace_invitations WHERE token_hash")?{rows:[{...invitation,...patch}]}:sql.includes("SELECT id FROM workspaces")?{rows:[{id:"workspace-1"}]}:{rows:[]});
    const result=await acceptWorkspaceInvitation(database,{token,userId:"user-1",email:"new@example.test"});
    assert.equal(result.error,expected);
   });

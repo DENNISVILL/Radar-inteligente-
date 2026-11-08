@@ -7,11 +7,12 @@ const workspaceA="11111111-1111-4111-8111-111111111111";
 const workspaceB="33333333-3333-4333-8333-333333333333";
 const researchId="22222222-2222-4222-8222-222222222222";
 
-async function buildApp({role="owner",accessibleWorkspaces=[workspaceA],researchExists=true}={}){
+async function buildApp({role="owner",accessibleWorkspaces=[workspaceA],researchExists=true,auditFailure=false}={}){
  const calls=[];
  const database={
   async query(sql,values=[]){
    calls.push({sql,values});
+   if(auditFailure&&sql.includes("INSERT INTO audit_logs"))throw new Error("audit unavailable");
    if(sql.includes("FROM workspace_members wm")){
     const workspaceId=values[1];
     return {rows:accessibleWorkspaces.includes(workspaceId)?[{workspace_id:workspaceId,workspace_name:"Workspace",role}]:[]};
@@ -24,6 +25,7 @@ async function buildApp({role="owner",accessibleWorkspaces=[workspaceA],research
    return {rows:[]};
   }
  };
+ database.connect=async()=>({query:(...args)=>database.query(...args),release:()=>calls.push({sql:"RELEASE",values:[]})});
  const app=Fastify({logger:false});
  await app.register(researchRoutes,{database,requireIdentity:async request=>{request.identity={subject:"auth-user",email:"user@example.test"};}});
  await app.ready();
@@ -208,5 +210,41 @@ test("foreign research identifiers inside an authorized workspace resolve as not
    assert.deepEqual(query.values.slice(0,2),[workspaceA,foreignResearchId]);
    assert.match(query.sql,/workspace_id=\$1 AND id=\$2/);
   }
+ }finally{await app.close();}
+});
+
+
+test("research creation rolls back when its audit event cannot be written",async()=>{
+ const {app,calls}=await buildApp({auditFailure:true});
+ try{
+  const response=await app.inject({method:"POST",url:`/api/v1/workspaces/${workspaceA}/researches`,payload:{
+   title:"Estudio",country:"Ecuador",sector:"Retail",objective:"Analizar el mercado"
+  }});
+  assert.equal(response.statusCode,500);
+  assert.ok(calls.some(call=>call.sql==="BEGIN"));
+  assert.ok(calls.some(call=>call.sql==="INSERT INTO researches (workspace_id,created_by,title,country,city,sector,objective) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id,workspace_id,created_by,title,country,city,sector,objective,status,created_at,updated_at"));
+  assert.ok(calls.some(call=>call.sql==="ROLLBACK"));
+  assert.equal(calls.some(call=>call.sql==="COMMIT"),false);
+ }finally{await app.close();}
+});
+
+test("research mutations write their audit events with the authenticated local actor",async()=>{
+ const {app,calls}=await buildApp();
+ try{
+  const created=await app.inject({method:"POST",url:`/api/v1/workspaces/${workspaceA}/researches`,payload:{
+   title:"Estudio",country:"Ecuador",sector:"Retail",objective:"Analizar el mercado"
+  }});
+  assert.equal(created.statusCode,201);
+  const updated=await app.inject({method:"PATCH",url:`/api/v1/workspaces/${workspaceA}/researches/${researchId}`,payload:{title:"Actualizado"}});
+  assert.equal(updated.statusCode,200);
+  const archived=await app.inject({method:"DELETE",url:`/api/v1/workspaces/${workspaceA}/researches/${researchId}`});
+  assert.equal(archived.statusCode,204);
+  const auditCalls=calls.filter(call=>call.sql.includes("INSERT INTO audit_logs"));
+  assert.equal(auditCalls.length,3);
+  assert.deepEqual(auditCalls.map(call=>call.values.slice(0,5)),[
+   [workspaceA,"local-user","research.created","research",researchId],
+   [workspaceA,"local-user","research.updated","research",researchId],
+   [workspaceA,"local-user","research.archived","research",researchId]
+  ]);
  }finally{await app.close();}
 });

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { buildApp } from "../../src/app.js";
+import { loadConfig } from "../../src/config/env.js";
 
 function makeApp(metricsEnabled = true) {
   return buildApp({
@@ -54,6 +55,18 @@ test("invalid traceparent is replaced with a fresh trace id", async () => {
 
 test("metrics endpoint can be disabled", async () => {
   const app = makeApp(false);
+  const response = await app.inject({ method: "GET", url: "/metrics" });
+  assert.equal(response.statusCode, 404);
+  await app.close();
+});
+
+
+test("metrics endpoint is absent with the default application configuration", async () => {
+  const app = buildApp({
+    config: loadConfig({}),
+    database: { query: async () => ({ rows: [] }) },
+    logger: false
+  });
   const response = await app.inject({ method: "GET", url: "/metrics" });
   assert.equal(response.statusCode, 404);
   await app.close();

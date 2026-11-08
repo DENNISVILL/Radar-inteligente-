@@ -1,6 +1,6 @@
 # Matriz de autorización HTTP
 
-Estado: contrato de cobertura para completar la suite. La existencia de esta matriz no significa que todos sus casos estén probados.
+Estado: matriz de referencia contrastada con pruebas HTTP unitarias y una suite de integración PostgreSQL. La cobertura es amplia, pero no implica que cada combinación posible de ruta, método, rol y estado se haya probado exhaustivamente.
 
 ## Roles
 
@@ -51,4 +51,12 @@ Cada prueba debe comprobar método/ruta, rol, workspace de sesión, workspace ob
 
 ## Criterio de cierre
 
-La matriz queda cubierta cuando cada endpoint de negocio tiene pruebas positivas y negativas para los roles aplicables, aislamiento entre dos workspaces, sesión anónima, UUID inválido y referencias cruzadas. Los controles que dependen de Supabase Auth real deben quedar identificados como integración pendiente y no declararse validados en producción.
+La evidencia actual incluye pruebas HTTP por familias de rutas (workspaces, miembros, invitaciones, investigaciones, inteligencia comercial e informes), pruebas específicas de denegación para viewer/no miembro y pruebas PostgreSQL de integración para autorización y aislamiento multiworkspace. También hay pruebas de autenticación JWT y validación de identificadores. No se debe interpretar esta matriz como una certificación exhaustiva: al añadir o cambiar rutas, deben incorporarse casos positivos/negativos y actualizar esta tabla. La integración real con Supabase Auth, RLS (si se habilita acceso directo) y las pruebas externas de seguridad siguen pendientes.
+
+
+## Evidencia y límites de la revisión actual
+
+- Los tests HTTP de módulos cubren reglas de rol, validación y ausencia de escrituras ante denegación en las familias de rutas descritas.
+- La suite `tests/integration/postgres-authorization-http.test.js` ejecuta autorización con PostgreSQL real de CI y separa workspaces/identidades para comprobar permisos y aislamiento.
+- `tests/modules/market-intelligence/market-tenant-isolation-http.test.js` cubre denegaciones y aislamiento en superficies de inteligencia comercial e informes.
+- La suite no sustituye pruebas de penetración, fuzzing sistemático ni validación contra un proyecto Supabase real.

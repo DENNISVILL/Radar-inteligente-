@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import pg from "pg";
 import { loadConfig } from "../src/config/env.js";
+import { postgresSslConfig } from "../src/infrastructure/database/postgres-ssl.js";
 
 const MIGRATION_LOCK_KEY = "radar-comercial-schema-migrations";
 
@@ -79,7 +80,7 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
   const { Pool } = pg;
   const pool = new Pool({
     connectionString: migrationUrl,
-    ssl: config.databaseSsl ? { rejectUnauthorized: true } : false
+    ssl: postgresSslConfig(migrationUrl, config.databaseSsl)
   });
   try {
     const result = await applyMigrations(pool);

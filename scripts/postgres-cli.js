@@ -42,7 +42,16 @@ export async function withPostgresCliEnv(connection, operation) {
     // Keep pg_dump/pg_restore at least as strict as node-postgres.
     env.PGSSLMODE = tlsEnabled ? "verify-full" : "disable";
     const sslrootcert = url.searchParams.get("sslrootcert");
+    const sslcert = url.searchParams.get("sslcert");
+    const sslkey = url.searchParams.get("sslkey");
+    if (Boolean(sslcert) !== Boolean(sslkey)) {
+      throw new TypeError("sslcert y sslkey deben configurarse juntos.");
+    }
     if (sslrootcert) env.PGSSLROOTCERT = sslrootcert;
+    if (sslcert) {
+      env.PGSSLCERT = sslcert;
+      env.PGSSLKEY = sslkey;
+    }
     return await operation(env);
   } finally {
     await rm(directory, { recursive: true, force: true });

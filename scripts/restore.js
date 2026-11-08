@@ -31,6 +31,13 @@ const client = new pg.Client({
 });
 await client.connect();
 try {
+  const identity = await client.query(
+    "SELECT current_user AS role, pg_get_userbyid(datdba) AS owner " +
+    "FROM pg_database WHERE datname=current_database()"
+  );
+  if (identity.rows[0].role !== "radar_migration_owner" || identity.rows[0].owner !== "radar_migration_owner") {
+    throw new Error("La restauración debe ejecutarse como radar_migration_owner y la base destino debe pertenecer a ese rol.");
+  }
   const result = await client.query(
     "SELECT count(*)::int AS object_count " +
     "FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace " +

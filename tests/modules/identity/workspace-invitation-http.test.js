@@ -9,12 +9,13 @@ const invitationId="22222222-2222-4222-8222-222222222222";
 const rawToken="abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG";
 const invite={id:invitationId,workspace_id:workspaceId,email:"new@example.test",role:"analyst",expires_at:new Date(Date.now()+86400000),accepted_at:null,revoked_at:null};
 
-async function buildApp({role="owner",email="new@example.test",member=true}={}){
+async function buildApp({role="owner",email="new@example.test",member=true,transactionRole=role}={}){
  const calls=[];
  const database={
   async query(sql,values=[]){
    calls.push({sql,values});
    if(sql.includes("FROM workspace_members wm"))return {rows:member?[{workspace_id:workspaceId,role}]:[]};
+   if(sql.includes("FROM workspace_invitations WHERE token_hash"))return {rows:[invite]};
    if(sql.includes("INSERT INTO users (auth_subject, email)"))return {rows:[{id:"owner-user",email,status:"active"}]};
    return {rows:[]};
   },
@@ -22,6 +23,7 @@ async function buildApp({role="owner",email="new@example.test",member=true}={}){
    return {async query(sql,values=[]){
     calls.push({sql,values});
     if(sql.includes("SELECT id FROM workspaces"))return {rows:[{id:workspaceId}]};
+    if(sql.includes("FROM workspace_members wm"))return {rows:member?[{role:transactionRole}]:[]};
     if(sql.includes("INSERT INTO workspace_invitations"))return {rows:[{id:invitationId,email:"new@example.test",role:"analyst",expires_at:invite.expires_at,created_at:new Date()}]};
     if(sql.includes("FROM workspace_invitations WHERE token_hash"))return {rows:[invite]};
     if(sql.includes("INSERT INTO users(auth_subject,email)"))return {rows:[{id:"invitee-user",status:"active"}]};
@@ -196,5 +198,28 @@ test("invitation acceptance requires an authenticated email claim before databas
   assert.equal(response.statusCode,403);
   assert.equal(response.json().error,"EMAIL_REQUIRED");
   assert.equal(calls.length,0);
+ }finally{await app.close();}
+});
+
+
+test("HTTP invitation creation rechecks manager privileges inside its transaction",async()=>{
+ const {app,calls}=await buildApp({role:"owner",transactionRole:"viewer"});
+ try{
+  const response=await app.inject({method:"POST",url:`/api/v1/workspaces/${workspaceId}/invitations`,payload:{email:"new@example.test",role:"admin"}});
+  assert.equal(response.statusCode,403);
+  assert.equal(response.json().error,"FORBIDDEN_ROLE");
+  assert.ok(calls.some(call=>call.sql==="ROLLBACK"));
+  assert.equal(calls.some(call=>call.sql?.includes("INSERT INTO workspace_invitations")||call.sql?.includes("INSERT INTO audit_logs")),false);
+ }finally{await app.close();}
+});
+
+test("HTTP invitation revocation rechecks manager privileges inside its transaction",async()=>{
+ const {app,calls}=await buildApp({role:"owner",transactionRole:"viewer"});
+ try{
+  const response=await app.inject({method:"DELETE",url:`/api/v1/workspaces/${workspaceId}/invitations/${invitationId}`});
+  assert.equal(response.statusCode,403);
+  assert.equal(response.json().error,"FORBIDDEN");
+  assert.ok(calls.some(call=>call.sql==="ROLLBACK"));
+  assert.equal(calls.some(call=>call.sql?.includes("UPDATE workspace_invitations")),false);
  }finally{await app.close();}
 });

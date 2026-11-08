@@ -90,7 +90,7 @@ El 100 % de los 29 entregables principales no incluye el cierre de infraestructu
 ### 3. Investigaciones — backend implementado
 
 - [x] CRUD, validaciones, estados y aislamiento por workspace.
-- [ ] Añadir auditoría transaccional a creación, actualización y archivo de investigaciones; el CRUD actual aún no registra estos eventos.
+- [x] Auditoría transaccional de creación, actualización y archivo de investigaciones (`research.created`, `research.updated`, `research.archived`), con pruebas de rollback ante fallo de auditoría.
 
 ### 4. Inteligencia de mercado — backend implementado
 
@@ -112,7 +112,7 @@ El 100 % de los 29 entregables principales no incluye el cierre de infraestructu
 
 - [x] Autorización multiempresa en servidor.
 - [x] Auditoría de operaciones relevantes en miembros, invitaciones, creación de workspaces e inteligencia de mercado.
-- [ ] Completar auditoría atómica del CRUD de investigaciones y sus pruebas de rollback.
+- [x] Completar auditoría atómica del CRUD de investigaciones y sus pruebas de rollback.
 - [x] Pruebas de migraciones, relaciones, integridad, concurrencia y rutas HTTP de invitaciones.
 - [x] Rate limiting por IP/ruta (120 solicitudes por 60 s por defecto; 10 para aceptar invitaciones), con límites configurables, cabeceras 429 y capacidad acotada; al llenarse, preserva ventanas activas y rechaza temporalmente nuevos buckets con 503 `RATE_LIMIT_CAPACITY`.
 - [ ] Sustituir el almacenamiento en memoria por un backend compartido antes de escalar a múltiples instancias; el control de capacidad actual evita expulsar ventanas activas, pero no comparte contadores entre procesos.

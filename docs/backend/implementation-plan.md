@@ -75,7 +75,7 @@ El 100 % de los 29 entregables principales no incluye el cierre de infraestructu
 
 ### 2. Identidad y acceso — backend implementado
 
-- [x] Verificación de JWT de Supabase mediante JWKS (requiere `SUPABASE_URL` real).
+- [x] Verificación de JWT de Supabase mediante JWKS (requiere `SUPABASE_URL` real); los tokens inválidos responden 401 y las caídas del proveedor JWKS responden 503, con prueba HTTP de regresión.
 - [x] Usuarios, workspaces y membresías.
 - [x] Roles `owner`, `admin`, `analyst` y `viewer`.
 - [x] Gestión de miembros, cambios de rol y restricciones de privilegios.

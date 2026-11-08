@@ -15,7 +15,7 @@ async function buildApp({role="owner",accessibleWorkspaces=[workspaceA],research
    if(sql.includes("FROM workspaces WHERE"))return {rows:[{id:workspaceA}]};
    if(auditFailure&&sql.includes("INSERT INTO audit_logs"))throw new Error("audit unavailable");
    if(sql.includes("FROM workspace_members wm")){
-    const workspaceId=values[1];
+    const workspaceId=values.length===3?values[0]:values[1];
     return {rows:accessibleWorkspaces.includes(workspaceId)?[{workspace_id:workspaceId,workspace_name:"Workspace",role}]:[]};
    }
    if(sql.includes("INSERT INTO users"))return {rows:[{id:"local-user",email:"user@example.test",status:"active"}]};

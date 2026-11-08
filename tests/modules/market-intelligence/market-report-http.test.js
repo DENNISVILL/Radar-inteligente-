@@ -95,7 +95,7 @@ test("PDF export refuses a snapshot whose integrity hash does not match",async()
  }finally{await app.close();}
 });
 
-test("report snapshot lookup cannot return a report outside the requested workspace and research",async()=>{
+test("a foreign-workspace report ID cannot be fetched through another workspace and research",async()=>{
  const {app,calls}=await buildApp({reportRows:[]});
  try{
   const response=await app.inject({method:"GET",url:`/api/v1/workspaces/${workspaceA}/researches/${researchId}/reports/${reportId}`});

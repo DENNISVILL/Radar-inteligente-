@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile, stat, access } from "node:fs/promises";
-import { withPostgresCliEnv, postgresClientSsl } from "../../scripts/postgres-cli.js";
+import { withPostgresCliEnv } from "../../scripts/postgres-cli.js";
+import { postgresSslConfig } from "../../src/infrastructure/database/postgres-ssl.js";
 
 test("PostgreSQL CLI credentials use a private temporary passfile, not argv or environment passwords", async () => {
   let passfile;
@@ -45,34 +46,34 @@ test("PostgreSQL CLI rejects non-PostgreSQL and incomplete connection URLs", asy
 
 test("restore preflight uses verified TLS when URL sslmode requests encryption", () => {
   assert.deepEqual(
-    postgresClientSsl("postgres://radar:secret@db.example.test/radar?sslmode=require"),
+    postgresSslConfig("postgres://radar:secret@db.example.test/radar?sslmode=require"),
     { rejectUnauthorized: true }
   );
   assert.deepEqual(
-    postgresClientSsl("postgres://radar:secret@db.example.test/radar?sslmode=verify-full"),
+    postgresSslConfig("postgres://radar:secret@db.example.test/radar?sslmode=verify-full"),
     { rejectUnauthorized: true }
   );
 });
 
 test("restore preflight honors explicit DB_SSL and refuses downgrade modes", () => {
   assert.deepEqual(
-    postgresClientSsl("postgres://radar:secret@db.example.test/radar?sslmode=disable", true),
+    postgresSslConfig("postgres://radar:secret@db.example.test/radar?sslmode=disable", true),
     { rejectUnauthorized: true }
   );
   assert.equal(
-    postgresClientSsl("postgres://radar:secret@db.example.test/radar?sslmode=disable", false),
+    postgresSslConfig("postgres://radar:secret@db.example.test/radar?sslmode=disable", false),
     false
   );
   assert.deepEqual(
-    postgresClientSsl("postgres://radar:secret@db.example.test/radar", true),
+    postgresSslConfig("postgres://radar:secret@db.example.test/radar", true),
     { rejectUnauthorized: true }
   );
   assert.throws(
-    () => postgresClientSsl("postgres://radar:secret@db.example.test/radar?sslmode=prefer"),
+    () => postgresSslConfig("postgres://radar:secret@db.example.test/radar?sslmode=prefer"),
     /sslmode inseguro/
   );
   assert.throws(
-    () => postgresClientSsl("postgres://radar:secret@db.example.test/radar?sslmode=allow"),
+    () => postgresSslConfig("postgres://radar:secret@db.example.test/radar?sslmode=allow"),
     /sslmode inseguro/
   );
 });

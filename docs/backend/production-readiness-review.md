@@ -86,3 +86,10 @@ El cierre de 29/29 entregables describe la fase principal de construcción del b
 - La cobertura automatizada de auditoría sigue limitada a las mutaciones implementadas en los módulos actuales; nuevas mutaciones futuras deberán seguir el mismo patrón.
 - Las operaciones de miembros e invitaciones ya escriben sus eventos en la transacción de mutación; las rutas de inteligencia de mercado usan `executeAuditedMutation` para que un fallo de auditoría revierta la mutación.
 - La tabla permite `actor_user_id` nulo por `ON DELETE SET NULL`, preservando el evento si se elimina posteriormente una cuenta local. Esto es una decisión de retención histórica; no permite al cliente elegir actor, porque las escrituras toman el actor desde la sesión autenticada.
+
+## 8. Integridad de auditoría — revisión adicional
+- La migración `010_audit_log_immutability.sql` impide `UPDATE`, `DELETE` y `TRUNCATE` ordinarios sobre `audit_logs` mediante triggers de PostgreSQL.
+- Las referencias a workspace y actor se desvinculan con `ON DELETE SET NULL`; el evento histórico permanece aunque se elimine posteriormente la empresa o la cuenta. La retención y el respaldo externo siguen pendientes de definir.
+- No hay rutas HTTP para consultar o mutar registros de auditoría. No se ha añadido una superficie de lectura sin un requisito de producto y una matriz de permisos definida.
+- Límite del control: un propietario/superusuario de PostgreSQL puede desactivar triggers o alterar el esquema. Antes de producción, crear un rol de runtime sin propiedad de tablas ni privilegios DDL, separado del rol de migraciones.
+- La CI incorpora pruebas PostgreSQL de rechazo de actualización, borrado y truncado, además de conservación del evento tras eliminar workspace/actor.

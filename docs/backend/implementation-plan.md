@@ -25,7 +25,7 @@ Este porcentaje mide únicamente el trabajo de API, lógica de aplicación, vali
 - [x] Snapshots versionados e historial.
 - [x] Exportación PDF.
 - [x] Auditoría de operaciones.
-- [x] Rate limiting configurable.
+- [x] Rate limiting configurable por IP/ruta, con capacidad máxima de buckets, limpieza de ventanas expiradas y rechazo 503 temporal cuando se alcanza la capacidad sin expulsar ventanas activas.
 - [x] Pruebas unitarias y HTTP de módulos principales.
 - [x] Pruebas de integración del backend contra PostgreSQL en CI, incluidas pruebas concurrentes de roles y membresías.
 
@@ -109,8 +109,8 @@ El 100 % de los 29 entregables principales no incluye el cierre de infraestructu
 - [x] Autorización multiempresa en servidor.
 - [x] Auditoría de operaciones relevantes.
 - [x] Pruebas de migraciones, relaciones, integridad, concurrencia y rutas HTTP de invitaciones.
-- [x] Rate limiting fijo por IP y ruta (120 solicitudes por 60 s por defecto; 10 para aceptar invitaciones), con límites configurables, cabeceras y respuesta 429.
-- [ ] Sustituir el almacenamiento en memoria por un backend compartido antes de escalar a múltiples instancias.
+- [x] Rate limiting por IP/ruta (120 solicitudes por 60 s por defecto; 10 para aceptar invitaciones), con límites configurables, cabeceras 429 y capacidad acotada; al llenarse, preserva ventanas activas y rechaza temporalmente nuevos buckets con 503 `RATE_LIMIT_CAPACITY`.
+- [ ] Sustituir el almacenamiento en memoria por un backend compartido antes de escalar a múltiples instancias; el control de capacidad actual evita expulsar ventanas activas, pero no comparte contadores entre procesos.
 - [ ] Ajustar la confianza en IP de cliente solo al configurar proxies de confianza.
 - [x] Completar pruebas HTTP de gestión de miembros (listado, alta, cambio de rol, baja, protección del último owner y auditoría).
 - [x] Métricas, correlación de trazas y logs estructurados, con pruebas automatizadas en CI.

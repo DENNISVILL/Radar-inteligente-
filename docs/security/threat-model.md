@@ -31,7 +31,7 @@ La API ya aplica autenticación Bearer, autorización por rol y comprobaciones d
 
 | Amenaza | Impacto | Controles existentes | Riesgo / acción requerida |
 |---|---|---|---|
-| Lectura o modificación de datos de otro workspace (IDOR / elevación de privilegios) | Alto | Verificación de membresía y rol en servidor; consultas con workspace; restricciones relacionales PostgreSQL; pruebas de aislamiento parciales | Ampliar la matriz HTTP a todos los módulos y rutas de informes/PDF antes de producción. |
+| Lectura o modificación de datos de otro workspace (IDOR / elevación de privilegios) | Alto | Verificación de membresía y rol en servidor; consultas con workspace; restricciones relacionales PostgreSQL; pruebas HTTP y PostgreSQL de aislamiento entre workspaces en investigaciones, competidores, productos, precios, observaciones, análisis, informes, snapshots y PDF | Mantener pruebas al añadir rutas nuevas; validar la integración con Supabase y cualquier futura política RLS antes de producción. |
 | Uso de invitación por una identidad cuyo correo no está verificado | Alto | Token aleatorio de 32 bytes, hash almacenado, expiración, revocación, comparación de correo y consumo transaccional de un solo uso; con clave pública Supabase configurada, la API consulta `GET /auth/v1/user` y exige `email_confirmed_at` | Validar el flujo contra el proyecto Supabase real antes de producción; CI usa un proveedor HTTP simulado y no sustituye esa integración. |
 | Robo o exposición de tokens de invitación | Alto | Solo se almacena SHA-256; el token se devuelve al crear y no se guarda en texto plano | No registrar cuerpos/respuestas sensibles; distribuir por canal seguro; no activar correo hasta definir remitente y protección contra abuso. |
 | Fuerza bruta / abuso de endpoints | Medio | Rate limit por IP y ruta, límites específicos para aceptación, 429 y cabeceras | El contador es en memoria y no coordina instancias. Sustituir por almacenamiento compartido antes de escalar. |
@@ -53,7 +53,7 @@ La API ya aplica autenticación Bearer, autorización por rol y comprobaciones d
 ## 6. Acciones obligatorias antes de producción
 
 1. Mantener la exigencia de correo confirmado en el flujo de invitaciones y validar la integración contra el proyecto Supabase real; la CI simula JWKS/Auth.
-2. Completar pruebas HTTP de aislamiento, autorización, respuestas 401/403/404/409 y acceso a informes/PDF.
+2. Mantener la matriz HTTP de aislamiento y autorización ampliada, incluyendo 401/403/404/409 y acceso a informes/PDF; añadir casos negativos para cada nueva ruta.
 3. Decidir y probar RLS si se habilita acceso directo desde clientes; mantener la API como frontera de autorización mientras tanto.
 4. Sustituir el rate limiter en memoria por un almacén compartido cuando exista más de una instancia.
 5. Configurar proxy de confianza de forma explícita al desplegar detrás de un balanceador.

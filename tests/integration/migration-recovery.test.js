@@ -4,6 +4,7 @@ import pg from "pg";
 import { mkdtemp, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { applyMigrations } from "../../scripts/migrate.js";
 
 test("failed migration rolls back only its own transaction and preserves prior applied migrations", {
@@ -18,7 +19,7 @@ test("failed migration rolls back only its own transaction and preserves prior a
     await pool.query("DROP TABLE IF EXISTS recovery_probe_success, recovery_probe_rolled_back");
     await writeFile(join(directory, applied + ".sql"), "CREATE TABLE recovery_probe_success(id integer PRIMARY KEY);");
     await writeFile(join(directory, failed + ".sql"), "CREATE TABLE recovery_probe_rolled_back(id integer PRIMARY KEY); SELECT 1 / 0;");
-    await assert.rejects(() => applyMigrations(pool, directory), /division by zero/i);
+    await assert.rejects(() => applyMigrations(pool, pathToFileURL(directory + "/")), /division by zero/i);
     const success = await pool.query("SELECT to_regclass('public.recovery_probe_success') AS name");
     const rolledBack = await pool.query("SELECT to_regclass('public.recovery_probe_rolled_back') AS name");
     const ledger = await pool.query("SELECT version FROM schema_migrations WHERE version = ANY($1::varchar[])", [[applied, failed]]);

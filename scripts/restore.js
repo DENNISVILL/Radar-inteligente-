@@ -2,6 +2,7 @@ import { stat } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import pg from "pg";
 import { resolve } from "node:path";
+import { withPostgresCliEnv } from "./postgres-cli.js";
 
 function run(command, args, extraEnv = {}) {
   return new Promise((resolvePromise, reject) => {
@@ -52,8 +53,8 @@ try {
   await client.end();
 }
 
-await run("pg_restore", [
+await withPostgresCliEnv(connection, env => run("pg_restore", [
   "--exit-on-error", "--single-transaction", "--no-owner", "--no-privileges",
   file
-], { PGDATABASE: connection });
+], env));
 console.info("Restauración completada en la base " + database + ". Verifica el servicio antes de cambiar el tráfico.");

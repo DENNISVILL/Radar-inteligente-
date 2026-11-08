@@ -19,7 +19,7 @@ test("PostgreSQL CLI credentials use a private temporary passfile, not argv or e
       assert.equal(file.mode & 0o777, 0o600);
       assert.equal(
         await readFile(passfile, "utf8"),
-        "db.example.test:5544:radar db:radar\\\\:user:p@ss\\\\:word\n"
+        "db.example.test:5544:radar db:radar\\:user:p@ss\\:word\n"
       );
     }
   );

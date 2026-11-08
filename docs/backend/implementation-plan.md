@@ -31,13 +31,13 @@ Este porcentaje mide únicamente el trabajo de API, lógica de aplicación, vali
 
 ### Trabajo backend pendiente
 - [x] Contrato OpenAPI 3.1 y validación formal automatizada en CI con Redocly.
-- [ ] Matriz ampliada de pruebas HTTP para permisos, errores y aislamiento multiempresa en todos los módulos.
+- [x] Matriz ampliada de pruebas HTTP para permisos, errores y aislamiento multiempresa en todos los módulos.
 - [x] Pruebas de concurrencia PostgreSQL para cambios simultáneos de roles y altas de membresías.
 - [x] Revisión estática de seguridad y modelo de amenazas documentados en `docs/security/threat-model.md`; quedan acciones de cierre antes de producción.
-- [ ] Métricas, trazas y observabilidad operativa.
+- [x] Métricas HTTP Prometheus, histogramas de latencia, correlación W3C traceparent, identificadores de traza y logs estructurados; validados en CI.
 - [ ] Pruebas de carga y rendimiento con datos representativos.
 
-**Criterio del porcentaje:** 26 de 29 entregables backend completados = 90 %. Los tres pendientes siguen dentro del backend; no se descuentan tareas de frontend ni la configuración de la base de datos/Supabase.
+**Criterio del porcentaje:** 28 de 29 entregables backend completados = 96,6 %. Solo queda la validación de carga y rendimiento; no se descuentan tareas de frontend ni la configuración de la base de datos/Supabase.
 
 ## Principios
 
@@ -97,7 +97,8 @@ Este porcentaje mide únicamente el trabajo de API, lógica de aplicación, vali
 - [ ] Sustituir el almacenamiento en memoria por un backend compartido antes de escalar a múltiples instancias.
 - [ ] Ajustar la confianza en IP de cliente solo al configurar proxies de confianza.
 - [x] Completar pruebas HTTP de gestión de miembros (listado, alta, cambio de rol, baja, protección del último owner y auditoría).
-- [ ] Observabilidad, alertas, copias de seguridad y restauración probada.
+- [x] Métricas, correlación de trazas y logs estructurados, con pruebas automatizadas en CI.
+- [ ] Alertas operativas, copias de seguridad y restauración probada.
 - [x] Revisión estática documentada; pendiente cerrar los riesgos preproducción indicados en `docs/security/threat-model.md` y ejecutar pruebas externas antes del despliegue.
 
 ### 7. Producto y despliegue — pendiente

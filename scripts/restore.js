@@ -55,6 +55,7 @@ try {
 
 await withPostgresCliEnv(connection, env => run("pg_restore", [
   "--exit-on-error", "--single-transaction", "--no-owner", "--no-privileges",
+  "--dbname=" + database,
   file
 ], env));
 console.info("Restauración completada en la base " + database + ". Verifica el servicio antes de cambiar el tráfico.");

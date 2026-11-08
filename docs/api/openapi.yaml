@@ -184,6 +184,8 @@ paths:
       summary: Listar invitaciones pendientes
       operationId: listWorkspaceInvitations
       description: Solo owner y admin; no expone hashes de tokens.
+      parameters:
+        - { $ref: '#/components/parameters/limit100' }
       responses:
         '200': { $ref: '#/components/responses/GenericList' }
         '403': { $ref: '#/components/responses/Forbidden' }

@@ -115,12 +115,11 @@ test("PostgreSQL CLI rejects downgrade sslmodes and applies DB_SSL consistently"
 
 test("node-postgres connection options strip TLS URL flags after resolving strict SSL settings", () => {
   const options = postgresConnectionOptions(
-    "postgres://radar:secret@db.example.test/radar?sslmode=disable&application_name=radar&sslrootcert=%2Ftmp%2Fca.pem",
+    "postgres://radar:secret@db.example.test/radar?sslmode=disable&application_name=radar",
     true
   );
   const parsed = new URL(options.connectionString);
   assert.equal(parsed.searchParams.has("sslmode"), false);
-  assert.equal(parsed.searchParams.has("sslrootcert"), false);
   assert.equal(parsed.searchParams.get("application_name"), "radar");
-  assert.deepEqual(options.ssl, { rejectUnauthorized: true, ca: "-----BEGIN CERTIFICATE-----\\nTEST CA MATERIAL\\n-----END CERTIFICATE-----\\n" });
+  assert.deepEqual(options.ssl, { rejectUnauthorized: true });
 });

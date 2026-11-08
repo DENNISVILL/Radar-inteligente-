@@ -6,7 +6,7 @@ import {workspaceMemberRoutes} from "../../../src/modules/identity/presentation/
 const workspaceId="11111111-1111-4111-8111-111111111111";
 const userId="22222222-2222-4222-8222-222222222222";
 
-async function buildApp({role="owner",memberRole="analyst",member=true,owners=2}={}){
+async function buildApp({role="owner",memberRole="analyst",member=true,owners=2,transactionRole=role}={}){
  const calls=[];
  const database={
   async query(sql,values=[]){
@@ -20,6 +20,7 @@ async function buildApp({role="owner",memberRole="analyst",member=true,owners=2}
     async query(sql,values=[]){
      calls.push({sql,values});
      if(sql.includes("SELECT id FROM workspaces"))return {rows:[{id:workspaceId}]};
+     if(sql.includes("FROM workspace_members wm JOIN users u"))return {rows:member?[{role:transactionRole}]:[]};
      if(sql.includes("SELECT id,email,display_name,status FROM users"))return {rows:[{id:userId,email:"person@example.test",display_name:"Person",status:"active"}]};
      if(sql.includes("SELECT role FROM workspace_members"))return {rows:[{role:memberRole}]};
      if(sql.includes("COUNT(*)::int"))return {rows:[{total:owners}]};
@@ -199,4 +200,16 @@ test("owner and admin can list workspace members while analyst and viewer cannot
    }
   }finally{await app.close();}
  }
+});
+
+
+test("HTTP member mutations recheck the actor role after acquiring the workspace lock",async()=>{
+ const {app,calls}=await buildApp({role:"owner",transactionRole:"viewer"});
+ try{
+  const response=await app.inject({method:"POST",url:`/api/v1/workspaces/${workspaceId}/members`,payload:{email:"person@example.test",role:"viewer"}});
+  assert.equal(response.statusCode,403);
+  assert.equal(response.json().error,"FORBIDDEN");
+  assert.ok(calls.some(call=>call.sql==="ROLLBACK"));
+  assert.equal(calls.some(call=>call.sql?.includes("INSERT INTO workspace_members")||call.sql?.includes("INSERT INTO audit_logs")),false);
+ }finally{await app.close();}
 });

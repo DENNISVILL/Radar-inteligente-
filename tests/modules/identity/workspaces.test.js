@@ -36,9 +36,9 @@ test("creates workspace, initial owner membership and both audit events in one t
   ]);
   assert.equal(auditRows.length, 2);
   assert.deepEqual(auditRows[0].params, ["w1", "u1", "w1"]);
-  assert.match(auditRows[0].sql, /workspace\\.created/);
+  assert.ok(auditRows[0].sql.includes("workspace.created"));
   assert.deepEqual(auditRows[1].params, ["w1", "u1", "u1"]);
-  assert.match(auditRows[1].sql, /workspace_member\\.added/);
+  assert.ok(auditRows[1].sql.includes("workspace_member.added"));
 });
 
 test("rolls back workspace creation when owner membership fails", async () => {

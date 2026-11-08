@@ -16,6 +16,8 @@ async function buildApp({role="owner",accessibleWorkspaces=[workspaceA]}={}){
     const workspaceId=values[1];
     return {rows:accessibleWorkspaces.includes(workspaceId)?[{workspace_id:workspaceId,workspace_name:"Workspace",role}]:[]};
    }
+   if(sql.includes("INSERT INTO users"))return {rows:[{id:"local-user",email:"user@example.test",status:"active"}]};
+   if(sql.includes("INSERT INTO researches"))return {rows:[{id:researchId,workspace_id:values[0],created_by:values[1],title:values[2],status:"draft"}]};
    if(sql.includes("FROM researches")){
     return {rows:[{id:researchId,workspace_id:values[0],title:"Estudio",status:"draft"}]};
    }
@@ -130,4 +132,25 @@ test("invalid research payload is rejected before creating a local identity or r
   assert.equal(calls.some(call=>call.sql.includes("INSERT INTO users")),false);
   assert.equal(calls.some(call=>call.sql.includes("INSERT INTO researches")),false);
  }finally{await app.close();}
+});
+
+
+test("research HTTP permissions follow the complete workspace role matrix",async()=>{
+ const payload={title:"Estudio",country:"Ecuador",sector:"Retail",objective:"Analizar el mercado"};
+ for(const role of ["owner","admin","analyst","viewer"]){
+  const {app,calls}=await buildApp({role});
+  try{
+   const read=await app.inject({method:"GET",url:`/api/v1/workspaces/${workspaceA}/researches`});
+   assert.equal(read.statusCode,200,role+" should read research");
+   const write=await app.inject({method:"POST",url:`/api/v1/workspaces/${workspaceA}/researches`,payload:{...payload}});
+   if(role==="viewer"){
+    assert.equal(write.statusCode,403);
+    assert.equal(write.json().error,"FORBIDDEN");
+    assert.equal(calls.some(call=>call.sql.includes("INSERT INTO researches")),false);
+   }else{
+    assert.equal(write.statusCode,201,role+" should create research");
+    assert.ok(calls.some(call=>call.sql.includes("INSERT INTO researches")));
+   }
+  }finally{await app.close();}
+ }
 });

@@ -206,3 +206,14 @@ Los cambios se desarrollan en `backend/foundation`, se prueban en CI y se mantie
 - [x] Añadir pruebas para corrupción, manifiestos inválidos, permisos de staging y sustitución posterior del archivo de origen.
 - [ ] Confirmar una ejecución CI exitosa sobre el head final del PR; la validación anterior no cubre los últimos commits.
 - [ ] Para autenticidad frente a un atacante con capacidad de reemplazar respaldo y manifiesto, definir firma digital/HMAC y gestión separada de claves. SHA-256 por sí solo detecta corrupción accidental, no autentica el origen.
+
+
+### Exportación verificable del historial de auditoría
+
+- [x] Endpoint owner/admin `GET /api/v1/workspaces/{workspaceId}/audit-logs/export` con paginación keyset y máximo 100 eventos por página.
+- [x] NDJSON con serialización determinista y SHA-256 del cuerpo exacto en cabecera de respuesta.
+- [x] Contador de eventos y cursor de continuación para completar exportaciones sin respuestas ilimitadas.
+- [x] Reutilizar la revalidación transaccional y bloqueos workspace → membresía antes de leer auditoría.
+- [x] Documentar contrato OpenAPI, matriz de roles y límites de seguridad.
+- [ ] Confirmar CI exitosa para el último head del PR.
+- [ ] Definir destino externo inmutable/cifrado, retención y firma digital o HMAC con gestión separada de claves si se requiere autenticidad verificable frente a un atacante.

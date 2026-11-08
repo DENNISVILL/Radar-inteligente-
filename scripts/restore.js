@@ -26,7 +26,7 @@ if (!database || process.env.RESTORE_CONFIRM_DATABASE !== database) {
 const staged = await stageVerifiedBackup(resolve(backup));
 try {
   const file = staged.filePath;
-  console.info("Integridad SHA-256 confirmada sobre una copia temporal privada: " + staged.integrity.digest + "; firma Ed25519: " + (staged.signed ? "verificada" : "no presente (modo compatible)").
+  console.info("Integridad SHA-256 confirmada sobre una copia temporal privada: " + staged.integrity.digest + "; firma Ed25519: " + (staged.signed ? "verificada" : "no presente (modo compatible)"));
   await run("pg_restore", ["--list", file]);
 
   const client = new pg.Client(postgresConnectionOptions(

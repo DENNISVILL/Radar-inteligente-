@@ -29,7 +29,7 @@ if (!database || process.env.RESTORE_CONFIRM_DATABASE !== database) {
 
 const client = new pg.Client({
   connectionString: connection,
-  ssl: postgresSslConfig(connection, process.env.DB_SSL === "true" || process.env.DB_SSL === "1" || process.env.DB_SSL === "yes"
+  ssl: postgresSslConfig(connection, process.env.DB_SSL === "true" || process.env.DB_SSL === "1" || process.env.DB_SSL === "yes")
 });
 await client.connect();
 try {

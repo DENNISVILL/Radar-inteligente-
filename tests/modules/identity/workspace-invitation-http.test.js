@@ -158,3 +158,31 @@ test("HTTP invitation routes reject malformed workspace IDs before membership lo
   assert.equal(calls.length,0);
  }finally{await app.close();}
 });
+
+
+
+test("invitation management follows the complete owner/admin versus analyst/viewer matrix",async()=>{
+ for(const role of ["owner","admin","analyst","viewer"]){
+  const {app,calls}=await buildApp({role});
+  const requests=[
+   {method:"GET",url:`/api/v1/workspaces/${workspaceId}/invitations`},
+   {method:"POST",url:`/api/v1/workspaces/${workspaceId}/invitations`,payload:{email:"new@example.test",role:"analyst"}},
+   {method:"DELETE",url:`/api/v1/workspaces/${workspaceId}/invitations/${invitationId}`}
+  ];
+  try{
+   for(const request of requests){
+    const response=await app.inject(request);
+    if(role==="owner"||role==="admin"){
+     assert.ok([200,201].includes(response.statusCode),role+" "+request.method+" "+request.url);
+    }else{
+     assert.equal(response.statusCode,403,role+" "+request.method+" "+request.url);
+     assert.equal(response.json().error,"FORBIDDEN");
+    }
+   }
+   if(role==="analyst"||role==="viewer"){
+    assert.equal(calls.some(call=>call.sql?.includes("FROM workspace_invitations")||call.sql?.includes("INSERT INTO workspace_invitations")||call.sql?.includes("UPDATE workspace_invitations")),false);
+    assert.equal(calls.some(call=>call.sql==="RELEASE"),false);
+   }
+  }finally{await app.close();}
+ }
+});

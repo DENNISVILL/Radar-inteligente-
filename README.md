@@ -62,3 +62,12 @@ Los análisis actuales son descriptivos y dependen de los datos y fuentes que se
 - Los hashes de integridad ayudan a detectar cambios, pero no equivalen a firmas digitales ni sustituyen controles de acceso.
 
 Consulta `docs/backend/implementation-plan.md` para ver el avance; `docs/backend/performance-baseline.md` para la medición de rendimiento; y `docs/backend/backup-and-recovery.md` para el procedimiento de respaldo y recuperación.
+
+### Ciclo de vida de autenticación y sesiones
+- La API acepta únicamente access tokens Bearer; no recibe ni almacena refresh tokens. El cliente oficial de Supabase Auth administra la renovación de sesión y debe enviar el access token vigente en cada solicitud.
+- Se validan firma JWKS, algoritmo permitido, emisor, audiencia, `sub`, `iat`, `exp` y `session_id`; se exige una antigüedad máxima configurable mediante `SUPABASE_JWT_MAX_AGE_SECONDS` (por defecto 3600; rango 300–86400 segundos).
+- Al configurar `SUPABASE_URL`, también se exige `SUPABASE_PUBLISHABLE_KEY` (preferida) o `SUPABASE_ANON_KEY` heredada. La API consulta `GET /auth/v1/user` en cada solicitud autenticada para comprobar que la sesión sigue siendo reconocida por Auth y obtiene el correo y su estado de confirmación desde el proveedor. No se acepta una clave `service_role` para esta función.
+- Si Supabase rechaza la sesión, la API devuelve 401; si Auth no responde o devuelve un error temporal, devuelve 503 y falla de forma cerrada. No se hace fallback a aceptar el JWT localmente.
+- Una cuenta local con estado `disabled` recibe 403. Aceptar invitaciones requiere que Supabase confirme el correo cuando la validación remota está habilitada.
+- El frontend deberá usar `supabase.auth.refreshSession()` / el mecanismo automático del SDK y `supabase.auth.signOut()`; la API no expone un endpoint de refresh ni de logout porque no gestiona refresh tokens.
+- Los JWT son stateless: un token emitido puede seguir siendo válido hasta `exp` después de un cierre de sesión. La validación remota de sesión por solicitud reduce esa ventana al rechazar sesiones que Auth ya no reconoce. Se debe mantener el tiempo de vida del JWT en Supabase alineado con el máximo configurado en Radar.

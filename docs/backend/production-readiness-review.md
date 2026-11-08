@@ -204,3 +204,11 @@ El cierre de 29/29 entregables describe la fase principal de construcción del b
 - La prueba verifica que el cliente reciba únicamente HTTP 500, el código estable `INTERNAL_SERVER_ERROR` y un mensaje genérico; no deben aparecer credenciales, host interno ni stack trace en el cuerpo de respuesta.
 - El error original sigue registrándose en el logger del servidor para diagnóstico. La retención, el acceso y la protección de esos logs deben configurarse en el entorno de despliegue.
 - **Alcance:** la prueba valida la respuesta HTTP de Fastify; no demuestra por sí sola la seguridad del destino de logs ni sustituye la revisión de permisos operativos.
+
+
+## 19. Límite de resultados para invitaciones pendientes (2026-11-08)
+
+- La consulta de invitaciones pendientes ahora aplica un límite SQL parametrizado: 50 registros por defecto y un máximo permitido de 100.
+- La ruta valida el parámetro `limit`; valores no enteros, inferiores a 1 o superiores a 100 se rechazan con HTTP 400 antes de consultar la tabla de invitaciones.
+- OpenAPI documenta el parámetro compartido `limit100`; las pruebas HTTP verifican el límite por defecto, un valor explícito y entradas inválidas.
+- **Alcance:** se limita el tamaño de cada respuesta, no se implementa paginación por cursor ni una política de retención. La lista devuelve las invitaciones pendientes más recientes; una interfaz que necesite recorrer más de 100 registros deberá solicitar paginación en una mejora posterior.

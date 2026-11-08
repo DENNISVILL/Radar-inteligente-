@@ -113,7 +113,7 @@ El 100 % de los 29 entregables principales no incluye el cierre de infraestructu
 - [ ] Sustituir el almacenamiento en memoria por un backend compartido antes de escalar a múltiples instancias; el control de capacidad actual evita expulsar ventanas activas, pero no comparte contadores entre procesos.
 - [ ] Ajustar la confianza en IP de cliente solo al configurar proxies de confianza.
 - [x] Completar pruebas HTTP de gestión de miembros (listado, alta, cambio de rol, baja, protección del último owner y auditoría).
-- [x] Métricas, correlación de trazas y logs estructurados, con pruebas automatizadas en CI.
+- [x] Métricas, correlación de trazas y logs estructurados, con pruebas automatizadas en CI; endpoint `/metrics` deshabilitado por defecto y habilitación explícita con `METRICS_ENABLED=true`.
 - [ ] Alertas operativas, copias de seguridad y restauración probada.
 - [x] Revisión estática documentada; pendiente cerrar los riesgos preproducción indicados en `docs/security/threat-model.md` y ejecutar pruebas externas antes del despliegue.
 

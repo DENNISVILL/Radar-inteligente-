@@ -71,3 +71,12 @@ La API ya aplica autenticación Bearer, autorización por rol y comprobaciones d
 - Se puede detectar una tasa anómala de errores/429 y recuperar la base desde una copia probada.
 
 **Dictamen:** revisión estática completada con riesgos y medidas pendientes documentados. No constituye certificación, pentest ni aprobación de despliegue productivo.
+
+## 8. Integridad y acceso a registros de auditoría
+- La migración `010_audit_log_immutability.sql` instala triggers PostgreSQL que rechazan `UPDATE`, `DELETE` y `TRUNCATE` directos sobre `audit_logs`.
+- Las referencias a workspace y actor usan `ON DELETE SET NULL`: borrar una empresa o una cuenta no elimina el evento histórico; se conserva su tipo, recurso, metadatos y fecha, aunque se pierde la referencia al registro eliminado.
+- Las actualizaciones internas ejecutadas por las acciones referenciales de PostgreSQL pueden desvincular esas referencias; la aplicación no puede usar el endpoint HTTP para reescribir eventos.
+- Actualmente no existe una ruta HTTP para listar, modificar o borrar registros de auditoría. Por tanto, no se expone un recurso de auditoría al cliente. Si se añade lectura, deberá autorizarse por workspace y rol, paginarse, limitar filtros y probar aislamiento entre tenants.
+- Los triggers protegen contra operaciones SQL ordinarias de la aplicación, no contra un propietario/superusuario de PostgreSQL que pueda desactivar triggers o alterar el esquema. En producción se requiere un rol de runtime que no sea propietario de tablas ni tenga privilegios DDL, además de credenciales administrativas separadas y acceso restringido.
+- Los registros de auditoría contienen metadatos de negocio: evitar incluir tokens, contraseñas, cabeceras de autenticación, datos personales innecesarios o contenido íntegro de documentos.
+- La inmutabilidad no sustituye copias de seguridad, retención legal, exportación externa ni almacenamiento WORM. Definir retención y destino de respaldo antes de producción.

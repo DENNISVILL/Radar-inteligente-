@@ -7,8 +7,8 @@
 
 ## 1. Evidencia verificada
 
-- CI #272: [ejecución aprobada](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42448430308).
-- 190 pruebas aprobadas y 0 fallidas.
+- CI #275: [ejecución aprobada](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42478835207).
+- 191 pruebas aprobadas y 0 fallidas.
 - PostgreSQL 16 de servicio en CI.
 - Benchmark escalonado con 1, 5, 20 y 50 trabajadores; todos los escenarios cumplieron el umbral P95 de 1.000 ms.
 - OpenAPI validado y comprobación de sintaxis aprobada.
@@ -25,7 +25,7 @@
 | Crítica antes de usuarios reales | Aceptación de invitaciones no exige correo confirmado | El verificador JWT expone `sub` y `email`, pero no consulta el estado de confirmación. La referencia oficial de claims JWT de Supabase no incluye `email_verified` entre los claims estándar; no se debe asumir que ese claim existe en un access token. | Al conectar el proyecto, validar el access token contra `GET /auth/v1/user` con `apikey` publicable y `Authorization: Bearer <access_token>`; exigir `email_confirmed_at` no nulo y que el correo devuelto coincida con el correo invitado. Cubrir confirmación ausente, correo cambiado y error del proveedor con pruebas. |
 | Alta | No hay copias automáticas ni restauración probada | No existe infraestructura de backup/restore configurada en el repositorio | Elegir hosting/servicio PostgreSQL, definir RPO/RTO, automatizar backups cifrados y ejecutar una restauración documentada |
 | Alta | Rate limiter no distribuido | Contadores en memoria por proceso | Antes de ejecutar más de una instancia, usar Redis u otro almacén compartido con límites atómicos |
-| Alta | Métricas expuestas por ruta sin autenticación propia | Corregido en código: `/metrics` queda deshabilitado por defecto; solo se registra con `METRICS_ENABLED=true`. La opción de habilitarlo sigue requiriendo red privada o restricción de proxy/firewall. | Antes de producción, habilitarlo solo si el entorno lo necesita y comprobar desde fuera que no sea accesible públicamente |
+| Alta | Métricas expuestas por ruta sin autenticación propia | Corregido y probado en CI #275: `/metrics` queda deshabilitado por defecto; solo se registra con `METRICS_ENABLED=true`. La opción de habilitarlo sigue requiriendo red privada o restricción de proxy/firewall. | Antes de producción, habilitarlo solo si el entorno lo necesita y comprobar desde fuera que no sea accesible públicamente |
 | Alta | Sin alertas ni política de retención | Logs y métricas se generan, pero no hay destino/alertas configurados | Definir proveedor de observabilidad, alertas de errores/latencia/DB/429, retención y responsables |
 | Alta | Privilegios y conectividad de PostgreSQL no verificados en entorno real | Pool configurado con máximo 10 conexiones; TLS opcional vía `DB_SSL` | Crear rol de mínimo privilegio, restringir red, activar TLS con certificados verificados y dimensionar pool según límite del hosting |
 | Media | Proxy de confianza depende del despliegue | Fastify no habilita `trustProxy` en la configuración actual | Mantener desactivado salvo necesidad; si se usa proxy, confiar solo en IPs/CIDRs del proxy administrado |
@@ -69,4 +69,4 @@ No se deben inventar ni simular estas decisiones: proveedor de hosting, servicio
 
 ## 6. Conclusión
 
-El cierre de 29/29 entregables describe la fase principal de construcción del backend, no la preparación integral para producción. La validación CI #272 (190 pruebas, 0 fallidas) confirma la calidad automatizada del código actual, pero no sustituye la configuración de infraestructura, recuperación, seguridad externa ni pruebas de staging.
+El cierre de 29/29 entregables describe la fase principal de construcción del backend, no la preparación integral para producción. La validación CI #275 (191 pruebas, 0 fallidas) confirma la calidad automatizada del código actual, pero no sustituye la configuración de infraestructura, recuperación, seguridad externa ni pruebas de staging.

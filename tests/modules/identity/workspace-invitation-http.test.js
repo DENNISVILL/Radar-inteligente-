@@ -186,3 +186,15 @@ test("invitation management follows the complete owner/admin versus analyst/view
   }finally{await app.close();}
  }
 });
+
+
+
+test("invitation acceptance requires an authenticated email claim before database access",async()=>{
+ const {app,calls}=await buildApp({email:null});
+ try{
+  const response=await app.inject({method:"POST",url:"/api/v1/invitations/accept",payload:{token:rawToken}});
+  assert.equal(response.statusCode,403);
+  assert.equal(response.json().error,"EMAIL_REQUIRED");
+  assert.equal(calls.length,0);
+ }finally{await app.close();}
+});

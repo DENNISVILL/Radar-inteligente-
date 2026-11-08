@@ -156,3 +156,10 @@ El cierre de 29/29 entregables describe la fase principal de construcción del b
 - Se documentó respuesta ante incidentes, correlación mediante trace ID, restricción de acceso a `/metrics`, retención y prohibición de etiquetas de alta cardinalidad o datos sensibles.
 - La instrumentación actual mantiene métricas en memoria por proceso; no agrega réplicas ni persiste series tras reinicio. No existe aún exportador OpenTelemetry, backend remoto, dashboard, alert manager ni métricas de pool/backup.
 - **Estado:** documentación operativa preparada; observabilidad productiva todavía no habilitada ni validada. Requiere proveedor, red privada, alertas, retención, responsables y simulacro en staging.
+
+
+## 13. Consistencia TLS de restauración (2026-11-08)
+
+- Se detectó que la validación previa de `scripts/restore.js` utilizaba únicamente `DB_SSL=true`, mientras que `pg_restore` también respetaba `sslmode` de la URL PostgreSQL a través de libpq.
+- Se unificó la decisión TLS de la conexión de prevalidación con la intención de conexión CLI: modos `require`, `verify-ca` y `verify-full` habilitan TLS con certificado verificado; `DB_SSL=true` lo fuerza; modos de downgrade `allow` y `prefer` se rechazan. Se añadieron pruebas unitarias para estos casos.
+- **Alcance:** pruebas unitarias de selección de configuración; no se ha probado un certificado ni un servidor PostgreSQL de proveedor real. La configuración TLS final debe probarse en staging con el CA/certificado del proveedor.

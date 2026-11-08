@@ -239,3 +239,11 @@ El cierre de 29/29 entregables describe la fase principal de construcción del b
 - `pg_restore --list` y la restauración real usan exclusivamente la copia temporal verificada. El archivo queda con permisos `0600`, el directorio es privado, se rechazan enlaces simbólicos de origen y la limpieza ocurre en un bloque `finally`.
 - Se añadieron pruebas para comprobar permisos del archivo temporal, independencia respecto a cambios posteriores del original y rechazo de enlaces simbólicos.
 - **Límite:** SHA-256 sin firma o HMAC no autentica el manifiesto si un atacante puede reemplazar simultáneamente el respaldo y su manifiesto. El directorio temporal protege frente a cambios posteriores de la ruta de origen bajo el modelo normal de permisos del sistema; no sustituye un host confiable, almacenamiento inmutable ni una firma digital.
+
+
+## 23. Exportación verificable y acotada de auditoría (2026-11-08)
+
+- Se añadió `GET /api/v1/workspaces/{workspaceId}/audit-logs/export`, limitado a owner/admin y protegido por la misma revalidación transaccional workspace → membresía que la consulta de auditoría.
+- La respuesta es NDJSON por página, con límite máximo de 100 eventos, orden estable de campos (incluidos objetos metadata), contador y SHA-256 calculado sobre los bytes exactos de la respuesta. El cursor de continuación permite recorrer el historial sin una descarga ilimitada ni offsets.
+- Se documentó el endpoint en OpenAPI y se amplió la matriz HTTP de roles. Las pruebas cubren digest reproducible, formato NDJSON, paginación, rechazo de límites/cursores inválidos y denegación de analyst, viewer y no miembros antes de leer auditoría.
+- **Límite:** el digest permite detectar alteraciones del cuerpo exportado, pero no autentica el origen si el mismo actor puede reemplazar el archivo y su hash. Para evidencia externa de mayor garantía se requiere firma digital/HMAC con clave protegida y almacenamiento inmutable administrado por separado. No se ha configurado destino externo ni política de retención.

@@ -13,6 +13,7 @@ async function authorize(options,request,reply){
 const messages={
  INVALID_ROLE:[400,"INVALID_ROLE","El rol solicitado no es válido."],
  FORBIDDEN_ROLE:[403,"FORBIDDEN_ROLE","No tienes permisos para asignar ese rol."],
+ FORBIDDEN:[403,"FORBIDDEN","Ya no tienes permisos para gestionar las invitaciones de este espacio."],
  INVITATION_ALREADY_PENDING:[409,"INVITATION_ALREADY_PENDING","Ya existe una invitación pendiente para ese correo."],
  INVALID_INVITATION:[400,"INVALID_INVITATION","El token de invitación no es válido."],
  INVITATION_ALREADY_USED:[409,"INVITATION_ALREADY_USED","Esta invitación ya fue utilizada."],
@@ -38,7 +39,7 @@ export async function workspaceInvitationRoutes(app,options){
   const email=typeof r.body?.email==="string"?r.body.email.trim():"";
   if(!email||email.length>254||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return p.code(400).send({error:"INVALID_EMAIL",message:"Ingresa un correo válido."});
   const user=await ensureIdentityUser(options.database,r.identity);
-  const result=await createWorkspaceInvitation(options.database,{workspaceId:r.params.workspaceId,email,role:r.body?.role,actorRole:actor.role,actorUserId:user.id});
+  const result=await createWorkspaceInvitation(options.database,{workspaceId:r.params.workspaceId,email,role:r.body?.role,actorRole:actor.role,actorUserId:user.id,actorSubject:r.identity.subject});
   if(result?.error)return fail(p,result.error);
   if(!result)return p.code(404).send({error:"WORKSPACE_NOT_FOUND",message:"No se encontró el espacio activo."});
   return p.code(201).send({data:{id:result.id,email:result.email,role:result.role,expiresAt:result.expires_at,token:result.token}});
@@ -48,7 +49,8 @@ export async function workspaceInvitationRoutes(app,options){
   if(!uuid.test(r.params.invitationId))return p.code(400).send({error:"INVALID_INVITATION_ID",message:"El identificador de invitación no es válido."});
   const actor=await authorize(options,r,p);if(!actor)return;
   const user=await ensureIdentityUser(options.database,r.identity);
-  const result=await revokeWorkspaceInvitation(options.database,{workspaceId:r.params.workspaceId,invitationId:r.params.invitationId,actorUserId:user.id});
+  const result=await revokeWorkspaceInvitation(options.database,{workspaceId:r.params.workspaceId,invitationId:r.params.invitationId,actorUserId:user.id,actorSubject:r.identity.subject});
+  if(result?.error)return fail(p,result.error);
   if(!result)return p.code(404).send({error:"INVITATION_NOT_FOUND",message:"No se encontró una invitación pendiente."});
   return {data:result};
  });

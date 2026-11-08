@@ -1,7 +1,7 @@
 import {ensureIdentityUser} from "../../identity/application/identity-user.js";
 import {canAccessWorkspace,findWorkspaceAccess} from "../../identity/application/workspace-access.js";
 import {buildMarketReport} from "../application/market-report.js";
-import {listWorkspaceAuditLogs,parseAuditCursor} from "../application/workspace-audit-logs.js";
+import {listWorkspaceAuditLogs,parseAuditCursor,serializeAuditLogNdjson} from "../application/workspace-audit-logs.js";
 import {generateMarketReportPdf} from "../application/market-report-pdf.js";
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const writers=["owner","admin","analyst"];
@@ -81,6 +81,23 @@ export async function marketReportRoutes(app,o){
   const result=await listWorkspaceAuditLogs(o.database,{workspaceId:r.params.workspaceId,authSubject:r.identity.subject,limit,cursor});
   if(result.forbidden)return p.code(403).send({error:"FORBIDDEN",message:"Solo owner o admin pueden consultar la auditoría."});
   return {data:result.data,nextCursor:result.nextCursor};
+ });
+ app.get("/api/v1/workspaces/:workspaceId/audit-logs/export",{preHandler:(r,p)=>o.requireIdentity(r,p)},async(r,p)=>{
+  if(!uuid.test(r.params.workspaceId))return p.code(400).send({error:"INVALID_WORKSPACE_ID",message:"El identificador del espacio no es válido."});
+  const limit=queryLimit(r.query?.limit,50,100);
+  if(limit===null)return p.code(400).send({error:"INVALID_LIMIT",message:"El límite debe ser un número entero entre 1 y 100."});
+  const cursor=parseAuditCursor(r.query?.cursor);
+  if(cursor===undefined)return p.code(400).send({error:"INVALID_CURSOR",message:"El cursor de auditoría no es válido."});
+  const result=await listWorkspaceAuditLogs(o.database,{workspaceId:r.params.workspaceId,authSubject:r.identity.subject,limit,cursor});
+  if(result.forbidden)return p.code(403).send({error:"FORBIDDEN",message:"Solo owner o admin pueden exportar la auditoría."});
+  const exported=serializeAuditLogNdjson(result.data);
+  const response=p.type("application/x-ndjson; charset=utf-8")
+   .header("Cache-Control","no-store")
+   .header("Content-Disposition",`attachment; filename="radar-audit-${r.params.workspaceId}.ndjson"`)
+   .header("X-Audit-Export-SHA256",exported.sha256)
+   .header("X-Audit-Export-Count",String(exported.count));
+  if(result.nextCursor)response.header("X-Audit-Export-Next-Cursor",result.nextCursor);
+  return response.send(exported.body);
  });
  app.get(base+"/reports",{preHandler:(r,p)=>o.requireIdentity(r,p)},async(r,p)=>{
   if(await authorize(r,p,o)!==true)return;

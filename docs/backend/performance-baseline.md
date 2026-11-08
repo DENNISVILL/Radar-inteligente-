@@ -87,3 +87,16 @@ Antes de declarar capacidad productiva, ejecutar pruebas con red real y staging,
 - Concurrencia 50: 250 solicitudes; P95 35,20 ms; 1.620,96 req/s.
 - Todos los escenarios cumplieron el umbral automatizado P95 de 1.000 ms.
 - Medición en CI con Fastify.inject() y PostgreSQL 16; no representa latencia de red ni capacidad garantizada de producción.
+
+
+## Validación más reciente — CI #346
+
+- [CI #346 aprobada](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42480259690).
+- 198 pruebas aprobadas, 0 fallidas.
+- Dataset: 500 productos y 2.500 observaciones de precios; 5 iteraciones por trabajador.
+- Concurrencia 1: 5 solicitudes; P95 1,48 ms; 797,77 req/s.
+- Concurrencia 5: 25 solicitudes; P95 16,23 ms; 790,90 req/s.
+- Concurrencia 20: 100 solicitudes; P95 21,53 ms; 1.144,91 req/s.
+- Concurrencia 50: 250 solicitudes; P95 38,56 ms; 1.506,04 req/s.
+- Todos los escenarios cumplieron el umbral automatizado P95 de 1.000 ms.
+- Medición en CI con Fastify.inject() y PostgreSQL 16; no representa latencia de red ni capacidad garantizada de producción.

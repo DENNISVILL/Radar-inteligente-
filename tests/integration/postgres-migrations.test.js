@@ -7,10 +7,10 @@ test("PostgreSQL migrations are executable, repeatable and enforce tenant relati
  skip:!process.env.TEST_DATABASE_URL
 },async()=>{
  const pool=new pg.Pool({connectionString:process.env.TEST_DATABASE_URL});
- let workspaceA,workspaceB,userId;
+ let workspaceA,workspaceB,userId,auditId;
  try{
   const first=await applyMigrations(pool);
-  assert.equal(first.discovered,9);
+  assert.equal(first.discovered,10);
   const second=await applyMigrations(pool);
   assert.deepEqual(second.versions,first.versions);
   const tables=await pool.query("SELECT tablename FROM pg_tables WHERE schemaname=current_schema()");
@@ -41,6 +41,22 @@ test("PostgreSQL migrations are executable, repeatable and enforce tenant relati
   await assert.rejects(()=>pool.query("UPDATE market_reports SET report_data='{}'::jsonb WHERE id=$1",[snapshot.rows[0].id]),/immutable/i);
   const membership=await pool.query("INSERT INTO workspace_members(workspace_id,user_id,role) VALUES($1,$2,'owner')",[workspaceA,userId]);
   assert.equal(membership.rowCount,1);
+  const audit=await pool.query("INSERT INTO audit_logs(workspace_id,actor_user_id,event_type,resource_type,resource_id,metadata) VALUES($1,$2,'integration.created','workspace',$1,'{"source":"migration-test"}'::jsonb) RETURNING id",[workspaceA,userId]);
+  auditId=audit.rows[0].id;
+  await assert.rejects(()=>pool.query("UPDATE audit_logs SET metadata='{}'::jsonb WHERE id=$1",[auditId]),/immutable/i);
+  await assert.rejects(()=>pool.query("DELETE FROM audit_logs WHERE id=$1",[auditId]),/immutable/i);
+  await assert.rejects(()=>pool.query("TRUNCATE audit_logs"),/immutable/i);
+  await pool.query("DELETE FROM workspaces WHERE id=$1",[workspaceA]);
+  workspaceA=null;
+  const retained=await pool.query("SELECT workspace_id,actor_user_id,event_type,metadata FROM audit_logs WHERE id=$1",[auditId]);
+  assert.equal(retained.rows[0].workspace_id,null);
+  assert.equal(retained.rows[0].actor_user_id,userId);
+  assert.equal(retained.rows[0].event_type,"integration.created");
+  assert.deepEqual(retained.rows[0].metadata,{source:"migration-test"});
+  await pool.query("DELETE FROM users WHERE id=$1",[userId]);
+  userId=null;
+  const afterActorRemoval=await pool.query("SELECT actor_user_id FROM audit_logs WHERE id=$1",[auditId]);
+  assert.equal(afterActorRemoval.rows[0].actor_user_id,null);
  }finally{
   if(workspaceA)await pool.query("DELETE FROM workspaces WHERE id=$1",[workspaceA]);
   if(workspaceB)await pool.query("DELETE FROM workspaces WHERE id=$1",[workspaceB]);

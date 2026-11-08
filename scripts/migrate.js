@@ -51,10 +51,11 @@ export async function applyMigrations(pool, migrationsDirectory = new URL("../da
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
   const config = loadConfig();
-  if (!config.databaseUrl) throw new Error("Configura DATABASE_URL antes de ejecutar migraciones.");
+  const migrationUrl = config.migrationDatabaseUrl || (config.nodeEnv === "production" ? "" : config.databaseUrl);
+  if (!migrationUrl) throw new Error("Configura MIGRATION_DATABASE_URL para ejecutar migraciones (obligatorio en producción).");
   const { Pool } = pg;
   const pool = new Pool({
-    connectionString: config.databaseUrl,
+    connectionString: migrationUrl,
     ssl: config.databaseSsl ? { rejectUnauthorized: true } : false
   });
   try {

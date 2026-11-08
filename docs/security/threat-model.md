@@ -39,7 +39,7 @@ La API ya aplica autenticación Bearer, autorización por rol y comprobaciones d
 | Exposición de secretos o acceso directo a datos | Alto | Credenciales configuradas por entorno; conexión desde backend | No hay entorno productivo ni secret manager verificado. Usar secretos de despliegue, red privada y rol PostgreSQL de mínimo privilegio. No exponer credenciales al cliente. |
 | Manipulación de informes históricos | Medio | Snapshots versionados, hash SHA-256 y bloqueo de actualización | Mantener pruebas de integridad y restringir privilegios de escritura directa a tablas de snapshots. |
 | Denegación de servicio por cuerpos o solicitudes lentas | Medio | Límite de cuerpo 1 MiB, timeout HTTP y rate limit | Añadir pruebas de carga, límites de conexión y métricas al preparar hosting. |
-| Falta de detección de incidentes | Alto | Auditoría de acciones de negocio | Faltan métricas, trazas, alertas, retención y procedimiento de respuesta. |
+| Falta de detección de incidentes | Alto | Auditoría de acciones de negocio | Ya existen métricas HTTP Prometheus, correlación básica W3C traceparent y logs estructurados; siguen pendientes alertas, retención definida y procedimiento de respuesta. |
 
 ## 5. Controles observados en código
 
@@ -57,7 +57,7 @@ La API ya aplica autenticación Bearer, autorización por rol y comprobaciones d
 3. Decidir y probar RLS si se habilita acceso directo desde clientes; mantener la API como frontera de autorización mientras tanto.
 4. Sustituir el rate limiter en memoria por un almacén compartido cuando exista más de una instancia.
 5. Configurar proxy de confianza de forma explícita al desplegar detrás de un balanceador.
-6. Añadir métricas, trazas, alertas, copias de seguridad y pruebas de restauración.
+6. Configurar alertas y retención, y establecer copias de seguridad automáticas con pruebas documentadas de restauración.
 7. Ejecutar pruebas de carga y una revisión de seguridad externa antes de abrir el servicio.
 
 ## 7. Criterios de aceptación

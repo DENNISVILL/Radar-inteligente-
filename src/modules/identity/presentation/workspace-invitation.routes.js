@@ -3,6 +3,7 @@ import {acceptWorkspaceInvitation,createWorkspaceInvitation,listWorkspaceInvitat
 
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const managers=["owner","admin"];
+function queryLimit(value){const limit=value===undefined?50:Number(value);return Number.isInteger(limit)&&limit>=1&&limit<=100?limit:null;}
 async function authorize(options,request,reply){
  if(!uuid.test(request.params.workspaceId)){reply.code(400).send({error:"INVALID_WORKSPACE_ID",message:"El identificador del espacio no es válido."});return null;}
  const member=await findWorkspaceAccess(options.database,request.identity.subject,request.params.workspaceId);
@@ -32,7 +33,9 @@ export async function workspaceInvitationRoutes(app,options){
  const auth={preHandler:(r,p)=>options.requireIdentity(r,p)};
  app.get("/api/v1/workspaces/:workspaceId/invitations",auth,async(r,p)=>{
   if(!await authorize(options,r,p))return;
-  return {data:await listWorkspaceInvitations(options.database,r.params.workspaceId)};
+  const limit=queryLimit(r.query?.limit);
+  if(limit===null)return p.code(400).send({error:"INVALID_LIMIT",message:"El límite debe ser un número entero entre 1 y 100."});
+  return {data:await listWorkspaceInvitations(options.database,r.params.workspaceId,{limit})};
  });
  app.post("/api/v1/workspaces/:workspaceId/invitations",auth,async(r,p)=>{
   const actor=await authorize(options,r,p);if(!actor)return;

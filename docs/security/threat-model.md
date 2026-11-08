@@ -80,3 +80,14 @@ La API ya aplica autenticación Bearer, autorización por rol y comprobaciones d
 - Los triggers protegen contra operaciones SQL ordinarias de la aplicación, no contra un propietario/superusuario de PostgreSQL que pueda desactivar triggers o alterar el esquema. En producción se requiere un rol de runtime que no sea propietario de tablas ni tenga privilegios DDL, además de credenciales administrativas separadas y acceso restringido.
 - Los registros de auditoría contienen metadatos de negocio: evitar incluir tokens, contraseñas, cabeceras de autenticación, datos personales innecesarios o contenido íntegro de documentos.
 - La inmutabilidad no sustituye copias de seguridad, retención legal, exportación externa ni almacenamiento WORM. Definir retención y destino de respaldo antes de producción.
+
+
+## 9. Revalidación transaccional de membresía (TOCTOU)
+
+- Las escrituras de investigación y de inteligencia comercial revalidan la membresía dentro de la misma transacción que modifica el recurso y registra la auditoría.
+- La transacción bloquea primero la fila de `workspaces` (`FOR UPDATE`) y después la membresía del actor (`FOR UPDATE OF wm`). Este orden coincide con las operaciones de alta/baja/cambio de miembros e invitaciones que ya bloquean primero el workspace.
+- La ruta de snapshots de informes usa el mismo orden de bloqueo y revalida el rol antes de consultar la evidencia y guardar el snapshot.
+- Roles autorizados para escrituras de negocio: owner, admin y analyst. Si la membresía desapareció, la cuenta fue deshabilitada o el rol cambió a viewer, la operación termina con 403 y rollback antes de ejecutar la mutación.
+- Las escrituras de negocio de estos módulos pasan por el mismo bloqueo de workspace; esto también serializa cambios de datos del workspace mientras se construye un snapshot, conservando una vista coherente sin mantener un snapshot REPEATABLE READ anterior a la revalidación de membresía.
+- Se añadieron pruebas unitarias para membresía revocada/degradada y una prueba de integración PostgreSQL que confirma que una persona eliminada del workspace no puede insertar el recurso ni su auditoría.
+- Este control cubre las mutaciones de investigación, inteligencia comercial y snapshots. Las lecturas HTTP siguen usando autorización previa y consultas filtradas por workspace; si se habilita acceso directo de clientes a PostgreSQL, se deberá diseñar y probar RLS con claims de tenant confiables, no confiar en el UUID enviado por el navegador.

@@ -2,6 +2,7 @@ import { access, chmod, stat, open, unlink } from "node:fs/promises";
 import { constants } from "node:fs";
 import { spawn } from "node:child_process";
 import { resolve } from "node:path";
+import { withPostgresCliEnv } from "./postgres-cli.js";
 
 function run(command, args, extraEnv = {}) {
   return new Promise((resolvePromise, reject) => {
@@ -31,8 +32,7 @@ try {
   const handle = await open(target, "wx", 0o600);
   await handle.close();
   created = true;
-  // Keep the connection URL (and password) out of process arguments; libpq reads PGDATABASE.
-  await run("pg_dump", backupArguments(target), { PGDATABASE: connection });
+  await withPostgresCliEnv(connection, env => run("pg_dump", backupArguments(target), env));
   await chmod(target, 0o600);
   const info = await stat(target);
   if (info.size === 0) throw new Error("El archivo de respaldo quedó vacío.");

@@ -80,6 +80,9 @@ La API ya aplica autenticación Bearer, autorización por rol y comprobaciones d
 - Los triggers protegen contra operaciones SQL ordinarias de la aplicación, no contra un propietario/superusuario de PostgreSQL que pueda desactivar triggers o alterar el esquema. En producción se requiere un rol de runtime que no sea propietario de tablas ni tenga privilegios DDL, además de credenciales administrativas separadas y acceso restringido.
 - Los registros de auditoría contienen metadatos de negocio: evitar incluir tokens, contraseñas, cabeceras de autenticación, datos personales innecesarios o contenido íntegro de documentos.
 - La inmutabilidad no sustituye copias de seguridad, retención legal, exportación externa ni almacenamiento WORM. Definir retención y destino de respaldo antes de producción.
+- La exportación `GET /api/v1/workspaces/{workspaceId}/audit-logs/export` aplica la misma autorización owner/admin y la misma revalidación transaccional workspace → membresía que la lectura paginada. Devuelve NDJSON por página (máximo 100 eventos), con serialización determinista, SHA-256 del cuerpo exacto, contador y cursor de continuación. El hash permite detectar alteraciones del archivo exportado, pero no acredita por sí solo quién produjo el archivo ni sustituye una firma digital.
+- La exportación se realiza por páginas y no ofrece descarga ilimitada en una sola respuesta. El cliente debe conservar cada página y su digest, y solicitar la siguiente mediante el cursor devuelto. El endpoint no modifica ni elimina eventos.
+
 
 
 ## 9. Revalidación transaccional de membresía (TOCTOU)

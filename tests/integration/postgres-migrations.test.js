@@ -247,3 +247,38 @@ test("PostgreSQL serializes invitation acceptance against revocation using one l
   await pool.end();
  }
 });
+
+
+test("PostgreSQL migration runner grants runtime DML but protects audit and migration history",{
+ skip:!process.env.TEST_DATABASE_URL
+},async()=>{
+ const pool=new pg.Pool({connectionString:process.env.TEST_DATABASE_URL});
+ let createdRole=false;
+ try{
+  const existing=await pool.query("SELECT 1 FROM pg_roles WHERE rolname='radar_runtime'");
+  if(existing.rowCount===0){await pool.query("CREATE ROLE radar_runtime NOLOGIN");createdRole=true;}
+  await applyMigrations(pool);
+  const privileges=await pool.query(`
+   SELECT
+    has_table_privilege('radar_runtime','workspaces','SELECT') AS can_read_workspaces,
+    has_table_privilege('radar_runtime','workspaces','INSERT') AS can_insert_workspaces,
+    has_table_privilege('radar_runtime','workspaces','UPDATE') AS can_update_workspaces,
+    has_table_privilege('radar_runtime','workspaces','DELETE') AS can_delete_workspaces,
+    has_table_privilege('radar_runtime','audit_logs','INSERT') AS can_append_audit,
+    has_table_privilege('radar_runtime','audit_logs','SELECT') AS can_read_audit,
+    has_table_privilege('radar_runtime','audit_logs','UPDATE') AS can_update_audit,
+    has_table_privilege('radar_runtime','audit_logs','DELETE') AS can_delete_audit,
+    has_table_privilege('radar_runtime','audit_logs','TRUNCATE') AS can_truncate_audit,
+    has_table_privilege('radar_runtime','schema_migrations','SELECT') AS can_read_migrations,
+    has_schema_privilege('radar_runtime','public','CREATE') AS can_create_objects
+  `);
+  assert.deepEqual(privileges.rows[0],{
+   can_read_workspaces:true,can_insert_workspaces:true,can_update_workspaces:true,can_delete_workspaces:true,
+   can_append_audit:true,can_read_audit:false,can_update_audit:false,can_delete_audit:false,can_truncate_audit:false,
+   can_read_migrations:false,can_create_objects:false
+  });
+ }finally{
+  if(createdRole)await pool.query("DROP ROLE radar_runtime");
+  await pool.end();
+ }
+});

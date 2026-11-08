@@ -20,17 +20,8 @@ GRANT USAGE, CREATE ON SCHEMA public TO radar_migration_owner;
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 GRANT USAGE ON SCHEMA public TO radar_runtime;
 
--- Privilegios DML mínimos sobre las tablas de la aplicación existentes.
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO radar_runtime;
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO radar_runtime;
-
--- El runtime puede generar eventos, pero no leerlos ni reescribirlos/borrarlos.
-REVOKE ALL ON TABLE audit_logs FROM radar_runtime;
-GRANT INSERT ON TABLE audit_logs TO radar_runtime;
-
--- La API nunca administra el historial de migraciones.
-REVOKE ALL ON TABLE schema_migrations FROM radar_runtime;
-
+-- Los grants sobre tablas existentes y las excepciones para auditoría se
+-- aplican automáticamente al terminar npm run db:migrate.
 -- Los objetos futuros creados por radar_migration_owner heredan permisos DML
 -- para runtime; aplicar excepciones explícitas a tablas sensibles en cada migración.
 ALTER DEFAULT PRIVILEGES FOR ROLE radar_migration_owner IN SCHEMA public

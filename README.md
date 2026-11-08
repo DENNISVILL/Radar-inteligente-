@@ -25,7 +25,7 @@ El backend está en desarrollo y cuenta con una base funcional: autenticación m
 4. Ejecuta `npm run db:migrate`.
 5. Inicia con `npm run dev`.
 
-Comandos disponibles: `npm test`, `npm run check`, `npm start`.
+Comandos disponibles: `npm test`, `npm run check`, `npm run perf` (baseline de rendimiento con `TEST_DATABASE_URL`) y `npm start`.
 
 Rutas de salud: `GET /health` y `GET /ready`. Métricas Prometheus: `GET /metrics` (configurable con `METRICS_ENABLED=true|false`).
 
@@ -56,4 +56,4 @@ Los análisis actuales son descriptivos y dependen de los datos y fuentes que se
 - No hay todavía frontend, despliegue productivo ni políticas RLS configuradas en un proyecto Supabase.
 - Los hashes de integridad ayudan a detectar cambios, pero no equivalen a firmas digitales ni sustituyen controles de acceso.
 
-Consulta `docs/backend/implementation-plan.md` para ver el avance y los pendientes.
+Consulta `docs/backend/implementation-plan.md` para ver el avance y los pendientes, y `docs/backend/performance-baseline.md` para reproducir y entender la medición de rendimiento.

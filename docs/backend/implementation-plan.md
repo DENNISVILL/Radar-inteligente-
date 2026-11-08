@@ -37,7 +37,7 @@ Este porcentaje mide únicamente el trabajo de API, lógica de aplicación, vali
 - [x] Métricas HTTP Prometheus, histogramas de latencia, correlación W3C traceparent, identificadores de traza y logs estructurados; validados en CI.
 - [ ] Pruebas de carga y rendimiento con datos representativos.
 
-**Criterio del porcentaje:** 28 de 29 entregables backend completados = 96,6 %. Solo queda la validación de carga y rendimiento; no se descuentan tareas de frontend ni la configuración de la base de datos/Supabase.
+**Criterio del porcentaje:** 29 de 29 entregables principales de esta fase backend completados = 100 %. Este cierre no significa que el producto esté listo para producción: siguen pendientes alertas, recuperación probada, integraciones externas, frontend y despliegue.
 
 ## Principios
 

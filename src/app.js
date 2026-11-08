@@ -7,6 +7,14 @@ import { healthRoutes } from "./modules/health/presentation/health.routes.js";
 import { identityRoutes } from "./modules/identity/presentation/identity.routes.js";
 export function buildApp({ config = loadConfig(), database = getPool(config), logger = true } = {}) {
   const app = Fastify({ logger: logger ? { level: config.logLevel, redact: ["req.headers.authorization", "req.headers.cookie"] } : false, bodyLimit: 1048576, requestTimeout: 15000 });
+  app.addHook("onSend", async (_request, reply, payload) => {
+    reply.header("Cache-Control", "no-store");
+    reply.header("X-Content-Type-Options", "nosniff");
+    reply.header("X-Frame-Options", "DENY");
+    reply.header("Referrer-Policy", "no-referrer");
+    reply.header("Cross-Origin-Resource-Policy", "same-origin");
+    return payload;
+  });
   registerObservability(app, { metricsEnabled: config.metricsEnabled });
   app.addHook("preHandler",createRateLimiter({
     maxRequests:config.rateLimitMax,

@@ -84,3 +84,46 @@ test("a non-member cannot mutate market data in another workspace",async()=>{
   assert.equal(calls.some(call=>call.sql.includes("INSERT INTO competitors")||call.sql.includes("INSERT INTO audit_logs")),false);
  } finally {await app.close();}
 });
+
+
+test("a product identifier from another workspace cannot expose its price history",async()=>{
+ const {app,calls}=await buildApp();
+ try{
+  const foreignProductId="55555555-5555-4555-8555-555555555555";
+  const response=await app.inject({method:"GET",url:`/api/v1/workspaces/${workspaceA}/products/${foreignProductId}/prices`});
+  assert.equal(response.statusCode,200);
+  assert.deepEqual(response.json().data,[]);
+  const query=calls.find(call=>call.sql.includes("FROM price_observations"));
+  assert.ok(query);
+  assert.deepEqual(query.values,[workspaceA,foreignProductId,50]);
+  assert.match(query.sql,/workspace_id=\$1 AND product_id=\$2/);
+ }finally{await app.close();}
+});
+
+test("observation filters remain scoped to the authenticated workspace and research",async()=>{
+ const {app,calls}=await buildApp();
+ try{
+  const foreignCompetitorId="55555555-5555-4555-8555-555555555555";
+  const response=await app.inject({method:"GET",url:`/api/v1/workspaces/${workspaceA}/researches/${researchId}/observations?competitorId=${foreignCompetitorId}`});
+  assert.equal(response.statusCode,200);
+  assert.deepEqual(response.json().data,[]);
+  const query=calls.find(call=>call.sql.includes("FROM market_observations"));
+  assert.ok(query);
+  assert.deepEqual(query.values,[workspaceA,researchId,foreignCompetitorId,50]);
+  assert.match(query.sql,/workspace_id=\$1 AND research_id=\$2 AND competitor_id=\$3/);
+ }finally{await app.close();}
+});
+
+test("market analysis queries constrain every resource to the requested workspace",async()=>{
+ const {app,calls}=await buildApp();
+ try{
+  const response=await app.inject({method:"GET",url:`/api/v1/workspaces/${workspaceA}/researches/${researchId}/analysis`});
+  assert.equal(response.statusCode,200);
+  const analysisQueries=calls.filter(call=>/FROM competitors c|FROM market_products p|FROM market_observations/.test(call.sql));
+  assert.ok(analysisQueries.length>=3);
+  for(const query of analysisQueries){
+   assert.ok(query.values.includes(workspaceA),query.sql);
+   assert.match(query.sql,/workspace_id|c\.workspace_id|p\.workspace_id/);
+  }
+ }finally{await app.close();}
+});

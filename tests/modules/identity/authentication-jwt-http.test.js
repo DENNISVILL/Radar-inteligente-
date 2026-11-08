@@ -160,3 +160,112 @@ test("JWKS provider outages return 503 instead of misclassifying valid sessions 
     await new Promise(resolve => server.close(resolve));
   }
 });
+
+
+test("live Supabase session introspection detects revoked sessions and requires confirmed email for invitations", async () => {
+  const { publicKey, privateKey } = await generateKeyPair("RS256");
+  const jwk = await exportJWK(publicKey);
+  const keyId = "radar-session-lifecycle-key";
+  let userStatus = 200;
+  let disabledLocalAccount = false;
+  const seenHeaders = [];
+  const server = createServer((request, response) => {
+    if (request.url === "/auth/v1/.well-known/jwks.json") {
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify({ keys: [{ ...jwk, kid: keyId, alg: "RS256", use: "sig" }] }));
+      return;
+    }
+    if (request.url === "/auth/v1/user") {
+      seenHeaders.push({ apikey: request.headers.apikey, authorization: request.headers.authorization });
+      if (userStatus !== 200) {
+        response.writeHead(userStatus, { "content-type": "application/json" });
+        response.end(JSON.stringify({ message: "auth response" }));
+        return;
+      }
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify({
+        id: "auth-user-session",
+        email: "confirmed@example.test",
+        email_confirmed_at: null
+      }));
+      return;
+    }
+    response.writeHead(404).end();
+  });
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  const address = server.address();
+  const supabaseUrl = `http://127.0.0.1:${address.port}`;
+  const database = {
+    async query(sql) {
+      if (sql.includes("FROM users WHERE auth_subject")) {
+        return { rows: disabledLocalAccount ? [{ status: "disabled" }] : [{ status: "active" }] };
+      }
+      return { rows: [] };
+    },
+    async connect() {
+      throw new Error("No debe abrirse una transacción en la prueba de sesión.");
+    }
+  };
+  const app = Fastify({ logger: false });
+  try {
+    await app.register(identityRoutes, {
+      database,
+      config: {
+        supabaseUrl,
+        supabaseApiKey: "sb_publishable_test",
+        supabaseJwtMaxAgeSeconds: 3600
+      }
+    });
+    await app.ready();
+    const jwt = await new SignJWT({
+      email: "untrusted-claim@example.test",
+      role: "authenticated",
+      session_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+    })
+      .setProtectedHeader({ alg: "RS256", kid: keyId })
+      .setIssuer(`${supabaseUrl}/auth/v1`)
+      .setAudience("authenticated")
+      .setSubject("auth-user-session")
+      .setIssuedAt()
+      .setExpirationTime("5m")
+      .sign(privateKey);
+    const headers = { authorization: `Bearer ${jwt}` };
+
+    const me = await app.inject({ method: "GET", url: "/api/v1/me", headers });
+    assert.equal(me.statusCode, 200);
+    assert.equal(me.json().email, "confirmed@example.test");
+    assert.equal(seenHeaders[0].apikey, "sb_publishable_test");
+    assert.equal(seenHeaders[0].authorization, `Bearer ${jwt}`);
+
+    const invitation = await app.inject({
+      method: "POST",
+      url: "/api/v1/invitations/accept",
+      headers,
+      payload: { token: "a".repeat(48) }
+    });
+    assert.equal(invitation.statusCode, 403);
+    assert.equal(invitation.json().error, "EMAIL_NOT_CONFIRMED");
+
+    disabledLocalAccount = true;
+    const disabled = await app.inject({ method: "GET", url: "/api/v1/me", headers });
+    assert.equal(disabled.statusCode, 403);
+    assert.equal(disabled.json().error, "ACCOUNT_DISABLED");
+
+    disabledLocalAccount = false;
+    userStatus = 401;
+    const revoked = await app.inject({ method: "GET", url: "/api/v1/me", headers });
+    assert.equal(revoked.statusCode, 401);
+    assert.equal(revoked.json().error, "INVALID_TOKEN");
+
+    userStatus = 503;
+    const unavailable = await app.inject({ method: "GET", url: "/api/v1/me", headers });
+    assert.equal(unavailable.statusCode, 503);
+    assert.equal(unavailable.json().error, "AUTH_PROVIDER_UNAVAILABLE");
+  } finally {
+    await app.close();
+    await new Promise(resolve => server.close(resolve));
+  }
+});

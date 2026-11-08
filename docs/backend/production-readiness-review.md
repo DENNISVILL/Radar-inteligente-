@@ -221,3 +221,12 @@ El cierre de 29/29 entregables describe la fase principal de construcción del b
 - Se conserva el borrado en cascada cuando se elimina la investigación o el workspace padre; el trigger distingue la acción referencial mediante la profundidad de triggers de PostgreSQL.
 - Se añadieron pruebas: verificación estática de la migración y una prueba de integración PostgreSQL que confirma que el borrado directo falla, el snapshot permanece y la eliminación del padre sí ejecuta la cascada.
 - **Alcance:** la protección cubre DML ordinario del rol runtime. Un superusuario/propietario de esquema puede alterar triggers o migraciones; se mantiene la separación de roles y el control de acceso administrativo como requisito operativo.
+
+
+## 21. Lectura transaccional y paginada del historial de auditoría (2026-11-08)
+
+- La revisión detectó que la ruta de auditoría ya existía, pero la documentación de amenazas decía erróneamente que no había endpoint. También se identificó que la lectura se autorizaba antes de consultar los eventos, dejando una ventana TOCTOU frente a la revocación simultánea de membresía, y que solo podía consultarse la primera página.
+- La consulta ahora inicia una transacción y bloquea primero el workspace activo (`FOR UPDATE`) y después la membresía (`FOR UPDATE OF wm`), en el mismo orden que las escrituras y cambios de membresía. Si el workspace dejó de estar activo o el actor no conserva rol owner/admin, revierte sin consultar auditoría.
+- La paginación usa cursor keyset por `(created_at,id)` descendente, límite por defecto 50 y máximo 100. Se obtiene un registro adicional para determinar si existe página siguiente; `nextCursor` es opaco, se valida antes de abrir conexión y no usa offsets crecientes.
+- La especificación OpenAPI y el modelo de amenazas reflejan el endpoint real y su política de acceso. Se añadieron pruebas de servicio y HTTP para orden de bloqueos, denegación por rol, workspace inactivo, paginación y cursor inválido.
+- **Límite:** esto serializa la lectura respecto de operaciones que respetan el bloqueo de workspace. El acceso SQL administrativo puede saltarse el protocolo de aplicación; los triggers de inmutabilidad y la separación de roles siguen siendo necesarios.

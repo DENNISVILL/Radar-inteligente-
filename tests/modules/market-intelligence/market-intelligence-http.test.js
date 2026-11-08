@@ -128,7 +128,7 @@ test("viewer is denied every market-intelligence mutation before identity creati
  }finally{await app.close();}
 });
 
-test("admin can create market intelligence records",async()=>{
+test("owner can create market intelligence records",async()=>{
  const {app,calls}=await buildApp({role:"owner"});
  try{
   const response=await app.inject({method:"POST",url:`/api/v1/workspaces/${workspaceId}/competitors`,payload:{name:"Competidor"}});

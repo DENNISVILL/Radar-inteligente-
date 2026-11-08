@@ -6,13 +6,21 @@ export async function listWorkspaceMembers(database,workspaceId){
  ORDER BY CASE wm.role WHEN 'owner' THEN 1 WHEN 'admin' THEN 2 WHEN 'analyst' THEN 3 ELSE 4 END,u.email`,[workspaceId]);
  return result.rows;
 }
-async function lockWorkspace(database,workspaceId){
+async function lockWorkspace(database,workspaceId,actorSubject){
  const client=await database.connect();
  try{
   await client.query("BEGIN");
-  const result=await client.query("SELECT id FROM workspaces WHERE id=$1 AND status='active' FOR UPDATE",[workspaceId]);
-  if(!result.rows[0]){await client.query("ROLLBACK");client.release();return null;}
-  return client;
+  const workspace=await client.query("SELECT id FROM workspaces WHERE id=$1 AND status='active' FOR UPDATE",[workspaceId]);
+  if(!workspace.rows[0]){await client.query("ROLLBACK");client.release();return null;}
+  const actor=await client.query(`SELECT wm.role
+   FROM workspace_members wm JOIN users u ON u.id=wm.user_id
+   WHERE wm.workspace_id=$1 AND u.auth_subject=$2 AND u.status='active'
+   FOR UPDATE OF wm`,[workspaceId,actorSubject]);
+  const actorRole=actor.rows[0]?.role;
+  if(!["owner","admin"].includes(actorRole)){
+   await client.query("ROLLBACK");client.release();return {error:"FORBIDDEN"};
+  }
+  return {client,actorRole};
  }catch(error){try{await client.query("ROLLBACK");}finally{client.release();}throw error;}
 }
 async function writeAudit(client,workspaceId,actorSubject,eventType,userId,metadata){
@@ -23,7 +31,7 @@ async function writeAudit(client,workspaceId,actorSubject,eventType,userId,metad
 export async function addWorkspaceMember(database,{workspaceId,email,role,actorRole,actorSubject}){
  if(!manageable.includes(role))return {error:"INVALID_ROLE"};
  if(actorRole==="admin"&&role!=="analyst"&&role!=="viewer")return {error:"FORBIDDEN_ROLE"};
- const client=await lockWorkspace(database,workspaceId);if(!client)return null;
+ const locked=await lockWorkspace(database,workspaceId,actorSubject);if(!locked||locked.error)return locked;const {client,actorRole:currentActorRole}=locked;
  try{
   const target=await client.query("SELECT id,email,display_name,status FROM users WHERE lower(email)=lower($1) LIMIT 1",[email]);
   if(!target.rows[0]||target.rows[0].status!=="active"){await client.query("ROLLBACK");return {error:"USER_NOT_FOUND"};}
@@ -43,7 +51,7 @@ export async function updateWorkspaceMemberRole(database,{workspaceId,userId,rol
  try{
   const target=await client.query("SELECT role FROM workspace_members WHERE workspace_id=$1 AND user_id=$2 FOR UPDATE",[workspaceId,userId]);
   if(!target.rows[0]){await client.query("ROLLBACK");return null;}
-  if(target.rows[0].role==="owner"&&actorRole!=="owner"){await client.query("ROLLBACK");return {error:"FORBIDDEN_ROLE"};}
+  if(target.rows[0].role==="owner"&&currentActorRole!=="owner"){await client.query("ROLLBACK");return {error:"FORBIDDEN_ROLE"};}
   if(target.rows[0].role==="owner"&&role!=="owner"){
    const count=await client.query("SELECT COUNT(*)::int AS total FROM workspace_members WHERE workspace_id=$1 AND role='owner'",[workspaceId]);
    if(count.rows[0].total<=1){await client.query("ROLLBACK");return {error:"LAST_OWNER"};}
@@ -59,7 +67,7 @@ export async function removeWorkspaceMember(database,{workspaceId,userId,actorRo
   const target=await client.query("SELECT role FROM workspace_members WHERE workspace_id=$1 AND user_id=$2 FOR UPDATE",[workspaceId,userId]);
   if(!target.rows[0]){await client.query("ROLLBACK");return null;}
   if(target.rows[0].role==="owner"){
-   if(actorRole!=="owner"){await client.query("ROLLBACK");return {error:"FORBIDDEN_ROLE"};}
+   if(currentActorRole!=="owner"){await client.query("ROLLBACK");return {error:"FORBIDDEN_ROLE"};}
    const count=await client.query("SELECT COUNT(*)::int AS total FROM workspace_members WHERE workspace_id=$1 AND role='owner'",[workspaceId]);
    if(count.rows[0].total<=1){await client.query("ROLLBACK");return {error:"LAST_OWNER"};}
   }

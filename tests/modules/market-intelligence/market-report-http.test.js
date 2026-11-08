@@ -74,6 +74,29 @@ test("viewer cannot read workspace audit logs",async()=>{
  }finally{await app.close();}
 });
 
+test("report history rejects invalid limits instead of silently coercing them",async()=>{
+ const {app,calls}=await buildApp({role:"viewer"});
+ try{
+  for(const value of ["0","51","1.5","abc","2abc"]){
+   const response=await app.inject({method:"GET",url:"/api/v1/workspaces/"+workspaceA+"/researches/"+researchId+"/reports?limit="+value});
+   assert.equal(response.statusCode,400,value);
+   assert.equal(response.json().error,"INVALID_LIMIT",value);
+  }
+  assert.equal(calls.some(call=>call.sql.includes("FROM market_reports")),false);
+ }finally{await app.close();}
+});
+
+test("audit log history rejects invalid limits instead of silently coercing them",async()=>{
+ const {app,calls}=await buildApp({role:"admin"});
+ try{
+  for(const value of ["0","101","1.5","abc","2abc"]){
+   const response=await app.inject({method:"GET",url:"/api/v1/workspaces/"+workspaceA+"/audit-logs?limit="+value});
+   assert.equal(response.statusCode,400,value);
+   assert.equal(response.json().error,"INVALID_LIMIT",value);
+  }
+  assert.equal(calls.some(call=>call.sql.includes("FROM audit_logs")),false);
+ }finally{await app.close();}
+});
 test("malformed report identifiers are rejected before querying snapshots",async()=>{
  const {app,calls}=await buildApp();
  try{

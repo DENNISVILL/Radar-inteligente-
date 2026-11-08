@@ -85,3 +85,14 @@ test("rate limiter preserves active client windows when bucket capacity is reach
  reply=fakeReply();await limit({ip:"192.0.2.11",routeOptions:{url:"/api/v1/me"}},reply);
  assert.equal(reply.statusCode,200);
 });
+
+test("unmatched URLs share one bounded rate-limit bucket per IP",async()=>{
+ const limit=createRateLimiter({maxRequests:1,windowMs:10_000,now:()=>20_000,maxBuckets:2});
+ let reply=fakeReply();
+ await limit({ip:"192.0.2.20",url:"/random-path-one",routeOptions:{}},reply);
+ assert.equal(reply.statusCode,200);
+ reply=fakeReply();
+ await limit({ip:"192.0.2.20",url:"/random-path-two?x=1",routeOptions:{}},reply);
+ assert.equal(reply.statusCode,429);
+ assert.equal(reply.payload.error,"RATE_LIMITED");
+});

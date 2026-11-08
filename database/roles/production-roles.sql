@@ -18,6 +18,9 @@ WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'radar_runtime') \gexec
 SELECT format('ALTER ROLE radar_runtime LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L', :'runtime_password') \gexec
 
 GRANT CONNECT ON DATABASE :"database_name" TO radar_migration_owner, radar_runtime;
+-- La migración inicial instala pgcrypto; CREATE en la base permite crear extensiones.
+-- Esta facultad se mantiene solo en la credencial de migraciones, nunca en runtime.
+GRANT CREATE ON DATABASE :"database_name" TO radar_migration_owner;
 
 -- Solo el propietario de migraciones puede crear/alterar objetos del esquema.
 GRANT USAGE, CREATE ON SCHEMA public TO radar_migration_owner;

@@ -14,7 +14,7 @@ En producción, el comando de migraciones falla si no se define `MIGRATION_DATAB
 Este procedimiento está pensado para una base PostgreSQL nueva y vacía, antes de ejecutar la primera migración. Los proveedores administrados pueden reservar el esquema `public` o limitar la creación de roles; en ese caso, adaptar el procedimiento con el administrador del proveedor.
 
 1. Crear la base de datos desde el panel/proveedor.
-2. Ejecutar `database/roles/production-roles.sql` una sola vez, conectado a esa base como administrador. El script crea dos roles sin superusuario ni permisos para crear bases o roles. Las contraseñas se leen de las variables de entorno `MIGRATION_DB_PASSWORD` y `RUNTIME_DB_PASSWORD`; no se guardan en Git.
+2. Ejecutar `database/roles/production-roles.sql` una sola vez, conectado a esa base como administrador. El script crea dos roles sin superusuario ni permisos para crear bases o roles ni omitir RLS (`NOBYPASSRLS`). También revoca explícitamente `CREATE` sobre la base al rol runtime y a `PUBLIC`; solo el rol de migraciones recibe `CREATE` para instalar extensiones y gestionar el esquema. Las contraseñas se leen de las variables de entorno `MIGRATION_DB_PASSWORD` y `RUNTIME_DB_PASSWORD`; no se guardan en Git.
 3. Configurar `MIGRATION_DATABASE_URL` con el usuario `radar_migration_owner` y `DATABASE_URL` con `radar_runtime`. Activar `DB_SSL=true` cuando el proveedor exija TLS y la cadena de certificados sea verificable.
 4. Ejecutar `npm run db:migrate` usando la credencial de migraciones.
 5. Arrancar la API únicamente con `DATABASE_URL`; no inyectar `MIGRATION_DATABASE_URL` en el servicio web.
@@ -29,7 +29,8 @@ El rol `radar_migration_owner` tiene `CREATE` en la base únicamente para poder 
 - USAGE/SELECT sobre secuencias.
 - Solo INSERT sobre `audit_logs`; no puede leer, actualizar, borrar ni truncar el historial.
 - Ningún permiso sobre `schema_migrations`.
-- Ningún permiso CREATE sobre el esquema `public`.
+- Ningún permiso CREATE sobre el esquema `public` ni sobre la base de datos.
+- Atributos de rol `NOSUPERUSER`, `NOCREATEDB`, `NOCREATEROLE`, `NOREPLICATION` y `NOBYPASSRLS`.
 
 El script de aprovisionamiento configura privilegios por defecto para tablas y secuencias futuras creadas por `radar_migration_owner`. La rutina de migración vuelve a aplicar los grants operativos y las excepciones de auditoría tras cada ejecución. Al añadir tablas sensibles nuevas, revisar expresamente sus grants.
 

@@ -2,10 +2,12 @@ import Fastify from "fastify";
 import { loadConfig } from "./config/env.js";
 import { getPool } from "./infrastructure/database/pool.js";
 import { createRateLimiter } from "./infrastructure/http/rate-limit.js";
+import { registerObservability } from "./infrastructure/observability/instrumentation.js";
 import { healthRoutes } from "./modules/health/presentation/health.routes.js";
 import { identityRoutes } from "./modules/identity/presentation/identity.routes.js";
 export function buildApp({ config = loadConfig(), database = getPool(config), logger = true } = {}) {
   const app = Fastify({ logger: logger ? { level: config.logLevel, redact: ["req.headers.authorization", "req.headers.cookie"] } : false, bodyLimit: 1048576, requestTimeout: 15000 });
+  registerObservability(app, { metricsEnabled: config.metricsEnabled });
   app.addHook("preHandler",createRateLimiter({
     maxRequests:config.rateLimitMax,
     authMaxRequests:config.rateLimitAuthMax,

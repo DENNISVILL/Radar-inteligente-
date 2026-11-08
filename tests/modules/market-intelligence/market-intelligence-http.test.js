@@ -104,3 +104,56 @@ test("invalid research identifiers are rejected before workspace membership look
   assert.equal(calls.length,0);
  }finally{await app.close();}
 });
+
+test("viewer is denied every market-intelligence mutation before identity creation or persistence",async()=>{
+ const {app,calls}=await buildApp({role:"viewer"});
+ const requests=[
+  {method:"POST",url:`/api/v1/workspaces/${workspaceId}/competitors`,payload:{name:"Competidor"}},
+  {method:"POST",url:`/api/v1/workspaces/${workspaceId}/products`,payload:{name:"Producto"}},
+  {method:"POST",url:`/api/v1/workspaces/${workspaceId}/products/${productId}/prices`,payload:{price:12,currency:"USD",observedOn:"2026-11-07"}},
+  {method:"PATCH",url:`/api/v1/workspaces/${workspaceId}/competitors/${productId}`,payload:{name:"Cambio"}},
+  {method:"DELETE",url:`/api/v1/workspaces/${workspaceId}/competitors/${productId}`},
+  {method:"PATCH",url:`/api/v1/workspaces/${workspaceId}/products/${productId}`,payload:{name:"Cambio"}},
+  {method:"DELETE",url:`/api/v1/workspaces/${workspaceId}/products/${productId}`},
+  {method:"POST",url:`/api/v1/workspaces/${workspaceId}/researches/${productId}/observations`,payload:{type:"risk",description:"Riesgo"}}
+ ];
+ try{
+  for(const request of requests){
+   const response=await app.inject(request);
+   assert.equal(response.statusCode,403,request.method+" "+request.url);
+   assert.equal(response.json().error,"FORBIDDEN");
+  }
+  assert.equal(calls.some(call=>/INSERT INTO users|INSERT INTO competitors|INSERT INTO market_products|INSERT INTO price_observations|UPDATE competitors|UPDATE market_products|INSERT INTO market_observations|UPDATE market_observations|DELETE FROM/.test(call.sql)),false);
+  assert.equal(calls.some(call=>call.sql==="RELEASE"),false);
+ }finally{await app.close();}
+});
+
+test("analyst can create market intelligence records while viewer remains read-only",async()=>{
+ const {app,calls}=await buildApp({role:"analyst"});
+ try{
+  const response=await app.inject({method:"POST",url:`/api/v1/workspaces/${workspaceId}/competitors`,payload:{name:"Competidor"}});
+  assert.equal(response.statusCode,201);
+  assert.ok(calls.some(call=>call.sql.includes("INSERT INTO users")));
+  assert.ok(calls.some(call=>call.sql.includes("INSERT INTO competitors")));
+ }finally{await app.close();}
+});
+
+test("viewer can read products, price history, observations and market analysis",async()=>{
+ const {app,calls}=await buildApp({role:"viewer"});
+ const urls=[
+  `/api/v1/workspaces/${workspaceId}/products`,
+  `/api/v1/workspaces/${workspaceId}/products/${productId}/prices`,
+  `/api/v1/workspaces/${workspaceId}/researches/${productId}/observations`,
+  `/api/v1/workspaces/${workspaceId}/researches/${productId}/analysis`
+ ];
+ try{
+  for(const url of urls){
+   const response=await app.inject({method:"GET",url});
+   assert.equal(response.statusCode,200,url);
+   assert.ok(Array.isArray(response.json().data),url);
+  }
+  assert.ok(calls.some(call=>call.sql.includes("FROM market_products")));
+  assert.ok(calls.some(call=>call.sql.includes("FROM price_observations")));
+  assert.ok(calls.some(call=>call.sql.includes("FROM market_observations")));
+ }finally{await app.close();}
+});

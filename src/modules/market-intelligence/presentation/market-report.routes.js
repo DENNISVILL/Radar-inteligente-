@@ -1,6 +1,7 @@
 import {ensureIdentityUser} from "../../identity/application/identity-user.js";
 import {canAccessWorkspace,findWorkspaceAccess} from "../../identity/application/workspace-access.js";
 import {buildMarketReport} from "../application/market-report.js";
+import {listWorkspaceAuditLogs,parseAuditCursor} from "../application/workspace-audit-logs.js";
 import {generateMarketReportPdf} from "../application/market-report-pdf.js";
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const writers=["owner","admin","analyst"];

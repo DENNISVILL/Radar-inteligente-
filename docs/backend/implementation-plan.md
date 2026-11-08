@@ -120,7 +120,9 @@ El 100 % de los 29 entregables principales no incluye el cierre de infraestructu
 - [ ] Ajustar la confianza en IP de cliente solo al configurar proxies de confianza.
 - [x] Completar pruebas HTTP de gestión de miembros (listado, alta, cambio de rol, baja, protección del último owner y auditoría).
 - [x] Métricas, correlación de trazas y logs estructurados, con pruebas automatizadas en CI; endpoint `/metrics` deshabilitado por defecto y habilitación explícita con `METRICS_ENABLED=true`.
-- [ ] Alertas operativas, copias de seguridad y restauración probada.
+- [x] Herramientas de backup custom-format y restauración protegida en base vacía; CI ejecuta backup real, restore real y verifica esquema/historial en PostgreSQL efímero.
+- [x] Prueba de rollback de una migración fallida y conservación de migraciones previas.
+- [ ] Programar backups externos cifrados, definir RPO/RTO y probar restauración periódica en el proveedor real.
 - [x] Revisión estática documentada; pendiente cerrar los riesgos preproducción indicados en `docs/security/threat-model.md` y ejecutar pruebas externas antes del despliegue.
 
 ### 7. Producto y despliegue — pendiente
@@ -150,3 +152,11 @@ Los cambios se desarrollan en `backend/foundation`, se prueban en CI y se mantie
 - [x] Aplicar grants de runtime después de migrar: DML operativo, INSERT únicamente en auditoría, sin acceso a `schema_migrations` ni CREATE en `public`.
 - [x] Añadir pruebas de resolución de credenciales y privilegios PostgreSQL; CI ejecuta aprovisionamiento y migraciones usando el rol propietario dedicado.
 - [ ] Ejecutar el procedimiento con el proveedor PostgreSQL real, validar TLS/red/propietarios y probar restauración; aún no hay infraestructura productiva conectada.
+
+
+### Recuperación PostgreSQL
+- [x] `npm run db:backup`: pg_dump custom-format, no sobrescribe archivos y verifica legibilidad con pg_restore.
+- [x] `npm run db:restore`: exige confirmación exacta, rol/propietario migrador y base destino vacía; restauración atómica sin `--clean`.
+- [x] CI valida copia/restauración real en una segunda base PostgreSQL y reaplica permisos runtime.
+- [x] Prueba de integración demuestra rollback de la migración fallida y conservación de la migración previa confirmada.
+- [ ] Configurar almacenamiento externo cifrado, programación/retención, alertas, RPO/RTO y recuperación PITR según proveedor.

@@ -127,3 +127,31 @@ test("market analysis queries constrain every resource to the requested workspac
   }
  }finally{await app.close();}
 });
+
+
+
+test("non-members are denied every market-intelligence and reporting read surface before data queries",async()=>{
+ const {app,calls}=await buildApp({memberships:[]});
+ const productId="55555555-5555-4555-8555-555555555555";
+ const reportId="66666666-6666-4666-8666-666666666666";
+ const requests=[
+  `/api/v1/workspaces/${workspaceA}/competitors`,
+  `/api/v1/workspaces/${workspaceA}/products`,
+  `/api/v1/workspaces/${workspaceA}/products/${productId}/prices`,
+  `/api/v1/workspaces/${workspaceA}/researches/${researchId}/observations`,
+  `/api/v1/workspaces/${workspaceA}/researches/${researchId}/analysis`,
+  `/api/v1/workspaces/${workspaceA}/researches/${researchId}/report`,
+  `/api/v1/workspaces/${workspaceA}/researches/${researchId}/reports`,
+  `/api/v1/workspaces/${workspaceA}/researches/${researchId}/reports/${reportId}`,
+  `/api/v1/workspaces/${workspaceA}/researches/${researchId}/reports/${reportId}/pdf`,
+  `/api/v1/workspaces/${workspaceA}/audit-logs`
+ ];
+ try{
+  for(const url of requests){
+   const response=await app.inject({method:"GET",url});
+   assert.equal(response.statusCode,403,url);
+   assert.equal(response.json().error,"FORBIDDEN",url);
+  }
+  assert.equal(calls.some(call=>/FROM competitors|FROM market_products|FROM price_observations|FROM market_observations|FROM researches|FROM market_reports|FROM audit_logs/.test(call.sql)),false);
+ }finally{await app.close();}
+});

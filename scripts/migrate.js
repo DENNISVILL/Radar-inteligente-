@@ -6,6 +6,12 @@ import { loadConfig } from "../src/config/env.js";
 
 const MIGRATION_LOCK_KEY = "radar-comercial-schema-migrations";
 
+export function resolveMigrationDatabaseUrl(config) {
+  const url = config.migrationDatabaseUrl || (config.nodeEnv === "production" ? "" : config.databaseUrl);
+  if (!url) throw new Error("Configura MIGRATION_DATABASE_URL para ejecutar migraciones (obligatorio en producción).");
+  return url;
+}
+
 export async function applyMigrations(pool, migrationsDirectory = new URL("../database/migrations/", import.meta.url)) {
   const client = await pool.connect();
   let lockAcquired = false;
@@ -51,8 +57,7 @@ export async function applyMigrations(pool, migrationsDirectory = new URL("../da
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
   const config = loadConfig();
-  const migrationUrl = config.migrationDatabaseUrl || (config.nodeEnv === "production" ? "" : config.databaseUrl);
-  if (!migrationUrl) throw new Error("Configura MIGRATION_DATABASE_URL para ejecutar migraciones (obligatorio en producción).");
+  const migrationUrl = resolveMigrationDatabaseUrl(config);
   const { Pool } = pg;
   const pool = new Pool({
     connectionString: migrationUrl,

@@ -32,6 +32,7 @@ export async function addWorkspaceMember(database,{workspaceId,email,role,actorR
  if(!manageable.includes(role))return {error:"INVALID_ROLE"};
  if(actorRole==="admin"&&role!=="analyst"&&role!=="viewer")return {error:"FORBIDDEN_ROLE"};
  const locked=await lockWorkspace(database,workspaceId,actorSubject);if(!locked||locked.error)return locked;const {client,actorRole:currentActorRole}=locked;
+ if(currentActorRole==="admin"&&role!=="analyst"&&role!=="viewer"){await client.query("ROLLBACK");client.release();return {error:"FORBIDDEN_ROLE"};}
  try{
   const target=await client.query("SELECT id,email,display_name,status FROM users WHERE lower(email)=lower($1) LIMIT 1",[email]);
   if(!target.rows[0]||target.rows[0].status!=="active"){await client.query("ROLLBACK");return {error:"USER_NOT_FOUND"};}
@@ -47,7 +48,9 @@ export async function updateWorkspaceMemberRole(database,{workspaceId,userId,rol
  if(!["owner","admin","analyst","viewer"].includes(role))return {error:"INVALID_ROLE"};
  if(actorRole==="admin"&&!["analyst","viewer"].includes(role))return {error:"FORBIDDEN_ROLE"};
  if(actorRole!=="owner"&&role==="owner")return {error:"FORBIDDEN_ROLE"};
- const client=await lockWorkspace(database,workspaceId);if(!client)return null;
+ const locked=await lockWorkspace(database,workspaceId,actorSubject);if(!locked||locked.error)return locked;const {client,actorRole:currentActorRole}=locked;
+ if(currentActorRole==="admin"&&!["analyst","viewer"].includes(role)){await client.query("ROLLBACK");client.release();return {error:"FORBIDDEN_ROLE"};}
+ if(currentActorRole!=="owner"&&role==="owner"){await client.query("ROLLBACK");client.release();return {error:"FORBIDDEN_ROLE"};}
  try{
   const target=await client.query("SELECT role FROM workspace_members WHERE workspace_id=$1 AND user_id=$2 FOR UPDATE",[workspaceId,userId]);
   if(!target.rows[0]){await client.query("ROLLBACK");return null;}
@@ -62,7 +65,7 @@ export async function updateWorkspaceMemberRole(database,{workspaceId,userId,rol
  }catch(error){try{await client.query("ROLLBACK");}catch{}throw error;}finally{client.release();}
 }
 export async function removeWorkspaceMember(database,{workspaceId,userId,actorRole,actorSubject}){
- const client=await lockWorkspace(database,workspaceId);if(!client)return null;
+ const locked=await lockWorkspace(database,workspaceId,actorSubject);if(!locked||locked.error)return locked;const {client,actorRole:currentActorRole}=locked;
  try{
   const target=await client.query("SELECT role FROM workspace_members WHERE workspace_id=$1 AND user_id=$2 FOR UPDATE",[workspaceId,userId]);
   if(!target.rows[0]){await client.query("ROLLBACK");return null;}

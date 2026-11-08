@@ -3,9 +3,9 @@ import { spawn } from "node:child_process";
 import pg from "pg";
 import { resolve } from "node:path";
 
-function run(command, args) {
+function run(command, args, extraEnv = {}) {
   return new Promise((resolvePromise, reject) => {
-    const child = spawn(command, args, { stdio: "inherit" });
+    const child = spawn(command, args, { stdio: "inherit", env: { ...process.env, ...extraEnv } });
     child.once("error", reject);
     child.once("close", code => code === 0 ? resolvePromise() : reject(new Error(command + " terminó con código " + code)));
   });
@@ -54,6 +54,6 @@ try {
 
 await run("pg_restore", [
   "--exit-on-error", "--single-transaction", "--no-owner", "--no-privileges",
-  "--dbname=" + connection, file
-]);
+  file
+], { PGDATABASE: connection });
 console.info("Restauración completada en la base " + database + ". Verifica el servicio antes de cambiar el tráfico.");

@@ -262,11 +262,13 @@ test("PostgreSQL migration runner grants runtime DML but protects audit and migr
   if(existing.rowCount===0){await pool.query("CREATE ROLE radar_runtime NOLOGIN");createdRole=true;}
   await applyMigrations(pool);
   const roleAttributes=await pool.query(`
-   SELECT rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls
+   SELECT rolsuper, rolcreatedb, rolcreaterole, rolreplication, rolbypassrls,
+    has_database_privilege('radar_runtime',current_database(),'CREATE') AS can_create_database_objects
    FROM pg_roles WHERE rolname='radar_runtime'
   `);
   assert.deepEqual(roleAttributes.rows[0],{
-   rolsuper:false,rolcreatedb:false,rolcreaterole:false,rolreplication:false,rolbypassrls:false
+   rolsuper:false,rolcreatedb:false,rolcreaterole:false,rolreplication:false,rolbypassrls:false,
+   can_create_database_objects:false
   });
   const privileges=await pool.query(`
    SELECT

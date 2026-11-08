@@ -31,6 +31,7 @@ export async function verifySupabaseAccessToken(token, supabaseUrl, { maxTokenAg
   }
   return Object.freeze({
     subject: payload.sub,
+    sessionId: payload.session_id,
     email: typeof payload.email === "string" ? payload.email : null,
     role: typeof payload.role === "string" ? payload.role : null
   });

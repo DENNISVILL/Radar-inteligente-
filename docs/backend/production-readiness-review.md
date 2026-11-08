@@ -230,3 +230,12 @@ El cierre de 29/29 entregables describe la fase principal de construcción del b
 - La paginación usa cursor keyset por `(created_at,id)` descendente, límite por defecto 50 y máximo 100. Se obtiene un registro adicional para determinar si existe página siguiente; `nextCursor` es opaco, se valida antes de abrir conexión y no usa offsets crecientes.
 - La especificación OpenAPI y el modelo de amenazas reflejan el endpoint real y su política de acceso. Se añadieron pruebas de servicio y HTTP para orden de bloqueos, denegación por rol, workspace inactivo, paginación y cursor inválido.
 - **Límite:** esto serializa la lectura respecto de operaciones que respetan el bloqueo de workspace. El acceso SQL administrativo puede saltarse el protocolo de aplicación; los triggers de inmutabilidad y la separación de roles siguen siendo necesarios.
+
+
+## 22. Copia privada verificada para restauración (2026-11-08)
+
+- La revisión del flujo SHA-256 identificó una ventana TOCTOU: verificar el archivo original y luego entregar su ruta a `pg_restore` permite que el contenido cambie entre ambas operaciones si otro proceso puede modificar esa ruta.
+- La restauración ahora lee el manifiesto y copia el respaldo a un directorio temporal privado creado con permisos restrictivos. El digest y el tamaño se calculan durante la copia; si no coinciden con el manifiesto, la copia se elimina y no se invoca `pg_restore`.
+- `pg_restore --list` y la restauración real usan exclusivamente la copia temporal verificada. El archivo queda con permisos `0600`, el directorio es privado, se rechazan enlaces simbólicos de origen y la limpieza ocurre en un bloque `finally`.
+- Se añadieron pruebas para comprobar permisos del archivo temporal, independencia respecto a cambios posteriores del original y rechazo de enlaces simbólicos.
+- **Límite:** SHA-256 sin firma o HMAC no autentica el manifiesto si un atacante puede reemplazar simultáneamente el respaldo y su manifiesto. El directorio temporal protege frente a cambios posteriores de la ruta de origen bajo el modelo normal de permisos del sistema; no sustituye un host confiable, almacenamiento inmutable ni una firma digital.

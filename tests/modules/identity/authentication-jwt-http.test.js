@@ -98,13 +98,13 @@ test("Supabase JWT verification protects identity and workspace-access HTTP rout
       await token({ subject: null }),
       await token({ signingKey: wrongPrivateKey })
     ];
-    for (const invalidToken of invalidTokens) {
+    for (const [index, invalidToken] of invalidTokens.entries()) {
       const response = await app.inject({
         method: "GET",
         url: "/api/v1/me",
         headers: { authorization: `Bearer ${invalidToken}` }
       });
-      assert.equal(response.statusCode, 401);
+      assert.equal(response.statusCode, 401, "invalid token fixture index " + index);
       assert.equal(response.json().error, "INVALID_TOKEN");
     }
     assert.equal(calls.length, 2, "invalid tokens must not reach workspace data queries");

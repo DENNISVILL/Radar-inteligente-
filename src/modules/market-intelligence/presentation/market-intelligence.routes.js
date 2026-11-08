@@ -31,7 +31,7 @@ function limit(q,p){
 }
 async function audited(o,r,user,eventType,resourceType,metadata,mutation){
  return executeAuditedMutation(o.database,{
-  workspaceId:r.params.workspaceId,actorUserId:user.id,eventType,resourceType,metadata
+  workspaceId:r.params.workspaceId,actorUserId:user.id,actorSubject:r.identity.subject,eventType,resourceType,metadata
  },mutation);
 }
 

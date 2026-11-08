@@ -8,8 +8,9 @@ function traceContext(value) {
   const validParent = match && !/^0+$/.test(match[1]) && !/^0+$/.test(match[2]);
   const traceId = validParent ? match[1].toLowerCase() : randomBytes(16).toString("hex");
   const parentSpanId = validParent ? match[2].toLowerCase() : null;
+  const traceFlags = validParent ? match[3].toLowerCase() : "00";
   const spanId = randomBytes(8).toString("hex");
-  return { traceId, parentSpanId, spanId, traceparent: `00-${traceId}-${spanId}-01` };
+  return { traceId, parentSpanId, spanId, traceparent: `00-${traceId}-${spanId}-${traceFlags}` };
 }
 
 function label(value) {

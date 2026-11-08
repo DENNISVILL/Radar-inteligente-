@@ -236,3 +236,33 @@ test("competitor and product update/archive routes enforce writer permissions fo
   }finally{await app.close();}
  }
 });
+
+
+
+test("product, price and observation creation use the same owner/admin/analyst writer matrix",async()=>{
+ for(const role of ["owner","admin","analyst","viewer"]){
+  const {app,calls}=await buildApp({role});
+  const requests=[
+   {method:"POST",url:`/api/v1/workspaces/${workspaceId}/products`,payload:{name:"Producto de prueba"}},
+   {method:"POST",url:`/api/v1/workspaces/${workspaceId}/products/${productId}/prices`,payload:{price:12.5,currency:"USD",observedOn:"2026-11-07"}},
+   {method:"POST",url:`/api/v1/workspaces/${workspaceId}/researches/${productId}/observations`,payload:{type:"risk",title:"Riesgo",content:"Descripción del riesgo",observedOn:"2026-11-07"}}
+  ];
+  try{
+   for(const request of requests){
+    const response=await app.inject(request);
+    if(role==="viewer"){
+     assert.equal(response.statusCode,403,request.url);
+     assert.equal(response.json().error,"FORBIDDEN");
+    }else{
+     assert.notEqual(response.statusCode,403,role+" "+request.url);
+    }
+   }
+   const writes=calls.filter(call=>/INSERT INTO (market_products|price_observations|market_observations)/.test(call.sql||""));
+   if(role==="viewer")assert.equal(writes.length,0);
+   else{
+    assert.equal(writes.length,3);
+    for(const write of writes)assert.equal(write.values[0],workspaceId);
+   }
+  }finally{await app.close();}
+ }
+});

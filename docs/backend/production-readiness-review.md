@@ -22,7 +22,7 @@
 
 | Prioridad | Hallazgo | Estado actual | Acción para cerrar |
 |---|---|---|---|
-| Crítica antes de usuarios reales | Aceptación de invitaciones no exige claim de correo verificado | El verificador JWT expone subject y email, pero no valida/expone `email_verified` | Conectar el proveedor real, confirmar el claim exacto y exigir correo verificado coincidente; agregar pruebas negativas y positivas |
+| Crítica antes de usuarios reales | Aceptación de invitaciones no exige correo confirmado | El verificador JWT expone `sub` y `email`, pero no consulta el estado de confirmación. La referencia oficial de claims JWT de Supabase no incluye `email_verified` entre los claims estándar; no se debe asumir que ese claim existe en un access token. | Al conectar el proyecto, validar el access token contra `GET /auth/v1/user` con `apikey` publicable y `Authorization: Bearer <access_token>`; exigir `email_confirmed_at` no nulo y que el correo devuelto coincida con el correo invitado. Cubrir confirmación ausente, correo cambiado y error del proveedor con pruebas. |
 | Alta | No hay copias automáticas ni restauración probada | No existe infraestructura de backup/restore configurada en el repositorio | Elegir hosting/servicio PostgreSQL, definir RPO/RTO, automatizar backups cifrados y ejecutar una restauración documentada |
 | Alta | Rate limiter no distribuido | Contadores en memoria por proceso | Antes de ejecutar más de una instancia, usar Redis u otro almacén compartido con límites atómicos |
 | Alta | Métricas expuestas por ruta sin autenticación propia | `/metrics` se registra cuando `METRICS_ENABLED=true` | Mantenerlo en red privada o restringirlo en proxy/firewall; verificar que no quede expuesto públicamente |
@@ -31,6 +31,15 @@
 | Media | Proxy de confianza depende del despliegue | Fastify no habilita `trustProxy` en la configuración actual | Mantener desactivado salvo necesidad; si se usa proxy, confiar solo en IPs/CIDRs del proxy administrado |
 | Media | Prueba de rendimiento es in-process | Usa `Fastify.inject()` y PostgreSQL en runner CI | Repetir en staging con red, TLS, proxy, recursos y pool equivalentes a producción |
 | Media | Política de despliegue/migración no documentada | Migraciones se serializan y aplican transaccionalmente; no hay procedimiento de backup previo/rollback operativo | Documentar ventana, backup previo, compatibilidad hacia atrás y recuperación ante migración fallida |
+
+### Nota técnica sobre la verificación de correo
+
+La verificación de firma JWT solo demuestra que el token fue emitido por el proyecto y no fue alterado; no demuestra por sí sola que el correo esté confirmado. La referencia de claims de Supabase enumera `email` como claim estándar, pero no `email_verified`. El endpoint autenticado `GET /auth/v1/user` devuelve el perfil de usuario, incluido `email_confirmed_at`; la integración deberá usar la clave publicable del proyecto en `apikey` y el access token del usuario en `Authorization`, nunca una clave `service_role` en el cliente. Como Radar todavía no tiene un proyecto Supabase conectado ni esa configuración, esta comprobación queda documentada como bloqueo y no se simula con un claim inventado.
+
+Referencias oficiales:
+- [Supabase — JWT Claims Reference](https://supabase.com/docs/guides/auth/jwt-fields)
+- [Supabase — Auth User endpoint](https://supabase.com/docs/reference/javascript/auth-getuser)
+- [Supabase — JWT verification](https://supabase.com/docs/guides/auth/jwts)
 
 ## 3. Controles que sí existen
 

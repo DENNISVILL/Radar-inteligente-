@@ -25,11 +25,15 @@ El backend está en desarrollo y cuenta con una base funcional: autenticación m
 4. Ejecuta `npm run db:migrate` con `MIGRATION_DATABASE_URL`.
 5. Inicia con `npm run dev`; el servidor usa únicamente `DATABASE_URL`.
 
-Comandos disponibles: `npm test`, `npm run check`, `npm run perf` (baseline de rendimiento con `TEST_DATABASE_URL`) y `npm start`.
+Comandos disponibles: `npm test`, `npm run check`, `npm run perf`, `npm run db:backup` y `npm run db:restore`. Los comandos de respaldo/restauración requieren `pg_dump` y `pg_restore`; consulta `docs/backend/backup-and-recovery.md` antes de usarlos.
 
 Rutas de salud: `GET /health` y `GET /ready`. Métricas Prometheus: `GET /metrics` (deshabilitado por defecto; habilitar explícitamente con `METRICS_ENABLED=true` solo en una red privada o tras restringir el acceso en el proxy/firewall).
 
-## PostgreSQL y privilegios\n\nLa API usa `DATABASE_URL` con el rol `radar_runtime`; el comando `npm run db:migrate` usa `MIGRATION_DATABASE_URL` con el rol `radar_migration_owner`. En producción la credencial de migraciones es obligatoria y no se permite reutilizar la conexión de runtime. El rol runtime no puede crear objetos, leer/modificar auditoría ni consultar el historial de migraciones. Consulta `docs/backend/postgresql-roles.md` y `database/roles/production-roles.sql` para el aprovisionamiento de una base nueva.\n\n## Observabilidad
+## PostgreSQL y privilegios
+
+La API usa `DATABASE_URL` con el rol `radar_runtime`; el comando `npm run db:migrate` usa `MIGRATION_DATABASE_URL` con el rol `radar_migration_owner`. En producción la credencial de migraciones es obligatoria y no se permite reutilizar la conexión de runtime. El rol runtime no puede crear objetos, leer/modificar auditoría ni consultar el historial de migraciones. Consulta `docs/backend/postgresql-roles.md` y `database/roles/production-roles.sql` para el aprovisionamiento de una base nueva.
+
+## Observabilidad
 
 - Logs JSON estructurados de Fastify con redacción de `Authorization` y cookies.
 - Cada respuesta incluye `x-trace-id`; acepta `traceparent` W3C válido y genera un span ID de servidor para correlación. No sustituye todavía una integración OpenTelemetry/exportador distribuido.
@@ -42,7 +46,8 @@ Rutas de salud: `GET /health` y `GET /ready`. Métricas Prometheus: `GET /metric
 - Roles `owner`, `admin`, `analyst` y `viewer`.
 - Gestión de miembros e invitaciones de un solo uso, con vencimiento, revocación y auditoría.
 - Investigaciones, competidores, productos/servicios, observaciones y registros de precios.
-- Informes comerciales con snapshots versionados, historial, verificación de integridad y exportación PDF.\n- Comparación descriptiva de los dos precios más recientes por producto y moneda, sin extrapolación ni predicción; requiere fechas de observación distintas.
+- Informes comerciales con snapshots versionados, historial, verificación de integridad y exportación PDF.
+- Comparación descriptiva de los dos precios más recientes por producto y moneda, sin extrapolación ni predicción; requiere fechas de observación distintas.
 - Aislamiento de datos por workspace y validación de relaciones entre entidades.
 
 Los análisis actuales son descriptivos y dependen de los datos y fuentes que se registren. No se presentan como predicciones verificadas ni como vigilancia automática de sitios externos.
@@ -56,4 +61,4 @@ Los análisis actuales son descriptivos y dependen de los datos y fuentes que se
 - No hay todavía frontend, despliegue productivo ni políticas RLS configuradas en un proyecto Supabase.
 - Los hashes de integridad ayudan a detectar cambios, pero no equivalen a firmas digitales ni sustituyen controles de acceso.
 
-Consulta `docs/backend/implementation-plan.md` para ver el avance y los pendientes, y `docs/backend/performance-baseline.md` para reproducir y entender la medición de rendimiento.
+Consulta `docs/backend/implementation-plan.md` para ver el avance; `docs/backend/performance-baseline.md` para la medición de rendimiento; y `docs/backend/backup-and-recovery.md` para el procedimiento de respaldo y recuperación.

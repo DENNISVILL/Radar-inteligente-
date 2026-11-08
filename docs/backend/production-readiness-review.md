@@ -87,6 +87,16 @@ El cierre de 29/29 entregables describe la fase principal de construcción del b
 - Las operaciones de miembros e invitaciones ya escriben sus eventos en la transacción de mutación; las rutas de inteligencia de mercado usan `executeAuditedMutation` para que un fallo de auditoría revierta la mutación.
 - La tabla permite `actor_user_id` nulo por `ON DELETE SET NULL`, preservando el evento si se elimina posteriormente una cuenta local. Esto es una decisión de retención histórica; no permite al cliente elegir actor, porque las escrituras toman el actor desde la sesión autenticada.
 
+## 9. Separación de roles PostgreSQL — implementación y validación
+
+- La API usa `DATABASE_URL`; el ejecutor `npm run db:migrate` usa `MIGRATION_DATABASE_URL`.
+- En `NODE_ENV=production`, el runner rechaza iniciar si falta `MIGRATION_DATABASE_URL`; no cae silenciosamente en la credencial runtime.
+- Se añadió un aprovisionador para bases nuevas: `database/roles/production-roles.sql`. Crea `radar_migration_owner` y `radar_runtime` sin superusuario, CREATEDB ni CREATEROLE.
+- Tras migrar, el runner concede al runtime DML sobre tablas operativas y uso de secuencias, pero solo INSERT en `audit_logs`, ningún privilegio sobre `schema_migrations` y ningún CREATE en `public`.
+- Se añadieron pruebas de configuración y una prueba PostgreSQL de privilegios con `has_table_privilege` y `has_schema_privilege`.
+- **Alcance:** la automatización está preparada para una base nueva y aislada. La adopción en una base existente requiere inventario y cambio de propietarios controlado; no se debe ejecutar el bootstrap sin revisión.
+- **Pendiente operativo:** no hay base productiva conectada, por lo que todavía no se han probado credenciales reales, TLS, restricciones de red ni restauración de backups. La prueba CI valida privilegios PostgreSQL en un entorno efímero, no la configuración del proveedor final.
+
 ## 8. Integridad de auditoría — revisión adicional
 - La migración `010_audit_log_immutability.sql` impide `UPDATE`, `DELETE` y `TRUNCATE` ordinarios sobre `audit_logs` mediante triggers de PostgreSQL.
 - Las referencias a workspace y actor se desvinculan con `ON DELETE SET NULL`; el evento histórico permanece aunque se elimine posteriormente la empresa o la cuenta. La retención y el respaldo externo siguen pendientes de definir.

@@ -183,3 +183,8 @@ Los cambios se desarrollan en `backend/foundation`, se prueban en CI y se mantie
 - [x] Bloqueo consistente workspace → membresía, alineado con revocación/cambio de miembros para cerrar la carrera TOCTOU.
 - [x] Pruebas unitarias de membresía revocada/degradada y prueba PostgreSQL de que una membresía retirada no puede insertar ni auditar recursos.
 - [ ] Evaluar RLS únicamente si se habilita acceso directo de clientes a PostgreSQL; actualmente la API es la frontera de autorización.
+
+
+### Integridad de snapshots de informes
+- [x] Impedir UPDATE y DELETE directos de snapshots; permitir únicamente la eliminación en cascada derivada del ciclo de vida de la investigación/workspace.
+- [x] Prueba de integración PostgreSQL para borrado directo rechazado y cascada del recurso padre.

@@ -167,7 +167,9 @@ test("Ed25519 verification rejects a modified signature", async () => {
     const manifestPath = backupManifestPath(backup);
     const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
     const signature = manifest.signature.value;
-    manifest.signature.value = signature.slice(0, -1) + (signature.endsWith("A") ? "B" : "A");
+    const altered = Buffer.from(signature, "base64");
+    altered[0] ^= 1;
+    manifest.signature.value = altered.toString("base64");
     await writeFile(manifestPath, JSON.stringify(manifest));
     await assert.rejects(
       verifyBackupManifest(backup, { publicKey: keys.publicKey }),

@@ -54,7 +54,7 @@ export async function applyMigrations(pool, migrationsDirectory = new URL("../da
       await client.query("GRANT INSERT ON TABLE audit_logs TO radar_runtime");
       await client.query("REVOKE ALL ON TABLE schema_migrations FROM radar_runtime");
     }
-    return { discovered: files.length, versions: files.map(file => file.replace(/\\.sql$/i, "")) };
+    return { discovered: files.length, versions: files.map(file => file.replace(/\.sql$/i, "")) };
   } finally {
     try {
       if (lockAcquired) {

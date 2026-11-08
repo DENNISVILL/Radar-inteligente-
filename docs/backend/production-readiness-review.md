@@ -75,3 +75,13 @@ No se deben inventar ni simular estas decisiones: proveedor de hosting, servicio
 ## 6. Conclusión
 
 El cierre de 29/29 entregables describe la fase principal de construcción del backend, no la preparación integral para producción. La validación CI #352 (199 pruebas, 0 fallidas) confirma la calidad automatizada del código actual, pero no sustituye la configuración de infraestructura, recuperación, seguridad externa ni pruebas de staging.
+
+
+## 7. Revisión adicional de cobertura de auditoría
+
+- La creación de un workspace y la asignación de su propietario inicial se registran ahora como dos eventos (`workspace.created` y `workspace_member.added`) en la misma transacción que las inserciones de dominio. Si falla cualquiera de los dos INSERT de auditoría, la transacción completa se revierte.
+- El actor de esos eventos se toma del usuario local resuelto a partir de la identidad autenticada por el servidor; no se acepta un identificador de actor enviado por el cliente.
+- Se añadieron pruebas unitarias para verificar ambos eventos, el orden transaccional y el rollback ante fallo de auditoría.
+- **Pendiente de revisión/corrección:** el CRUD del módulo de investigaciones (`POST`, `PATCH`, `DELETE` de investigaciones) todavía ejecuta mutaciones directamente y no usa el helper de mutación auditada. Debe incorporarse auditoría atómica y pruebas de rollback antes de considerar completa la cobertura de auditoría de las operaciones de negocio.
+- Las operaciones de miembros e invitaciones ya escriben sus eventos en la transacción de mutación; las rutas de inteligencia de mercado usan `executeAuditedMutation` para que un fallo de auditoría revierta la mutación.
+- La tabla permite `actor_user_id` nulo por `ON DELETE SET NULL`, preservando el evento si se elimina posteriormente una cuenta local. Esto es una decisión de retención histórica; no permite al cliente elegir actor, porque las escrituras toman el actor desde la sesión autenticada.

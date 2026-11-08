@@ -11,7 +11,8 @@ async function requireIdentity(request,reply,options){
  const token=readBearerToken(request.headers.authorization);
  if(!token)return reply.code(401).send({error:"UNAUTHORIZED",message:"Se requiere un token Bearer válido."});
  try{
-  request.identity=await verifySupabaseAccessToken(token,options.config.supabaseUrl,{maxTokenAgeSeconds:options.config.supabaseJwtMaxAgeSeconds??3600});\n  if(options.config.supabaseApiKey)request.identity=await verifySupabaseSession(request.identity,token,{supabaseUrl:options.config.supabaseUrl,apiKey:options.config.supabaseApiKey});
+  request.identity=await verifySupabaseAccessToken(token,options.config.supabaseUrl,{maxTokenAgeSeconds:options.config.supabaseJwtMaxAgeSeconds??3600});
+  if(options.config.supabaseApiKey)request.identity=await verifySupabaseSession(request.identity,token,{supabaseUrl:options.config.supabaseUrl,apiKey:options.config.supabaseApiKey});
  }
  catch(error){
   const invalidTokenCodes=new Set([

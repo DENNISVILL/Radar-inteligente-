@@ -17,7 +17,7 @@ test("PostgreSQL CLI credentials use a private temporary passfile, not argv or e
       assert.equal(env.PGPORT, "5544");
       assert.equal(env.PGDATABASE, "radar db");
       assert.equal(env.PGUSER, "radar:user");
-      assert.equal(env.PGSSLMODE, "require");
+      assert.equal(env.PGSSLMODE, "verify-full");
       assert.equal("PGPASSWORD" in env, false);
       const file = await stat(passfile);
       assert.equal(file.mode & 0o777, 0o600);
@@ -93,5 +93,22 @@ test("PostgreSQL TLS helper loads a provider CA certificate from sslrootcert", (
     );
   } finally {
     rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("PostgreSQL CLI rejects downgrade sslmodes and applies DB_SSL consistently", async () => {
+  await assert.rejects(
+    withPostgresCliEnv("postgres://radar:secret@db.example.test/radar?sslmode=prefer", async () => {}),
+    /sslmode inseguro/
+  );
+  const previous = process.env.DB_SSL;
+  process.env.DB_SSL = "true";
+  try {
+    await withPostgresCliEnv("postgres://radar:secret@db.example.test/radar?sslmode=disable", async env => {
+      assert.equal(env.PGSSLMODE, "verify-full");
+    });
+  } finally {
+    if (previous == null) delete process.env.DB_SSL;
+    else process.env.DB_SSL = previous;
   }
 });

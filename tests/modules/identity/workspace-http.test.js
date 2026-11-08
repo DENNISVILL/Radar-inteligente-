@@ -10,7 +10,8 @@ async function buildApp({ userStatus = "active", failMembership = false } = {}) 
   const database = {
     async query(sql, values = []) {
       calls.push({ sql, values });
-      if (sql.includes("INSERT INTO users")) return { rows: [{ id: "local-user", email: identity.email, status: userStatus }] };\n      return { rows: [{ id: "workspace-1", name: "Mi Empresa", slug: "mi-empresa", role: "owner" }] };
+      if (sql.includes("INSERT INTO users")) return { rows: [{ id: "local-user", email: identity.email, status: userStatus }] };
+      return { rows: [{ id: "workspace-1", name: "Mi Empresa", slug: "mi-empresa", role: "owner" }] };
     },
     async connect() {
       return {

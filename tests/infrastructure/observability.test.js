@@ -71,3 +71,16 @@ test("metrics endpoint is absent with the default application configuration", as
   assert.equal(response.statusCode, 404);
   await app.close();
 });
+
+
+test("trace context preserves the incoming W3C sampled flag", async () => {
+  const app = makeApp();
+  const response = await app.inject({
+    method: "GET",
+    url: "/health",
+    headers: { traceparent: "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-00" }
+  });
+  assert.equal(response.statusCode, 200);
+  assert.match(response.headers.traceparent, /^00-4bf92f3577b34da6a3ce929d0e0e4736-[0-9a-f]{16}-00$/);
+  await app.close();
+});

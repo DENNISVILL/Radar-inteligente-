@@ -55,6 +55,20 @@ El 100 % de los 29 entregables principales no incluye el cierre de infraestructu
 - [ ] Sustituir rate limiting en memoria por almacenamiento compartido antes de escalar a varias instancias.
 - [ ] Ejecutar prueba de carga de red real y aceptación de seguridad en staging.
 
+### Cierre técnico de los puntos 32–33 — 2026-11-08
+
+- [x] Documentar métricas Prometheus existentes, consultas de referencia, umbrales iniciales y procedimiento de respuesta en `docs/backend/observability-runbook.md`.
+- [x] Corregir la consulta de tasa 5xx para que no subestime errores cuando el tráfico es bajo; incorporar condición de tráfico mínimo.
+- [x] Centralizar la política TLS de node-postgres para API, migraciones y validación de restauración.
+- [x] Alinear `pg_dump`/`pg_restore` con TLS verificado cuando está habilitado y rechazar modos de downgrade.
+- [x] Endurecer el rol runtime con `NOBYPASSRLS` y sin permiso `CREATE` en base/esquema; añadir aserciones PostgreSQL en CI.
+- [ ] Confirmar CI del último commit y conservar su evidencia.
+- [ ] Conectar un proveedor de métricas/logs, configurar alertas reales, retención, canales y responsables.
+- [ ] Ejecutar simulacro de incidentes y restauración en staging con TLS/certificados del proveedor.
+- [ ] Definir RPO/RTO, almacenamiento externo cifrado, programación y retención de backups.
+
+**Límite:** runbook, pruebas unitarias e integración efímera no equivalen a observabilidad o recuperación productiva activa. No declarar producción lista sin completar los puntos externos.
+
 ## Principios
 
 - Monolito modular en Node.js 22+ y Fastify.

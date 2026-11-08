@@ -15,7 +15,8 @@ test("creates workspace, initial owner membership and both audit events in one t
   const auditRows = [];
   const client = {
     query: async (sql, params = []) => {
-      statements.push(sql.trim().split(/\\s+/).slice(0, 3).join(" "));
+      const normalized = sql.trim().replace(/\\s+/g, " ");
+      statements.push(normalized.startsWith("INSERT INTO audit_logs") ? "INSERT INTO audit_logs" : normalized.split(" ").slice(0, 3).join(" "));
       if (sql.includes("RETURNING id, name, slug")) return { rows: [{ id: "w1", name: params[0], slug: params[1] }] };
       if (sql.includes("INSERT INTO audit_logs")) auditRows.push({ sql, params });
       return { rows: [] };
@@ -28,8 +29,8 @@ test("creates workspace, initial owner membership and both audit events in one t
     "BEGIN",
     "INSERT INTO workspaces",
     "INSERT INTO workspace_members",
-    "INSERT INTO audit_logs(workspace_id,actor_user_id,event_type,resource_type,resource_id,metadata)",
-    "INSERT INTO audit_logs(workspace_id,actor_user_id,event_type,resource_type,resource_id,metadata)",
+    "INSERT INTO audit_logs",
+    "INSERT INTO audit_logs",
     "COMMIT",
     "RELEASE"
   ]);

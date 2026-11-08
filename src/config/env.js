@@ -1,6 +1,9 @@
-const parseBoolean = (value, fallback = false) => {
+const parseBoolean = (value, fallback = false, name = "valor") => {
   if (value == null || value === "") return fallback;
-  return ["true", "1", "yes"].includes(String(value).toLowerCase());
+  const normalized = String(value).toLowerCase();
+  if (["true", "1", "yes"].includes(normalized)) return true;
+  if (["false", "0", "no"].includes(normalized)) return false;
+  throw new TypeError(`${name} debe ser true/false, 1/0 o yes/no.`);
 };
 function parseInteger(value,fallback,name,{min=1,max=Number.MAX_SAFE_INTEGER}={}){
  const parsed=Number(value??fallback);
@@ -24,9 +27,9 @@ export function loadConfig(env = process.env) {
   return Object.freeze({
     nodeEnv,host:env.HOST??"127.0.0.1",port,databaseUrl:env.DATABASE_URL??"",
     migrationDatabaseUrl:env.MIGRATION_DATABASE_URL??"",
-    databaseSsl:parseBoolean(env.DB_SSL),logLevel:env.LOG_LEVEL??"info",
-    supabaseUrl:supabaseUrl.replace(/\/$/,""),supabaseApiKey,supabaseJwtMaxAgeSeconds,
+    databaseSsl:parseBoolean(env.DB_SSL,false,"DB_SSL"),logLevel:env.LOG_LEVEL??"info",
+    supabaseUrl:supabaseUrl.replace(/\/$/, ""),supabaseApiKey,supabaseJwtMaxAgeSeconds,
     rateLimitMax,rateLimitAuthMax,rateLimitWindowMs,
-    metricsEnabled: parseBoolean(env.METRICS_ENABLED, false)
+    metricsEnabled: parseBoolean(env.METRICS_ENABLED, false, "METRICS_ENABLED")
   });
 }

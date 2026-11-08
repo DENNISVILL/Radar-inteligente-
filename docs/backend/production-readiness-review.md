@@ -7,7 +7,9 @@
 
 ## 1. Evidencia verificada
 
-- CI #543: [ejecución aprobada](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42486715691).
+- CI #549 (push): [ejecución aprobada](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42486922330).
+- CI #550 (Pull Request): [ejecución aprobada](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42486928367).
+- Ambas ejecuciones validan el head `e0ef9d1227a687c84cc8da271491c0a9fa1cce50`; el job `Tests and syntax` terminó en `success` en ambas.
 - La ejecución más reciente completó pruebas automatizadas e integración PostgreSQL, baseline de rendimiento, backup y restauración en base vacía, validación OpenAPI y sintaxis JavaScript. Todos los pasos finalizaron correctamente.
 - PostgreSQL 16 de servicio en CI.
 - Benchmark escalonado con 1, 5, 20 y 50 trabajadores; todos los escenarios cumplieron el umbral P95 de 1.000 ms.
@@ -25,7 +27,7 @@
 | Prioridad | Hallazgo | Estado actual | Acción para cerrar |
 |---|---|---|---|
 | Crítica antes de usuarios reales | Aceptación de invitaciones no exige correo confirmado | Corregido en código y CI: con introspección Supabase habilitada se consulta `GET /auth/v1/user`, se usa el correo devuelto por Auth y se exige `email_confirmed_at` antes de aceptar. | Conectar el proyecto real y ejecutar pruebas de aceptación contra su configuración Auth; CI cubre respuestas simuladas. |
-| Alta | No hay copias automáticas ni restauración probada | No existe infraestructura de backup/restore configurada en el repositorio | Elegir hosting/servicio PostgreSQL, definir RPO/RTO, automatizar backups cifrados y ejecutar una restauración documentada |
+| Alta | No hay copias automáticas externas ni política de recuperación productiva | Existen `npm run db:backup` y `npm run db:restore`; CI valida un ciclo real PostgreSQL 16 en una base separada. No hay proveedor ni almacenamiento externo configurados. | Elegir hosting/servicio PostgreSQL, definir RPO/RTO, automatizar backups cifrados con retención/alertas y ejecutar una restauración en el proveedor final |
 | Alta | Rate limiter no distribuido | Contadores en memoria por proceso | Antes de ejecutar más de una instancia, usar Redis u otro almacén compartido con límites atómicos |
 | Alta | Métricas expuestas por ruta sin autenticación propia | Corregido y probado en CI #275 y #346: `/metrics` queda deshabilitado por defecto; solo se registra con `METRICS_ENABLED=true`. La opción de habilitarlo sigue requiriendo red privada o restricción de proxy/firewall. | Antes de producción, habilitarlo solo si el entorno lo necesita y comprobar desde fuera que no sea accesible públicamente |
 | Alta | Sin alertas ni política de retención | Logs y métricas se generan, pero no hay destino/alertas configurados | Definir proveedor de observabilidad, alertas de errores/latencia/DB/429, retención y responsables |
@@ -33,7 +35,7 @@
 | Media | Proxy de confianza depende del despliegue | Fastify no habilita `trustProxy` en la configuración actual | Mantener desactivado salvo necesidad; si se usa proxy, confiar solo en IPs/CIDRs del proxy administrado |
 | Alta | Autorización de escritura podía usar el rol leído antes de adquirir el bloqueo transaccional | Corregido y probado en CI #346: las operaciones de alta/cambio/baja de miembros y creación/revocación de invitaciones vuelven a consultar el rol vigente del actor dentro de la transacción, después de bloquear el workspace. La aceptación y revocación de invitaciones siguen un orden de bloqueo común; una prueba PostgreSQL compite ambas operaciones y verifica que solo una pueda completar el ciclo de vida. | Mantener pruebas de concurrencia al ampliar la gestión de roles e invitaciones |
 | Media | Prueba de rendimiento es in-process | Usa `Fastify.inject()` y PostgreSQL en runner CI | Repetir en staging con red, TLS, proxy, recursos y pool equivalentes a producción |
-| Media | Política de despliegue/migración no documentada | Migraciones se serializan y aplican transaccionalmente; no hay procedimiento de backup previo/rollback operativo | Documentar ventana, backup previo, compatibilidad hacia atrás y recuperación ante migración fallida |
+| Media | Despliegue real aún no ensayado | Hay runbook de backup/restauración y recuperación ante migración fallida; no hay entorno staging ni proveedor final para validar el procedimiento extremo a extremo. | Ensayar en staging con backup previo, migraciones compatibles, restauración y plan de reversión |
 
 ### Nota técnica sobre la verificación de correo
 
@@ -127,3 +129,13 @@ El cierre de 29/29 entregables describe la fase principal de construcción del b
 - **Limitación inherente:** Supabase usa access tokens JWT stateless. Tras signOut o revocación, un token emitido puede seguir siendo válido hasta su expiración si solo se verifica localmente. La consulta remota por solicitud está activada cuando se configura la clave pública y permite detectar sesiones que Auth ya no reconoce. El proyecto real todavía no está conectado, por lo que CI usa un servidor HTTP local simulado y no acredita la configuración del proyecto de producción.
 - Pruebas añadidas: claims ausentes, token expirado, token antiguo, session_id mal formado, sesión revocada (401), Auth indisponible (503), cuenta local deshabilitada (403), correo sin confirmar y correo confirmado.
 - Variables nuevas: `SUPABASE_PUBLISHABLE_KEY` (o `SUPABASE_ANON_KEY`) y `SUPABASE_JWT_MAX_AGE_SECONDS`.
+
+
+## 8. Revalidación de evidencia (2026-11-08)
+
+- CI #549 (push) y CI #550 (Pull Request) terminaron correctamente en el mismo head `e0ef9d1227a687c84cc8da271491c0a9fa1cce50`.
+- Ambas ejecuciones tuvieron un único job (`Tests and syntax`) con conclusión `success`.
+- La matriz de autorización fue actualizada para distinguir cobertura automatizada existente de cobertura exhaustiva o certificación externa.
+- Los scripts de backup/restauración y su runbook están en el repositorio; su validación CI en PostgreSQL efímero no demuestra backups externos, cifrado, retención, PITR ni restauración del proveedor de producción.
+- La instrumentación HTTP actual usa etiquetas de ruta registradas (y una etiqueta común `unmatched`), histogramas y un gauge de solicitudes activas. `/metrics` permanece deshabilitado por defecto. No hay exportador OpenTelemetry, destino remoto, retención ni alertas configuradas.
+

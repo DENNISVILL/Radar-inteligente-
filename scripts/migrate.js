@@ -43,7 +43,18 @@ export async function applyMigrations(pool, migrationsDirectory = new URL("../da
         throw error;
       }
     }
-    return { discovered: files.length, versions: files.map(file => file.replace(/\.sql$/i, "")) };
+    const runtimeRole = await client.query("SELECT 1 FROM pg_roles WHERE rolname = 'radar_runtime'");
+    if (runtimeRole.rowCount > 0) {
+      // Runtime receives application DML only. Audit history is append-only,
+      // and the runtime must never alter migration bookkeeping.
+      await client.query("GRANT USAGE ON SCHEMA public TO radar_runtime");
+      await client.query("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO radar_runtime");
+      await client.query("GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO radar_runtime");
+      await client.query("REVOKE ALL ON TABLE audit_logs FROM radar_runtime");
+      await client.query("GRANT INSERT ON TABLE audit_logs TO radar_runtime");
+      await client.query("REVOKE ALL ON TABLE schema_migrations FROM radar_runtime");
+    }
+    return { discovered: files.length, versions: files.map(file => file.replace(/\\.sql$/i, "")) };
   } finally {
     try {
       if (lockAcquired) {

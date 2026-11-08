@@ -163,3 +163,11 @@ El cierre de 29/29 entregables describe la fase principal de construcción del b
 - Se detectó que la validación previa de `scripts/restore.js` utilizaba únicamente `DB_SSL=true`, mientras que `pg_restore` también respetaba `sslmode` de la URL PostgreSQL a través de libpq.
 - Se unificó la decisión TLS de la conexión de prevalidación con la intención de conexión CLI: modos `require`, `verify-ca` y `verify-full` habilitan TLS con certificado verificado; `DB_SSL=true` lo fuerza; modos de downgrade `allow` y `prefer` se rechazan. Se añadieron pruebas unitarias para estos casos.
 - **Alcance:** pruebas unitarias de selección de configuración; no se ha probado un certificado ni un servidor PostgreSQL de proveedor real. La configuración TLS final debe probarse en staging con el CA/certificado del proveedor.
+
+
+## 14. Atributos mínimos del rol PostgreSQL runtime (2026-11-08)
+
+- Se corrigió el bootstrap `database/roles/production-roles.sql`: `radar_runtime` se configura explícitamente con `NOBYPASSRLS`, además de `NOSUPERUSER`, `NOCREATEDB`, `NOCREATEROLE` y `NOREPLICATION`.
+- Se revoca explícitamente `CREATE` sobre la base de datos al rol runtime y a `PUBLIC`; el permiso se reserva al rol de migraciones para la instalación de extensiones y cambios de esquema.
+- La prueba PostgreSQL de migraciones ahora consulta `pg_roles` y falla si el rol runtime tiene cualquiera de esos atributos administrativos o `BYPASSRLS` activo.
+- **Alcance:** validación automatizada en PostgreSQL efímero de CI. No reemplaza la revisión de membresías heredadas ni el inventario de roles de una base administrada real.

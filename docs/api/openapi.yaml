@@ -585,7 +585,7 @@ paths:
                         metadata: { type: object, additionalProperties: true }
                         created_at: { type: string, format: date-time }
                   nextCursor: { type: [string, 'null'] }
-        '400': { description: Identificador, límite o cursor no válido. }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '403': { $ref: '#/components/responses/Forbidden' }
 components:
   securitySchemes:

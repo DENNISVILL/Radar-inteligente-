@@ -74,12 +74,13 @@ export async function marketReportRoutes(app,o){
  });
  app.get("/api/v1/workspaces/:workspaceId/audit-logs",{preHandler:(r,p)=>o.requireIdentity(r,p)},async(r,p)=>{
   if(!uuid.test(r.params.workspaceId))return p.code(400).send({error:"INVALID_WORKSPACE_ID",message:"El identificador del espacio no es válido."});
-  const membership=await findWorkspaceAccess(o.database,r.identity.subject,r.params.workspaceId);
-  if(!canAccessWorkspace(membership,["owner","admin"]))return p.code(403).send({error:"FORBIDDEN",message:"Solo owner o admin pueden consultar la auditoría."});
   const limit=queryLimit(r.query?.limit,50,100);
   if(limit===null)return p.code(400).send({error:"INVALID_LIMIT",message:"El límite debe ser un número entero entre 1 y 100."});
-  const result=await o.database.query("SELECT id,event_type,resource_type,resource_id,metadata,created_at FROM audit_logs WHERE workspace_id=$1 ORDER BY created_at DESC,id DESC LIMIT $2",[r.params.workspaceId,limit]);
-  return {data:result.rows};
+  const cursor=parseAuditCursor(r.query?.cursor);
+  if(cursor===undefined)return p.code(400).send({error:"INVALID_CURSOR",message:"El cursor de auditoría no es válido."});
+  const result=await listWorkspaceAuditLogs(o.database,{workspaceId:r.params.workspaceId,authSubject:r.identity.subject,limit,cursor});
+  if(result.forbidden)return p.code(403).send({error:"FORBIDDEN",message:"Solo owner o admin pueden consultar la auditoría."});
+  return {data:result.data,nextCursor:result.nextCursor};
  });
  app.get(base+"/reports",{preHandler:(r,p)=>o.requireIdentity(r,p)},async(r,p)=>{
   if(await authorize(r,p,o)!==true)return;

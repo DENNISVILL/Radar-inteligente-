@@ -179,3 +179,11 @@ El cierre de 29/29 entregables describe la fase principal de construcción del b
 - `pg_dump` y `pg_restore` ahora reciben `PGSSLMODE=verify-full` cuando TLS está habilitado, y `disable` cuando no lo está, para evitar que libpq degrade silenciosamente la conexión. Se rechazan `allow` y `prefer`.
 - Se añadieron pruebas unitarias para CA privada, modos TLS, rechazo de downgrade y paridad entre la configuración de Node y las herramientas CLI.
 - **Alcance:** pruebas de configuración. No se ha conectado un certificado ni servidor real de proveedor; la aceptación final exige prueba de staging con CA, hostname y política TLS reales.
+
+
+## 16. Cabeceras HTTP de protección (2026-11-08)
+
+- Se añadieron cabeceras comunes a todas las respuestas de la API, incluidas respuestas 404 y health: `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` y `Cross-Origin-Resource-Policy: same-origin`.
+- Se agregó una prueba HTTP con Fastify inject que verifica las cinco cabeceras tanto en una ruta existente como en una ruta inexistente.
+- No se fuerza HSTS desde la aplicación porque TLS puede terminar en un proxy administrado; HSTS debe configurarse en el punto de terminación TLS después de confirmar dominio y HTTPS. Tampoco se habilita CORS global: no hay orígenes frontend de producción definidos y permitir `*` sería una ampliación innecesaria de superficie.
+- Fastify mantiene `trustProxy` desactivado por defecto. Si el despliegue incorpora proxy, la confianza deberá limitarse a las IP/CIDR reales del proxy.

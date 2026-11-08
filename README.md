@@ -50,7 +50,7 @@ Los análisis actuales son descriptivos y dependen de los datos y fuentes que se
 ## Seguridad y límites conocidos
 
 - Nunca subas archivos `.env`, contraseñas, claves privadas ni tokens.
-- La API valida JWT mediante JWKS, pero requiere configurar `SUPABASE_URL` y un proyecto Supabase real.
+- La API valida JWT mediante JWKS, pero requiere configurar `SUPABASE_URL` y un proyecto Supabase real. Los tokens inválidos reciben 401; si el proveedor JWKS no está disponible temporalmente, la API responde 503 sin confundir la incidencia con credenciales inválidas.
 - Las invitaciones devuelven el token una sola vez al usuario que las crea. Sin proveedor de correo, su entrega es manual y debe realizarse por un canal seguro.
 - La API incluye límites por IP y ruta: 120 solicitudes por ventana de 60 segundos por defecto y 10 para aceptar invitaciones; `/health` y `/ready` quedan excluidos. Es un control en memoria por proceso, no distribuido: al escalar a varias instancias debe sustituirse o complementarse con un almacén compartido. Si se despliega detrás de un proxy, la confianza en cabeceras de IP debe configurarse explícitamente y con proxies confiables.
 - No hay todavía frontend, despliegue productivo ni políticas RLS configuradas en un proyecto Supabase.

@@ -142,7 +142,7 @@ El cierre de 29/29 entregables describe la fase principal de construcción del b
 
 ## 9. Endurecimiento de credenciales de backup (2026-11-08)
 
-- `scripts/backup.js` y `scripts/restore.js` ya no colocan la URL de conexión PostgreSQL en los argumentos del proceso; la entregan a libpq mediante la variable de entorno `PGDATABASE`.
-- El objetivo es reducir la exposición accidental de contraseñas en listados de procesos. Las variables de entorno siguen siendo secretos: deben inyectarse desde un gestor de secretos, limitarse al proceso de backup/restauración y nunca imprimirse en logs.
+- `scripts/backup.js` y `scripts/restore.js` ya no colocan la URL de conexión PostgreSQL en los argumentos del proceso. La contraseña se entrega mediante un `.pgpass` temporal de permisos `0600`, eliminado incluso si el comando falla.
+- Se añadieron pruebas para verificar permisos del archivo, escape de `:` y `\\`, ausencia de `PGPASSWORD` y limpieza del archivo temporal al finalizar o fallar.
 - `METRICS_ENABLED` permanece desactivado por defecto. Si se activa, `/metrics` debe quedar accesible únicamente desde la red de monitorización o detrás de controles de acceso del proxy; no publicarlo abiertamente en Internet.
 - No hay todavía un backend remoto de métricas/trazas ni reglas de alertas. Los logs actuales se emiten por el logger de la aplicación y su retención depende del entorno de ejecución.

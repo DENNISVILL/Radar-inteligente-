@@ -5,7 +5,7 @@ import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { withPostgresCliEnv } from "../../scripts/postgres-cli.js";
-import { postgresSslConfig } from "../../src/infrastructure/database/postgres-ssl.js";
+import { postgresSslConfig, postgresConnectionOptions } from "../../src/infrastructure/database/postgres-ssl.js";
 
 test("PostgreSQL CLI credentials use a private temporary passfile, not argv or environment passwords", async () => {
   let passfile;
@@ -111,4 +111,16 @@ test("PostgreSQL CLI rejects downgrade sslmodes and applies DB_SSL consistently"
     if (previous == null) delete process.env.DB_SSL;
     else process.env.DB_SSL = previous;
   }
+});
+
+test("node-postgres connection options strip TLS URL flags after resolving strict SSL settings", () => {
+  const options = postgresConnectionOptions(
+    "postgres://radar:secret@db.example.test/radar?sslmode=disable&application_name=radar&sslrootcert=%2Ftmp%2Fca.pem",
+    true
+  );
+  const parsed = new URL(options.connectionString);
+  assert.equal(parsed.searchParams.has("sslmode"), false);
+  assert.equal(parsed.searchParams.has("sslrootcert"), false);
+  assert.equal(parsed.searchParams.get("application_name"), "radar");
+  assert.deepEqual(options.ssl, { rejectUnauthorized: true, ca: "-----BEGIN CERTIFICATE-----\\nTEST CA MATERIAL\\n-----END CERTIFICATE-----\\n" });
 });

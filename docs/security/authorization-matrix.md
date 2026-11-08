@@ -26,7 +26,8 @@ Estado: matriz de referencia contrastada con pruebas HTTP unitarias y una suite 
 | Generar/leer informes | Sí | Sí | Sí | Sí | No |
 | Guardar snapshots | Sí | Sí | Sí | No | No |
 | Exportar PDF de snapshot autorizado | Sí | Sí | Sí | Según política de lectura | No |
-| Consultar auditoría | Sí | Según política | No | No | No |
+| Consultar auditoría | Sí | Sí | No | No | No |
+| Exportar auditoría NDJSON por página | Sí | Sí | No | No | No |
 
 La política efectiva de cada endpoint debe coincidir con las reglas de negocio implementadas. Si difiere, documentar la excepción explícitamente y probarla.
 

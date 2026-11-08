@@ -76,8 +76,6 @@ export async function acceptWorkspaceInvitation(database,{token,identity}){
   const user=account.rows[0];
   if(!user||user.status!=="active"){await client.query("ROLLBACK");return {error:"ACCOUNT_DISABLED"};}
   const userId=user.id;
-  const workspace=await client.query("SELECT id FROM workspaces WHERE id=$1 AND status='active' FOR UPDATE",[invitation.workspace_id]);
-  if(!workspace.rows[0]){await client.query("ROLLBACK");return {error:"WORKSPACE_NOT_FOUND"};}
   const member=await client.query(`INSERT INTO workspace_members(workspace_id,user_id,role)
    VALUES($1,$2,$3) ON CONFLICT(workspace_id,user_id) DO NOTHING RETURNING workspace_id,user_id,role,created_at`,
    [invitation.workspace_id,userId,invitation.role]);

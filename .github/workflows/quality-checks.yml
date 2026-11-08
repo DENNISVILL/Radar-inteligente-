@@ -60,7 +60,7 @@ jobs:
         run: npm run perf
 
       - name: Create empty database for restore verification
-        run: psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE DATABASE radar_restore_test"
+        run: psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE DATABASE radar_restore_test OWNER radar_migration_owner"
 
       - name: Create and verify PostgreSQL backup
         env:
@@ -70,10 +70,16 @@ jobs:
 
       - name: Restore backup into an empty database
         env:
-          RESTORE_DATABASE_URL: postgres://radar:radar_test@localhost:5432/radar_restore_test
+          RESTORE_DATABASE_URL: postgres://radar_migration_owner:radar_migration_test@localhost:5432/radar_restore_test
           RESTORE_FILE: /tmp/radar-ci-backup.dump
           RESTORE_CONFIRM_DATABASE: radar_restore_test
         run: npm run db:restore
+
+      - name: Reapply runtime privileges after restore
+        env:
+          NODE_ENV: production
+          MIGRATION_DATABASE_URL: postgres://radar_migration_owner:radar_migration_test@localhost:5432/radar_restore_test
+        run: npm run db:migrate
 
       - name: Verify restored schema and migration history
         env:

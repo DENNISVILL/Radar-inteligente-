@@ -100,7 +100,7 @@ test("HTTP workspace endpoints reject disabled local identities", async () => {
   try {
     const response = await app.inject({ method: "GET", url: "/api/v1/workspaces" });
     assert.equal(response.statusCode, 403);
-    assert.equal(response.json().statusCode, 403);
+    assert.equal(response.statusCode, 403);
     assert.equal(calls.length, 1);
   } finally {
     await app.close();

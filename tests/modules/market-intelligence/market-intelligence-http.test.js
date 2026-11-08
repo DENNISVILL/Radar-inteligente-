@@ -157,3 +157,26 @@ test("viewer can read products, price history, observations and market analysis"
   assert.ok(calls.some(call=>call.sql.includes("FROM market_observations")));
  }finally{await app.close();}
 });
+
+test("foreign-workspace competitor and product IDs cannot be updated or archived",async()=>{
+ const {app,calls}=await buildApp({role:"admin"});
+ const requests=[
+  {method:"PATCH",url:`/api/v1/workspaces/${workspaceId}/competitors/${productId}`,payload:{name:"Intento"}},
+  {method:"DELETE",url:`/api/v1/workspaces/${workspaceId}/competitors/${productId}`},
+  {method:"PATCH",url:`/api/v1/workspaces/${workspaceId}/products/${productId}`,payload:{name:"Intento"}},
+  {method:"DELETE",url:`/api/v1/workspaces/${workspaceId}/products/${productId}`}
+ ];
+ try{
+  for(const request of requests){
+   const response=await app.inject(request);
+   assert.equal(response.statusCode,404,request.method+" "+request.url);
+   assert.equal(response.json().error,"NOT_FOUND");
+  }
+  const scopedMutations=calls.filter(call=>call.sql.startsWith("UPDATE competitors")||call.sql.startsWith("UPDATE market_products"));
+  assert.equal(scopedMutations.length,4);
+  for(const call of scopedMutations){
+   assert.match(call.sql,/WHERE workspace_id=\$1 AND id=\$2/);
+   assert.deepEqual(call.values.slice(0,2),[workspaceId,productId]);
+  }
+ }finally{await app.close();}
+});

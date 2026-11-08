@@ -10,7 +10,9 @@ const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[
 async function requireIdentity(request,reply,options){
  const token=readBearerToken(request.headers.authorization);
  if(!token)return reply.code(401).send({error:"UNAUTHORIZED",message:"Se requiere un token Bearer válido."});
- try{\n  request.identity=await verifySupabaseAccessToken(token,options.config.supabaseUrl,{maxTokenAgeSeconds:options.config.supabaseJwtMaxAgeSeconds??3600});\n  if(options.config.supabaseApiKey)request.identity=await verifySupabaseSession(request.identity,token,{supabaseUrl:options.config.supabaseUrl,apiKey:options.config.supabaseApiKey});\n }
+ try{
+  request.identity=await verifySupabaseAccessToken(token,options.config.supabaseUrl,{maxTokenAgeSeconds:options.config.supabaseJwtMaxAgeSeconds??3600});\n  if(options.config.supabaseApiKey)request.identity=await verifySupabaseSession(request.identity,token,{supabaseUrl:options.config.supabaseUrl,apiKey:options.config.supabaseApiKey});
+ }
  catch(error){
   const invalidTokenCodes=new Set([
    "ERR_JWT_EXPIRED",

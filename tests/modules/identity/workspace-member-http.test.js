@@ -161,3 +161,42 @@ test("HTTP member routes reject malformed workspace IDs before membership lookup
   assert.equal(calls.length,0);
  }finally{await app.close();}
 });
+
+
+test("analysts and viewers cannot list or mutate workspace membership",async()=>{
+ for(const role of ["analyst","viewer"]){
+  const {app,calls}=await buildApp({role});
+  const requests=[
+   {method:"GET",url:`/api/v1/workspaces/${workspaceId}/members`},
+   {method:"POST",url:`/api/v1/workspaces/${workspaceId}/members`,payload:{email:"person@example.test",role:"analyst"}},
+   {method:"PATCH",url:`/api/v1/workspaces/${workspaceId}/members/${userId}`,payload:{role:"viewer"}},
+   {method:"DELETE",url:`/api/v1/workspaces/${workspaceId}/members/${userId}`}
+  ];
+  try{
+   for(const request of requests){
+    const response=await app.inject(request);
+    assert.equal(response.statusCode,403,role+" "+request.method+" "+request.url);
+    assert.equal(response.json().error,"FORBIDDEN");
+   }
+   assert.equal(calls.some(call=>call.sql?.includes("joined_at")),false);
+   assert.equal(calls.some(call=>call.sql?.includes("INSERT INTO workspace_members")||call.sql?.includes("UPDATE workspace_members")||call.sql?.includes("DELETE FROM workspace_members")),false);
+   assert.equal(calls.some(call=>call.sql==="RELEASE"),false);
+  }finally{await app.close();}
+ }
+});
+
+test("owner and admin can list workspace members while analyst and viewer cannot",async()=>{
+ for(const role of ["owner","admin","analyst","viewer"]){
+  const {app,calls}=await buildApp({role});
+  try{
+   const response=await app.inject({method:"GET",url:`/api/v1/workspaces/${workspaceId}/members`});
+   if(role==="owner"||role==="admin"){
+    assert.equal(response.statusCode,200,role);
+    assert.ok(calls.some(call=>call.sql?.includes("joined_at")));
+   }else{
+    assert.equal(response.statusCode,403,role);
+    assert.equal(calls.some(call=>call.sql?.includes("joined_at")),false);
+   }
+  }finally{await app.close();}
+ }
+});

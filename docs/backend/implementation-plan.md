@@ -204,7 +204,7 @@ Los cambios se desarrollan en `backend/foundation`, se prueban en CI y se mantie
 - [x] Copiar y verificar el respaldo dentro de un directorio temporal privado y restaurar exclusivamente desde esa copia para cerrar la ventana TOCTOU del archivo de origen.
 - [x] Rechazar enlaces simbólicos tanto en el respaldo como en su manifiesto y limpiar la copia temporal ante éxito o error.
 - [x] Añadir pruebas para corrupción, manifiestos inválidos, permisos de staging y sustitución posterior del archivo de origen.
-- [ ] Confirmar una ejecución CI exitosa sobre el head final del PR; la validación anterior no cubre los últimos commits.
+- [x] Confirmar CI exitosa sobre el head actual del PR: CI #768 aprobada (256 pruebas, 0 fallidas; PostgreSQL, backup/restauración, OpenAPI y sintaxis).
 - [ ] Para autenticidad frente a un atacante con capacidad de reemplazar respaldo y manifiesto, definir firma digital/HMAC y gestión separada de claves. SHA-256 por sí solo detecta corrupción accidental, no autentica el origen.
 
 
@@ -215,5 +215,5 @@ Los cambios se desarrollan en `backend/foundation`, se prueban en CI y se mantie
 - [x] Contador de eventos y cursor de continuación para completar exportaciones sin respuestas ilimitadas.
 - [x] Reutilizar la revalidación transaccional y bloqueos workspace → membresía antes de leer auditoría.
 - [x] Documentar contrato OpenAPI, matriz de roles y límites de seguridad.
-- [x] Confirmar CI exitosa para el último head del PR: CI #766 aprobada con 256 pruebas, 0 fallidas.
+- [x] Confirmar CI exitosa para el último head del PR: CI #768 aprobada con 256 pruebas, 0 fallidas.
 - [ ] Definir destino externo inmutable/cifrado, retención y firma digital o HMAC con gestión separada de claves si se requiere autenticidad verificable frente a un atacante.

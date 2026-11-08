@@ -1,9 +1,11 @@
 -- Bootstrap de roles para una base PostgreSQL NUEVA.
 -- Ejecutar una sola vez como administrador de la base:
--- psql "$ADMIN_DATABASE_URL" -v database_name=radar_comercial \
---   -v migration_password='...' -v runtime_password='...' -f database/roles/production-roles.sql
+-- MIGRATION_DB_PASSWORD='...' RUNTIME_DB_PASSWORD='...' psql "$ADMIN_DATABASE_URL" \
+--   -v database_name=radar_comercial -f database/roles/production-roles.sql
 -- No guardar contraseñas reales en el repositorio, shell history ni archivos compartidos.
 \set ON_ERROR_STOP on
+\getenv migration_password MIGRATION_DB_PASSWORD
+\getenv runtime_password RUNTIME_DB_PASSWORD
 
 SELECT format('CREATE ROLE radar_migration_owner LOGIN PASSWORD %L', :'migration_password')
 WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'radar_migration_owner') \gexec

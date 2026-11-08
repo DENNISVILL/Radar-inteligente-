@@ -19,6 +19,7 @@ export function loadConfig(env = process.env) {
   const rateLimitWindowMs=parseInteger(env.RATE_LIMIT_WINDOW_MS,60000,"RATE_LIMIT_WINDOW_MS",{min:1000,max:3600000});
   return Object.freeze({
     nodeEnv,host:env.HOST??"127.0.0.1",port,databaseUrl:env.DATABASE_URL??"",
+    migrationDatabaseUrl:env.MIGRATION_DATABASE_URL??"",
     databaseSsl:parseBoolean(env.DB_SSL),logLevel:env.LOG_LEVEL??"info",
     supabaseUrl:supabaseUrl.replace(/\/$/,""),
     rateLimitMax,rateLimitAuthMax,rateLimitWindowMs,

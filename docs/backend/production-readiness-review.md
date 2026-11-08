@@ -7,8 +7,8 @@
 
 ## 1. Evidencia verificada
 
-- CI #346: [ejecución aprobada](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42480259690).
-- 198 pruebas aprobadas y 0 fallidas.
+- CI #352: [ejecución aprobada](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42480447270).
+- 199 pruebas aprobadas y 0 fallidas.
 - PostgreSQL 16 de servicio en CI.
 - Benchmark escalonado con 1, 5, 20 y 50 trabajadores; todos los escenarios cumplieron el umbral P95 de 1.000 ms.
 - OpenAPI validado y comprobación de sintaxis aprobada.
@@ -31,7 +31,7 @@
 | Alta | Sin alertas ni política de retención | Logs y métricas se generan, pero no hay destino/alertas configurados | Definir proveedor de observabilidad, alertas de errores/latencia/DB/429, retención y responsables |
 | Alta | Privilegios y conectividad de PostgreSQL no verificados en entorno real | Pool configurado con máximo 10 conexiones; TLS opcional vía `DB_SSL` | Crear rol de mínimo privilegio, restringir red, activar TLS con certificados verificados y dimensionar pool según límite del hosting |
 | Media | Proxy de confianza depende del despliegue | Fastify no habilita `trustProxy` en la configuración actual | Mantener desactivado salvo necesidad; si se usa proxy, confiar solo en IPs/CIDRs del proxy administrado |
-| Alta | Autorización de escritura podía usar el rol leído antes de adquirir el bloqueo transaccional | Corregido y probado en CI #346: las operaciones de alta/cambio/baja de miembros y creación/revocación de invitaciones vuelven a consultar el rol vigente del actor dentro de la transacción, después de bloquear el workspace. La aceptación y revocación de invitaciones siguen un orden de bloqueo común. | Mantener pruebas de concurrencia al ampliar la gestión de roles e invitaciones |
+| Alta | Autorización de escritura podía usar el rol leído antes de adquirir el bloqueo transaccional | Corregido y probado en CI #346: las operaciones de alta/cambio/baja de miembros y creación/revocación de invitaciones vuelven a consultar el rol vigente del actor dentro de la transacción, después de bloquear el workspace. La aceptación y revocación de invitaciones siguen un orden de bloqueo común; una prueba PostgreSQL compite ambas operaciones y verifica que solo una pueda completar el ciclo de vida. | Mantener pruebas de concurrencia al ampliar la gestión de roles e invitaciones |
 | Media | Prueba de rendimiento es in-process | Usa `Fastify.inject()` y PostgreSQL en runner CI | Repetir en staging con red, TLS, proxy, recursos y pool equivalentes a producción |
 | Media | Política de despliegue/migración no documentada | Migraciones se serializan y aplican transaccionalmente; no hay procedimiento de backup previo/rollback operativo | Documentar ventana, backup previo, compatibilidad hacia atrás y recuperación ante migración fallida |
 
@@ -52,7 +52,7 @@ Referencias oficiales:
 - SSL de PostgreSQL configurable con validación de certificado cuando se activa.
 - Fastify no confía por defecto en cabeceras de proxy.
 - Rate limit por IP/ruta con cabeceras RateLimit y respuesta 429; capacidad acotada, limpieza de ventanas expiradas y rechazo temporal 503 cuando no hay espacio para un cliente nuevo sin alterar ventanas activas. Prueba de regresión incluida.
-- Mutaciones de miembros e invitaciones revalidan el rol del actor bajo el bloqueo del workspace. Aceptación y revocación de invitaciones adquieren bloqueos en orden workspace → invitación; las pruebas PostgreSQL de aceptación concurrente y ciclo de vida están aprobadas en CI #346.
+- Mutaciones de miembros e invitaciones revalidan el rol del actor bajo el bloqueo del workspace. Aceptación y revocación de invitaciones adquieren bloqueos en orden workspace → invitación; las pruebas PostgreSQL de aceptación concurrente y ciclo de vida están aprobadas en CI #352.
 - Logs estructurados con redacción de Authorization y Cookie.
 - Errores temporales del proveedor de identidad no se presentan como credenciales inválidas; la API responde 503 y falla de forma cerrada.
 - Endpoint de métricas con rutas registradas como etiquetas para limitar cardinalidad; deshabilitado por defecto y opt-in mediante `METRICS_ENABLED=true`.
@@ -74,4 +74,4 @@ No se deben inventar ni simular estas decisiones: proveedor de hosting, servicio
 
 ## 6. Conclusión
 
-El cierre de 29/29 entregables describe la fase principal de construcción del backend, no la preparación integral para producción. La validación CI #346 (198 pruebas, 0 fallidas) confirma la calidad automatizada del código actual, pero no sustituye la configuración de infraestructura, recuperación, seguridad externa ni pruebas de staging.
+El cierre de 29/29 entregables describe la fase principal de construcción del backend, no la preparación integral para producción. La validación CI #352 (199 pruebas, 0 fallidas) confirma la calidad automatizada del código actual, pero no sustituye la configuración de infraestructura, recuperación, seguridad externa ni pruebas de staging.

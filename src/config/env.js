@@ -22,6 +22,6 @@ export function loadConfig(env = process.env) {
     databaseSsl:parseBoolean(env.DB_SSL),logLevel:env.LOG_LEVEL??"info",
     supabaseUrl:supabaseUrl.replace(/\/$/,""),
     rateLimitMax,rateLimitAuthMax,rateLimitWindowMs,
-    metricsEnabled: parseBoolean(env.METRICS_ENABLED, true)
+    metricsEnabled: parseBoolean(env.METRICS_ENABLED, false)
   });
 }

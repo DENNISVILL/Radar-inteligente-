@@ -154,3 +154,37 @@ test("research HTTP permissions follow the complete workspace role matrix",async
   }finally{await app.close();}
  }
 });
+
+
+
+test("research read, create, update and archive routes enforce the full role matrix",async()=>{
+ for(const role of ["owner","admin","analyst","viewer"]){
+  const {app,calls}=await buildApp({role});
+  try{
+   const read=await app.inject({method:"GET",url:`/api/v1/workspaces/${workspaceA}/researches/${researchId}`});
+   assert.equal(read.statusCode,200,role+" can read research");
+   const create=await app.inject({method:"POST",url:`/api/v1/workspaces/${workspaceA}/researches`,payload:{
+    title:"Estudio",country:"Ecuador",sector:"Retail",objective:"Analizar el mercado"
+   }});
+   const update=await app.inject({method:"PATCH",url:`/api/v1/workspaces/${workspaceA}/researches/${researchId}`,payload:{title:"Actualizado"}});
+   const archive=await app.inject({method:"DELETE",url:`/api/v1/workspaces/${workspaceA}/researches/${researchId}`});
+   if(role==="viewer"){
+    for(const response of [create,update,archive]){
+     assert.equal(response.statusCode,403,role+" cannot mutate research");
+     assert.equal(response.json().error,"FORBIDDEN");
+    }
+    assert.equal(calls.some(call=>call.sql.includes("INSERT INTO researches")||call.sql.includes("UPDATE researches")),false);
+   }else{
+    assert.equal(create.statusCode,201,role+" can create research");
+    assert.notEqual(update.statusCode,403,role+" is authorized to attempt update");
+    assert.notEqual(archive.statusCode,403,role+" is authorized to attempt archive");
+    const scopedUpdates=calls.filter(call=>call.sql.includes("UPDATE researches"));
+    assert.ok(scopedUpdates.length>=2);
+    for(const call of scopedUpdates){
+     assert.deepEqual(call.values.slice(0,2),[workspaceA,researchId]);
+     assert.match(call.sql,/WHERE workspace_id=\$1 AND id=\$2/);
+    }
+   }
+  }finally{await app.close();}
+ }
+});

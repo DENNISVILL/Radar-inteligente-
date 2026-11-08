@@ -188,3 +188,10 @@ Los cambios se desarrollan en `backend/foundation`, se prueban en CI y se mantie
 ### Integridad de snapshots de informes
 - [x] Impedir UPDATE y DELETE directos de snapshots; permitir únicamente la eliminación en cascada derivada del ciclo de vida de la investigación/workspace.
 - [x] Prueba de integración PostgreSQL para borrado directo rechazado y cascada del recurso padre.
+
+
+### Historial de auditoría
+- [x] Bloquear la lectura frente a revocaciones simultáneas mediante revalidación transaccional y bloqueo workspace → membresía.
+- [x] Incorporar paginación keyset estable por `(created_at,id)`, límite 50 por defecto / 100 máximo y cursor opaco validado.
+- [x] Documentar el endpoint owner/admin en OpenAPI y modelo de amenazas.
+- [x] Añadir pruebas unitarias, HTTP y PostgreSQL para permisos actuales, cursores y recorrido de páginas.

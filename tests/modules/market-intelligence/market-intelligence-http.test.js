@@ -20,6 +20,8 @@ async function buildApp({role="owner"}={}){
    return {
     async query(sql,values=[]){
      calls.push({sql,values});
+     if(sql.includes("FROM workspaces WHERE"))return {rows:[{id:workspaceId}]};
+     if(sql.includes("FROM workspace_members wm"))return {rows:[{role:"owner"}]};
      if(sql.includes("INSERT INTO competitors"))return {rows:[{id:"competitor-1",workspace_id:workspaceId,name:values[2]}]};
      return {rows:[]};
     },

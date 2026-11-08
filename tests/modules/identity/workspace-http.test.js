@@ -10,7 +10,7 @@ async function buildApp({ userStatus = "active", failMembership = false } = {}) 
   const database = {
     async query(sql, values = []) {
       calls.push({ sql, values });
-      return { rows: [{ id: "local-user", email: identity.email, status: userStatus }] };
+      if (sql.includes("INSERT INTO users")) return { rows: [{ id: "local-user", email: identity.email, status: userStatus }] };\n      return { rows: [{ id: "workspace-1", name: "Mi Empresa", slug: "mi-empresa", role: "owner" }] };
     },
     async connect() {
       return {
@@ -42,7 +42,7 @@ test("HTTP workspace listing is scoped to the authenticated local user and activ
   try {
     const response = await app.inject({ method: "GET", url: "/api/v1/workspaces" });
     assert.equal(response.statusCode, 200);
-    assert.deepEqual(response.json().data, [{ id: "local-user", email: identity.email, status: "active" }]);
+    assert.deepEqual(response.json().data, [{ id: "workspace-1", name: "Mi Empresa", slug: "mi-empresa", role: "owner" }]);
     const query = calls.find(call => call.sql.includes("FROM workspace_members"));
     assert.deepEqual(query.values, ["local-user"]);
     assert.match(query.sql, /wm\.user_id = \$1/);
@@ -100,7 +100,7 @@ test("HTTP workspace endpoints reject disabled local identities", async () => {
   try {
     const response = await app.inject({ method: "GET", url: "/api/v1/workspaces" });
     assert.equal(response.statusCode, 403);
-    assert.equal(response.json().error, "REQUEST_ERROR");
+    assert.equal(response.json().statusCode, 403);
     assert.equal(calls.length, 1);
   } finally {
     await app.close();

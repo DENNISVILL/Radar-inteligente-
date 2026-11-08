@@ -5,8 +5,9 @@ const BUCKETS = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5];
 
 function traceContext(value) {
   const match = typeof value === "string" ? TRACEPARENT.exec(value) : null;
-  const traceId = match && !/^0+$/.test(match[1]) ? match[1].toLowerCase() : randomBytes(16).toString("hex");
-  const parentSpanId = match && !/^0+$/.test(match[2]) ? match[2].toLowerCase() : null;
+  const validParent = match && !/^0+$/.test(match[1]) && !/^0+$/.test(match[2]);
+  const traceId = validParent ? match[1].toLowerCase() : randomBytes(16).toString("hex");
+  const parentSpanId = validParent ? match[2].toLowerCase() : null;
   const spanId = randomBytes(8).toString("hex");
   return { traceId, parentSpanId, spanId, traceparent: `00-${traceId}-${spanId}-01` };
 }
@@ -23,15 +24,18 @@ export function registerObservability(app, { metricsEnabled = true } = {}) {
   app.addHook("onRequest", async (request, reply) => {
     const context = traceContext(request.headers.traceparent);
     request.radarTrace = context;
-    request.radarStartedAt = process.hrtime.bigint();
-    activeRequests += 1;
+    request.radarMetricsRequest = request.url.split("?")[0] === "/metrics";
+    if (!request.radarMetricsRequest) {
+      request.radarStartedAt = process.hrtime.bigint();
+      activeRequests += 1;
+    }
     reply.header("x-trace-id", context.traceId);
     reply.header("traceparent", context.traceparent);
   });
 
   app.addHook("onResponse", async (request, reply) => {
+    if (request.radarMetricsRequest) return;
     activeRequests = Math.max(0, activeRequests - 1);
-    if (request.url.split("?")[0] === "/metrics") return;
 
     const route = request.routeOptions?.url ?? "unmatched";
     const method = request.method;

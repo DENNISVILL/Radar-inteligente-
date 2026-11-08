@@ -7,7 +7,7 @@ const workspaceA="11111111-1111-4111-8111-111111111111";
 const workspaceB="33333333-3333-4333-8333-333333333333";
 const researchId="22222222-2222-4222-8222-222222222222";
 
-async function buildApp({role="owner",accessibleWorkspaces=[workspaceA]}={}){
+async function buildApp({role="owner",accessibleWorkspaces=[workspaceA],researchExists=true}={}){
  const calls=[];
  const database={
   async query(sql,values=[]){
@@ -19,7 +19,7 @@ async function buildApp({role="owner",accessibleWorkspaces=[workspaceA]}={}){
    if(sql.includes("INSERT INTO users"))return {rows:[{id:"local-user",email:"user@example.test",status:"active"}]};
    if(sql.includes("INSERT INTO researches"))return {rows:[{id:researchId,workspace_id:values[0],created_by:values[1],title:values[2],status:"draft"}]};
    if(sql.includes("FROM researches")){
-    return {rows:[{id:researchId,workspace_id:values[0],title:"Estudio",status:"draft"}]};
+    return {rows:researchExists?[{id:researchId,workspace_id:values[0],title:"Estudio",status:"draft"}]:[]};
    }
    return {rows:[]};
   }
@@ -187,4 +187,26 @@ test("research read, create, update and archive routes enforce the full role mat
    }
   }finally{await app.close();}
  }
+});
+
+
+
+test("foreign research identifiers inside an authorized workspace resolve as not found and remain workspace-scoped",async()=>{
+ const foreignResearchId="55555555-5555-4555-8555-555555555555";
+ const {app,calls}=await buildApp({researchExists:false});
+ try{
+  const read=await app.inject({method:"GET",url:`/api/v1/workspaces/${workspaceA}/researches/${foreignResearchId}`});
+  assert.equal(read.statusCode,404);
+  assert.equal(read.json().error,"RESEARCH_NOT_FOUND");
+  const update=await app.inject({method:"PATCH",url:`/api/v1/workspaces/${workspaceA}/researches/${foreignResearchId}`,payload:{title:"Cambio"}});
+  assert.equal(update.statusCode,404);
+  const archive=await app.inject({method:"DELETE",url:`/api/v1/workspaces/${workspaceA}/researches/${foreignResearchId}`});
+  assert.equal(archive.statusCode,404);
+  const resourceQueries=calls.filter(call=>call.sql.includes("FROM researches")||call.sql.includes("UPDATE researches"));
+  assert.ok(resourceQueries.length>=3);
+  for(const query of resourceQueries){
+   assert.deepEqual(query.values.slice(0,2),[workspaceA,foreignResearchId]);
+   assert.match(query.sql,/workspace_id=\$1 AND id=\$2/);
+  }
+ }finally{await app.close();}
 });

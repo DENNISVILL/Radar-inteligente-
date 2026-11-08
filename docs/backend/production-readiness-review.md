@@ -7,15 +7,15 @@
 
 ## 1. Evidencia verificada
 
-- CI #352: [ejecución aprobada](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42480447270).
-- 199 pruebas aprobadas y 0 fallidas.
+- CI #543: [ejecución aprobada](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42486715691).
+- La ejecución más reciente completó pruebas automatizadas e integración PostgreSQL, baseline de rendimiento, backup y restauración en base vacía, validación OpenAPI y sintaxis JavaScript. Todos los pasos finalizaron correctamente.
 - PostgreSQL 16 de servicio en CI.
 - Benchmark escalonado con 1, 5, 20 y 50 trabajadores; todos los escenarios cumplieron el umbral P95 de 1.000 ms.
 - OpenAPI validado y comprobación de sintaxis aprobada.
 - Health y readiness implementados; readiness ejecuta `SELECT 1` y responde 503 si PostgreSQL no está disponible.
 - Cierre ordenado del servidor y pool ante SIGINT/SIGTERM.
 - Migraciones serializadas con advisory lock y transacción individual por migración.
-- Rate limiting por IP/ruta en memoria, no compartido entre instancias. Al alcanzar `maxBuckets`, elimina únicamente buckets expirados; si la capacidad sigue llena, conserva las ventanas activas y responde 503 `RATE_LIMIT_CAPACITY` con `Retry-After` en lugar de expulsar clientes activos.
+- Rate limiting por IP/ruta en memoria, no compartido entre instancias. Usa plantillas de rutas registradas y agrupa rutas no registradas bajo `__unmatched__` por IP para impedir que URLs aleatorias creen buckets ilimitados. Al alcanzar `maxBuckets`, elimina únicamente buckets expirados; si la capacidad sigue llena, conserva las ventanas activas y responde 503 `RATE_LIMIT_CAPACITY` con `Retry-After`. Prueba de regresión incluida y aprobada en CI #543.
 - Métricas HTTP Prometheus y correlación básica de trazas; `/metrics` deshabilitado por defecto. No hay exportador OpenTelemetry ni sistema de alertas configurado.
 - Verificación JWT distingue tokens inválidos (401) de indisponibilidad del proveedor JWKS (503); prueba HTTP simula respuesta 503 del endpoint JWKS y confirma que no se consulta la base de datos.
 - Las operaciones de escritura de miembros e invitaciones vuelven a comprobar el rol actual del actor dentro de la transacción y bajo bloqueo de la fila del workspace. La aceptación y revocación de invitaciones usan el mismo orden de bloqueo (workspace y luego invitación) para evitar la inversión de bloqueos.

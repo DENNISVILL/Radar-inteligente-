@@ -232,3 +232,19 @@ test("report snapshot creation follows the owner/admin/analyst writer matrix",as
   }finally{await app.close();}
  }
 });
+
+
+
+test("all four workspace roles can read report history and an authorized snapshot",async()=>{
+ const snapshot={id:reportId,version:1,generated_at:new Date(),generated_by:"user-1",report_hash:"a".repeat(64),integrity_verified:true,report_data:{research:{title:"Estudio"}}};
+ for(const role of ["owner","admin","analyst","viewer"]){
+  const {app,calls}=await buildApp({role,reportRows:[snapshot]});
+  try{
+   const history=await app.inject({method:"GET",url:`/api/v1/workspaces/${workspaceA}/researches/${researchId}/reports`});
+   assert.equal(history.statusCode,200,role+" can read report history");
+   const detail=await app.inject({method:"GET",url:`/api/v1/workspaces/${workspaceA}/researches/${researchId}/reports/${reportId}`});
+   assert.equal(detail.statusCode,200,role+" can read report snapshot");
+   assert.ok(calls.filter(call=>call.sql.includes("FROM market_reports")).length>=2);
+  }finally{await app.close();}
+ }
+});

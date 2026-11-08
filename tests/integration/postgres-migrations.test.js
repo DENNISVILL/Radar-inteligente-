@@ -30,8 +30,11 @@ test("PostgreSQL migrations are executable, repeatable and enforce tenant relati
   await assert.rejects(()=>pool.query("INSERT INTO market_observations(workspace_id,research_id,competitor_id,observation_type,title,content,observed_on) VALUES($1,$2,$3,'risk','Cross tenant','Must be rejected','2026-11-07')",[workspaceA,research.rows[0].id,competitorB.rows[0].id]),/foreign key/i);
   await assert.rejects(()=>pool.query("INSERT INTO market_reports(workspace_id,research_id,version,report_data,generated_by) VALUES($1,$2,1,'{}'::jsonb,$3)",[workspaceB,research.rows[0].id,userId]),/foreign key/i);
   assert.ok(researchB.rows[0].id);
+  await assert.rejects(()=>pool.query("INSERT INTO market_products(workspace_id,research_id,name) VALUES($1,$2,'Cross tenant research product')",[workspaceA,researchB.rows[0].id]),/foreign key/i);
+  await assert.rejects(()=>pool.query("INSERT INTO market_observations(workspace_id,research_id,competitor_id,observation_type,title,content,observed_on) VALUES($1,$2,$3,'risk','Cross tenant research','Must be rejected','2026-11-07')",[workspaceB,researchB.rows[0].id,competitor.rows[0].id]),/foreign key/i);
   const product=await pool.query("INSERT INTO market_products(workspace_id,competitor_id,research_id,created_by,name) VALUES($1,$2,$3,$4,'Product A') RETURNING id",[workspaceA,competitor.rows[0].id,research.rows[0].id,userId]);
   await pool.query("INSERT INTO price_observations(workspace_id,product_id,recorded_by,price,currency,observed_on) VALUES($1,$2,$3,12.50,'USD','2026-11-07')",[workspaceA,product.rows[0].id,userId]);
+  await assert.rejects(()=>pool.query("INSERT INTO price_observations(workspace_id,product_id,recorded_by,price,currency,observed_on) VALUES($1,$2,$3,99.00,'USD','2026-11-07')",[workspaceB,product.rows[0].id,userId]),/foreign key/i);
   const history=await pool.query("SELECT count(*)::int AS count FROM price_observations WHERE workspace_id=$1 AND product_id=$2",[workspaceA,product.rows[0].id]);
   assert.equal(history.rows[0].count,1);
   const snapshot=await pool.query("INSERT INTO market_reports(workspace_id,research_id,version,report_data,generated_by) VALUES($1,$2,1,$3::jsonb,$4) RETURNING id,report_hash",[workspaceA,research.rows[0].id,JSON.stringify({title:"Snapshot de integración"}),userId]);

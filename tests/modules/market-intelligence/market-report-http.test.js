@@ -8,7 +8,7 @@ const workspaceB="33333333-3333-4333-8333-333333333333";
 const researchId="22222222-2222-4222-8222-222222222222";
 const reportId="44444444-4444-4444-8444-444444444444";
 
-async function buildApp({role="owner",accessibleWorkspaces=[workspaceA],reportRows=[]}={}){
+async function buildApp({role="owner",accessibleWorkspaces=[workspaceA],reportRows=[],snapshotWrites=false}={}){
  const calls=[];
  let connectCalls=0;
  const database={
@@ -24,7 +24,21 @@ async function buildApp({role="owner",accessibleWorkspaces=[workspaceA],reportRo
    if(sql.includes("INSERT INTO users"))return {rows:[{id:"user-1",email:"owner@example.test",status:"active"}]};
    return {rows:[]};
   },
-  async connect(){connectCalls++;throw new Error("No se esperaba abrir una conexión en esta prueba");}
+  async connect(){
+   connectCalls++;
+   if(!snapshotWrites)throw new Error("No se esperaba abrir una conexión en esta prueba");
+   return {
+    async query(sql,values=[]){
+     calls.push({sql,values});
+     if(sql.includes("FROM researches WHERE workspace_id=$1 AND id=$2"))return {rows:[{id:researchId,title:"Estudio",country:"Ecuador",sector:"Retail",objective:"Analizar el mercado",status:"draft"}]};
+     if(sql.includes("SELECT COUNT(*)::int AS total"))return {rows:[{total:0,sourced:0,opportunities:0,risks:0}]};
+     if(sql.includes("SELECT COALESCE(MAX(version),0)+1 AS version"))return {rows:[{version:1}]};
+     if(sql.includes("INSERT INTO market_reports"))return {rows:[{id:reportId,version:1,generated_at:new Date(),report_hash:"a".repeat(64),integrity_verified:true}]};
+     return {rows:[]};
+    },
+    release(){}
+   };
+  }
  };
  const app=Fastify({logger:false});
  await app.register(marketReportRoutes,{database,requireIdentity:async request=>{request.identity={subject:"auth-user",email:"user@example.test"};}});
@@ -193,6 +207,28 @@ test("report snapshot creation is denied to viewers and non-members before openi
    assert.equal(response.json().error,"FORBIDDEN");
    assert.equal(getConnectCalls(),0);
    assert.equal(calls.some(call=>call.sql.includes("INSERT INTO users")),false);
+  }finally{await app.close();}
+ }
+});
+
+
+
+test("report snapshot creation follows the owner/admin/analyst writer matrix",async()=>{
+ for(const role of ["owner","admin","analyst","viewer"]){
+  const {app,calls,getConnectCalls}=await buildApp({role,snapshotWrites:true});
+  try{
+   const response=await app.inject({method:"POST",url:`/api/v1/workspaces/${workspaceA}/researches/${researchId}/reports`});
+   if(role==="viewer"){
+    assert.equal(response.statusCode,403);
+    assert.equal(response.json().error,"FORBIDDEN");
+    assert.equal(getConnectCalls(),0);
+    assert.equal(calls.some(call=>call.sql.includes("INSERT INTO market_reports")),false);
+   }else{
+    assert.equal(response.statusCode,201,role+" can create report snapshots");
+    assert.equal(getConnectCalls(),1);
+    assert.ok(calls.some(call=>call.sql.includes("INSERT INTO market_reports")));
+    assert.ok(calls.some(call=>call.sql.includes("market_report.snapshot_created")));
+   }
   }finally{await app.close();}
  }
 });

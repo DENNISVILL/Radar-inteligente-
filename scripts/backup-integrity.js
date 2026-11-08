@@ -21,7 +21,12 @@ export async function calculateBackupDigest(backupPath) {
 }
 
 async function readBackupManifest(backupPath) {
-  const raw = await readFile(backupManifestPath(backupPath), "utf8");
+  const manifestPath = backupManifestPath(backupPath);
+  const info = await lstat(manifestPath);
+  if (!info.isFile() || info.isSymbolicLink()) {
+    throw new Error("El manifiesto SHA-256 debe ser un archivo regular y no un enlace simbólico.");
+  }
+  const raw = await readFile(manifestPath, "utf8");
   let manifest;
   try {
     manifest = JSON.parse(raw);

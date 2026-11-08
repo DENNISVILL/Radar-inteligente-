@@ -138,3 +138,30 @@ test("invalid workspace identifiers are rejected before membership lookup",async
   assert.equal(calls.length,0);
  }finally{await app.close();}
 });
+
+test("analysts cannot read workspace audit logs",async()=>{
+ const {app,calls}=await buildApp({role:"analyst"});
+ try{
+  const response=await app.inject({method:"GET",url:`/api/v1/workspaces/${workspaceA}/audit-logs`});
+  assert.equal(response.statusCode,403);
+  assert.equal(response.json().error,"FORBIDDEN");
+  assert.equal(calls.some(call=>call.sql.includes("FROM audit_logs")),false);
+ }finally{await app.close();}
+});
+
+test("non-members cannot read report history, report snapshots or PDF exports",async()=>{
+ const {app,calls}=await buildApp({accessibleWorkspaces:[]});
+ const requests=[
+  `/api/v1/workspaces/${workspaceA}/researches/${researchId}/reports`,
+  `/api/v1/workspaces/${workspaceA}/researches/${researchId}/reports/${reportId}`,
+  `/api/v1/workspaces/${workspaceA}/researches/${researchId}/reports/${reportId}/pdf`
+ ];
+ try{
+  for(const url of requests){
+   const response=await app.inject({method:"GET",url});
+   assert.equal(response.statusCode,403,url);
+   assert.equal(response.json().error,"FORBIDDEN");
+  }
+  assert.equal(calls.some(call=>call.sql.includes("FROM market_reports")),false);
+ }finally{await app.close();}
+});

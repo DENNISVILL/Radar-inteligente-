@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import {createHash} from "node:crypto";
 import Fastify from "fastify";
 import {marketReportRoutes} from "../../../src/modules/market-intelligence/presentation/market-report.routes.js";
 
@@ -31,7 +32,10 @@ async function buildApp({role="owner",accessibleWorkspaces=[workspaceA],reportRo
      calls.push({sql,values});
      if(sql.includes("FROM workspaces WHERE"))return {rows:accessibleWorkspaces.includes(values[0])?[{id:values[0]}]:[]};
      if(sql.includes("FROM workspace_members wm"))return {rows:accessibleWorkspaces.includes(values[0])?[{role}]:[]};
-     if(sql.includes("FROM audit_logs"))return {rows:[{id:"11111111-1111-4111-8111-111111111111",event_type:"market_report.snapshot_created",created_at:"2026-11-08T10:00:00.000Z"},{id:"22222222-2222-4222-8222-222222222222",event_type:"market_product.created",created_at:"2026-11-08T09:00:00.000Z"}]};
+     if(sql.includes("FROM audit_logs"))return {rows:[
+      {id:"11111111-1111-4111-8111-111111111111",event_type:"market_report.snapshot_created",resource_type:"market_report",resource_id:null,metadata:{version:1},created_at:"2026-11-08T10:00:00.000Z"},
+      {id:"22222222-2222-4222-8222-222222222222",event_type:"market_product.created",resource_type:"market_product",resource_id:null,metadata:{name:"Producto"},created_at:"2026-11-08T09:00:00.000Z"}
+     ]};
      if(sql.includes("FROM researches WHERE workspace_id=$1 AND id=$2"))return {rows:[{id:researchId,title:"Estudio",country:"Ecuador",sector:"Retail",objective:"Analizar el mercado",status:"draft"}]};
      if(sql.includes("SELECT COUNT(*)::int AS total"))return {rows:[{total:0,sourced:0,opportunities:0,risks:0}]};
      if(sql.includes("SELECT COALESCE(MAX(version),0)+1 AS version"))return {rows:[{version:1}]};
@@ -277,5 +281,53 @@ test("audit-log endpoint rejects malformed cursors before opening a database tra
   assert.equal(response.statusCode,400);
   assert.equal(response.json().error,"INVALID_CURSOR");
   assert.equal(calls.some(call=>call.sql==="BEGIN"),false);
+ }finally{await app.close();}
+});
+
+
+test("owner can export one bounded NDJSON audit page with a verifiable SHA-256 digest",async()=>{
+ const {app,calls}=await buildApp({role:"owner"});
+ try{
+  const response=await app.inject({method:"GET",url:`/api/v1/workspaces/${workspaceA}/audit-logs/export?limit=1`});
+  assert.equal(response.statusCode,200);
+  assert.match(response.headers["content-type"],/application\/x-ndjson/);
+  assert.equal(response.headers["x-audit-export-count"],"1");
+  assert.equal(response.headers["x-audit-export-sha256"],createHash("sha256").update(response.body,"utf8").digest("hex"));
+  assert.ok(response.headers["x-audit-export-next-cursor"]);
+  const lines=response.body.trimEnd().split("\n");
+  assert.equal(lines.length,1);
+  assert.equal(JSON.parse(lines[0]).event_type,"market_report.snapshot_created");
+  const query=calls.find(call=>call.sql.includes("FROM audit_logs"));
+  assert.deepEqual(query.values,[workspaceA,null,null,2]);
+ }finally{await app.close();}
+});
+
+test("analysts, viewers and non-members cannot export audit logs",async()=>{
+ for(const scenario of [
+  {role:"analyst",accessibleWorkspaces:[workspaceA]},
+  {role:"viewer",accessibleWorkspaces:[workspaceA]},
+  {role:"owner",accessibleWorkspaces:[]}
+ ]){
+  const {app,calls}=await buildApp(scenario);
+  try{
+   const response=await app.inject({method:"GET",url:`/api/v1/workspaces/${workspaceA}/audit-logs/export`});
+   assert.equal(response.statusCode,403);
+   assert.equal(response.json().error,"FORBIDDEN");
+   assert.equal(calls.some(call=>call.sql.includes("FROM audit_logs")),false);
+  }finally{await app.close();}
+ }
+});
+
+test("audit export rejects invalid cursors and limits before reading audit data",async()=>{
+ const {app,calls}=await buildApp({role:"admin"});
+ try{
+  for(const url of [
+   `/api/v1/workspaces/${workspaceA}/audit-logs/export?limit=101`,
+   `/api/v1/workspaces/${workspaceA}/audit-logs/export?cursor=invalid`
+  ]){
+   const response=await app.inject({method:"GET",url});
+   assert.equal(response.statusCode,400);
+  }
+  assert.equal(calls.some(call=>call.sql.includes("FROM audit_logs")),false);
  }finally{await app.close();}
 });

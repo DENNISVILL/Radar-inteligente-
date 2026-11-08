@@ -2,8 +2,9 @@
 
 ## Qué está implementado
 
-- `npm run db:backup`: genera un archivo PostgreSQL en formato custom (`pg_dump`), no sobrescribe un archivo existente, limita permisos locales a propietario (`0600`) y comprueba que `pg_restore --list` pueda leer el archivo. La conexión se descompone en variables estándar de libpq y la contraseña se escribe temporalmente en un archivo `.pgpass` con permisos `0600`; el archivo se elimina al terminar, incluso si falla el comando. La contraseña no aparece en los argumentos del proceso ni en sus variables de entorno.
-- `npm run db:restore`: verifica el archivo, exige que `RESTORE_CONFIRM_DATABASE` coincida exactamente con el nombre de la base destino, exige que la conexión sea el rol `radar_migration_owner`, exige que ese rol sea propietario de la base y rechaza destinos con tablas/vistas. Restaura en una sola transacción con `pg_restore --exit-on-error --single-transaction`; la contraseña también se entrega mediante un `.pgpass` temporal de permisos `0600`, eliminado al terminar.
+- `npm run db:backup`: genera un archivo PostgreSQL en formato custom (`pg_dump`), no sobrescribe un archivo existente, limita permisos locales a propietario (`0600`) y comprueba que `pg_restore --list` pueda leer el archivo. Además crea un manifiesto JSON lateral (`<archivo>.sha256.json`) con versión, algoritmo SHA-256, digest y tamaño exacto. El manifiesto también se crea sin sobrescritura y con permisos `0600`.
+- `npm run db:restore`: exige el manifiesto SHA-256 y verifica tamaño y digest antes de invocar `pg_restore) o conectarse a la base destino. Rechaza manifiestos ausentes, malformados o que no coincidan con el archivo. Después exige que `RESTORE_CONFIRM_DATABASE` coincida exactamente con el nombre de la base destino, exige que la conexión sea el rol `radar_migration_owner`, exige que ese rol sea propietario de la base y rechaza destinos con tablas/vistas. Restaura en una sola transacción con `pg_restore --exit-on-error --single-transaction`.
+- Las conexiones CLI usan variables estándar de libpq y la contraseña se escribe temporalmente en un archivo `.pgpass` con permisos `0600`; se elimina al terminar, incluso si falla el comando. La contraseña no aparece en los argumentos del proceso ni en sus variables de entorno.
 - CI crea una copia real de la base PostgreSQL de pruebas, la restaura en otra base vacía y vuelve a ejecutar el runner para aplicar los permisos runtime. Verifica el historial y las tablas restauradas.
 - Cada migración SQL se ejecuta dentro de su propia transacción. Si una migración falla, se revierte esa migración; las anteriores que ya hicieron COMMIT permanecen aplicadas. El bloque de grants runtime también se aplica en una transacción.
 
@@ -19,7 +20,13 @@ export BACKUP_FILE='/ruta/segura/radar-2026-11-08.dump'
 npm run db:backup
 ```
 
-El archivo debe guardarse en almacenamiento cifrado, con acceso restringido y fuera del servidor de la aplicación. El script no cifra ni programa la copia: esa parte debe configurarse en el proveedor de almacenamiento/backup o mediante un gestor de secretos y una tarea programada. No subir respaldos a Git ni enviarlos por correo/chat.
+El proceso genera dos archivos que deben conservarse juntos:
+- `radar-2026-11-08.dump`: respaldo PostgreSQL.
+- `radar-2026-11-08.dump.sha256.json`: manifiesto de integridad asociado.
+
+Copiar, mover o renombrar el respaldo requiere conservar el manifiesto y mantener su sufijo. Si falta, la restauración se bloquea. El hash detecta corrupción o cambios accidentales, pero no cifra el respaldo ni autentica el origen del manifiesto si un atacante puede sustituir ambos archivos. Para almacenamiento remoto, proteger ambos con controles de acceso y cifrado, y considerar firma digital o almacenamiento inmutable.
+
+El archivo y su manifiesto deben guardarse en almacenamiento cifrado, con acceso restringido y fuera del servidor de la aplicación. El script no cifra ni programa la copia: esa parte debe configurarse en el proveedor de almacenamiento/backup o mediante un gestor de secretos y una tarea programada. No subir respaldos a Git ni enviarlos por correo/chat.
 
 ## Restaurar sin sobrescribir datos
 
@@ -34,7 +41,7 @@ export RESTORE_CONFIRM_DATABASE='radar_recovery'
 npm run db:restore
 ```
 
-El nombre de confirmación debe coincidir exactamente con el nombre de la base destino. La herramienta se detiene si detecta tablas/vistas, si el rol no es el propietario esperado, si el archivo no se puede listar o si la restauración SQL falla. No se usa `--clean` ni `--if-exists`; por diseño no elimina objetos existentes.
+La herramienta verifica primero el manifiesto SHA-256 y el formato PostgreSQL. Después exige que el nombre de confirmación coincida exactamente con el nombre de la base destino. Se detiene si el manifiesto falta/no coincide, si detecta tablas/vistas, si el rol no es el propietario esperado o si la restauración SQL falla. No se usa `--clean` ni `--if-exists`; por diseño no elimina objetos existentes.
 
 Después de restaurar:
 

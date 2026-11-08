@@ -14,7 +14,7 @@ Este porcentaje mide únicamente el trabajo de API, lógica de aplicación, vali
 - [x] Autorización por roles.
 - [x] Creación y consulta de workspaces.
 - [x] Gestión de miembros y restricciones del último owner.
-- [x] Ciclo de invitaciones y auditoría.
+- [x] Ciclo de invitaciones y auditoría; revalidación del rol del actor dentro de la transacción para altas/cambios/bajas y operaciones de invitación.
 - [x] CRUD de investigaciones.
 - [x] CRUD de competidores.
 - [x] CRUD de productos/servicios.
@@ -27,7 +27,7 @@ Este porcentaje mide únicamente el trabajo de API, lógica de aplicación, vali
 - [x] Auditoría de operaciones.
 - [x] Rate limiting configurable por IP/ruta, con capacidad máxima de buckets, limpieza de ventanas expiradas y rechazo 503 temporal cuando se alcanza la capacidad sin expulsar ventanas activas.
 - [x] Pruebas unitarias y HTTP de módulos principales.
-- [x] Pruebas de integración del backend contra PostgreSQL en CI, incluidas pruebas concurrentes de roles y membresías.
+- [x] Pruebas de integración del backend contra PostgreSQL en CI, incluidas pruebas concurrentes de roles y membresías y consumo único de invitaciones.
 
 ### Trabajo backend pendiente
 - [x] Contrato OpenAPI 3.1 y validación formal automatizada en CI con Redocly.
@@ -50,7 +50,7 @@ El 100 % de los 29 entregables principales no incluye el cierre de infraestructu
 - [ ] Conectar Supabase real y exigir correo verificado al aceptar invitaciones.
 - [ ] Elegir hosting y PostgreSQL administrado; configurar TLS, red privada y rol SQL de mínimo privilegio.
 - [ ] Configurar backups automáticos y completar una restauración de prueba con RPO/RTO definidos.
-- [ ] Restringir `/metrics` a red privada o acceso autenticado en infraestructura.
+- [x] `/metrics` deshabilitado por defecto; si se habilita explícitamente, restringirlo a red privada o acceso autenticado en infraestructura.
 - [ ] Configurar alertas, retención de logs/métricas y procedimiento de incidentes.
 - [ ] Sustituir rate limiting en memoria por almacenamiento compartido antes de escalar a varias instancias.
 - [ ] Ejecutar prueba de carga de red real y aceptación de seguridad en staging.
@@ -81,6 +81,8 @@ El 100 % de los 29 entregables principales no incluye el cierre de infraestructu
 - [x] Gestión de miembros, cambios de rol y restricciones de privilegios.
 - [x] Invitaciones de un solo uso, hash SHA-256, expiración, revocación y auditoría.
 - [x] Prueba PostgreSQL de aceptación concurrente: solo una solicitud puede consumir la invitación.
+- [x] Revalidación de permisos dentro de la transacción tras bloquear el workspace; creación/revocación de invitaciones y cambios de miembros no confían únicamente en el rol leído por el pre-handler.
+- [x] Orden de bloqueos uniforme para aceptación y revocación de invitaciones: workspace antes de invitación.
 - [ ] Conectar un proyecto Supabase real y validar el flujo completo de Auth.
 - [ ] Configurar políticas RLS y revisar permisos del proyecto.
 

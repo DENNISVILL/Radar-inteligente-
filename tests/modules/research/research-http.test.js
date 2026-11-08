@@ -12,6 +12,7 @@ async function buildApp({role="owner",accessibleWorkspaces=[workspaceA],research
  const database={
   async query(sql,values=[]){
    calls.push({sql,values});
+   if(sql.includes("FROM workspaces WHERE"))return {rows:[{id:workspaceA}]};
    if(auditFailure&&sql.includes("INSERT INTO audit_logs"))throw new Error("audit unavailable");
    if(sql.includes("FROM workspace_members wm")){
     const workspaceId=values[1];

@@ -1,4 +1,4 @@
-import { readBearerToken, verifySupabaseAccessToken } from "../infrastructure/supabase-jwt.js";
+import { readBearerToken, verifySupabaseAccessToken, verifySupabaseSession } from "../infrastructure/supabase-jwt.js";
 import { canAccessWorkspace, findWorkspaceAccess } from "../application/workspace-access.js";
 import { workspaceRoutes } from "./workspace.routes.js";
 import { workspaceMemberRoutes } from "./workspace-member.routes.js";
@@ -10,7 +10,7 @@ const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[
 async function requireIdentity(request,reply,options){
  const token=readBearerToken(request.headers.authorization);
  if(!token)return reply.code(401).send({error:"UNAUTHORIZED",message:"Se requiere un token Bearer válido."});
- try{request.identity=await verifySupabaseAccessToken(token,options.config.supabaseUrl);}
+ try{\n  request.identity=await verifySupabaseAccessToken(token,options.config.supabaseUrl,{maxTokenAgeSeconds:options.config.supabaseJwtMaxAgeSeconds??3600});\n  if(options.config.supabaseApiKey)request.identity=await verifySupabaseSession(request.identity,token,{supabaseUrl:options.config.supabaseUrl,apiKey:options.config.supabaseApiKey});\n }
  catch(error){
   const invalidTokenCodes=new Set([
    "ERR_JWT_EXPIRED",
@@ -28,14 +28,18 @@ async function requireIdentity(request,reply,options){
  }
 }
 export async function identityRoutes(app,options){
- const routeOptions={database:options.database,requireIdentity:(request,reply)=>requireIdentity(request,reply,options)};
+ const routeOptions={database:options.database,config:options.config,requireIdentity:(request,reply)=>requireIdentity(request,reply,options)};
  app.register(workspaceRoutes,routeOptions);
  app.register(workspaceMemberRoutes,routeOptions);
  app.register(workspaceInvitationRoutes,routeOptions);
  app.register(researchRoutes,routeOptions);
  app.register(marketIntelligenceRoutes,routeOptions);
  app.register(marketReportRoutes,routeOptions);
- app.get("/api/v1/me",{preHandler:(r,p)=>requireIdentity(r,p,options)},async r=>({subject:r.identity.subject,email:r.identity.email}));
+ app.get("/api/v1/me",{preHandler:(r,p)=>requireIdentity(r,p,options)},async(r,p)=>{
+  const account=await options.database.query("SELECT status FROM users WHERE auth_subject=$1 LIMIT 1",[r.identity.subject]);
+  if(account.rows[0]?.status==="disabled")return p.code(403).send({error:"ACCOUNT_DISABLED",message:"La cuenta no está habilitada para utilizar Radar Comercial."});
+  return {subject:r.identity.subject,email:r.identity.email};
+ });
  app.get("/api/v1/workspaces/:workspaceId/access",{preHandler:(r,p)=>requireIdentity(r,p,options)},async(r,p)=>{
   if(!uuidPattern.test(r.params.workspaceId))return p.code(400).send({error:"INVALID_WORKSPACE_ID",message:"El identificador del espacio de trabajo no es válido."});
   const membership=await findWorkspaceAccess(options.database,r.identity.subject,r.params.workspaceId);

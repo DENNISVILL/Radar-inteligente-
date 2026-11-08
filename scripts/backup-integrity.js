@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile, unlink } from "node:fs/promises";
 
 export function backupManifestPath(backupPath) {
   return backupPath + ".sha256.json";
@@ -21,11 +21,17 @@ export async function writeBackupManifest(backupPath) {
     version: 1,
     ...await calculateBackupDigest(backupPath)
   };
-  await writeFile(backupManifestPath(backupPath), JSON.stringify(manifest, null, 2) + "\n", {
-    encoding: "utf8",
-    flag: "wx",
-    mode: 0o600
-  });
+  const path = backupManifestPath(backupPath);
+  try {
+    await writeFile(path, JSON.stringify(manifest, null, 2) + "\n", {
+      encoding: "utf8",
+      flag: "wx",
+      mode: 0o600
+    });
+  } catch (error) {
+    await unlink(path).catch(() => {});
+    throw error;
+  }
   return manifest;
 }
 

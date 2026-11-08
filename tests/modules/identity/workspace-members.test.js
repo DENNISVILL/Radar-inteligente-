@@ -13,15 +13,15 @@ test("prevents demoting the last owner",async()=>{
  assert.equal((await updateWorkspaceMemberRole(database,{workspaceId:"w",userId:"u1",role:"viewer",actorRole:"owner",actorSubject:"auth-owner"})).error,"LAST_OWNER");assert.ok(calls.some(x=>x.sql==="ROLLBACK"));
 });
 test("prevents admins from modifying an owner's role",async()=>{
- const {calls,database}=setup(sql=>{if(sql.includes("SELECT id FROM workspaces"))return {rows:[{id:"w"}]};if(sql.includes("FROM workspace_members wm JOIN users u"))return {rows:[{role:"owner"}]};if(sql.includes("SELECT role FROM workspace_members"))return {rows:[{role:"owner"}]};return {rows:[]};});
+ const {calls,database}=setup(sql=>{if(sql.includes("SELECT id FROM workspaces"))return {rows:[{id:"w"}]};if(sql.includes("FROM workspace_members wm JOIN users u"))return {rows:[{role:"admin"}]};if(sql.includes("SELECT role FROM workspace_members"))return {rows:[{role:"owner"}]};return {rows:[]};});
  assert.equal((await updateWorkspaceMemberRole(database,{workspaceId:"w",userId:"u1",role:"viewer",actorRole:"admin",actorSubject:"auth-admin"})).error,"FORBIDDEN_ROLE");assert.ok(calls.some(x=>x.sql==="ROLLBACK"));
 });
 test("prevents removing the last owner",async()=>{
- const {calls,database}=setup(sql=>{if(sql.includes("SELECT id FROM workspaces"))return {rows:[{id:"w"}]};if(sql.includes("SELECT role FROM workspace_members"))return {rows:[{role:"owner"}]};if(sql.includes("COUNT(*)::int"))return {rows:[{total:1}]};return {rows:[]};});
+ const {calls,database}=setup(sql=>{if(sql.includes("SELECT id FROM workspaces"))return {rows:[{id:"w"}]};if(sql.includes("FROM workspace_members wm JOIN users u"))return {rows:[{role:"owner"}]};if(sql.includes("SELECT role FROM workspace_members"))return {rows:[{role:"owner"}]};if(sql.includes("COUNT(*)::int"))return {rows:[{total:1}]};return {rows:[]};});
  assert.equal((await removeWorkspaceMember(database,{workspaceId:"w",userId:"u1",actorRole:"owner",actorSubject:"auth-owner"})).error,"LAST_OWNER");assert.ok(calls.some(x=>x.sql==="ROLLBACK"));
 });
 test("rolls back if membership audit insertion fails",async()=>{
- const {calls,database}=setup(sql=>{if(sql.includes("SELECT id FROM workspaces"))return {rows:[{id:"w"}]};if(sql.includes("SELECT id,email"))return {rows:[{id:"u2",email:"person@example.test",status:"active"}]};if(sql.includes("INSERT INTO workspace_members"))return {rows:[{workspace_id:"w",user_id:"u2",role:"viewer"}]};if(sql.includes("INSERT INTO audit_logs"))throw new Error("audit failure");return {rows:[]};});
+ const {calls,database}=setup(sql=>{if(sql.includes("SELECT id FROM workspaces"))return {rows:[{id:"w"}]};if(sql.includes("FROM workspace_members wm JOIN users u"))return {rows:[{role:"owner"}]};if(sql.includes("SELECT id,email"))return {rows:[{id:"u2",email:"person@example.test",status:"active"}]};if(sql.includes("INSERT INTO workspace_members"))return {rows:[{workspace_id:"w",user_id:"u2",role:"viewer"}]};if(sql.includes("INSERT INTO audit_logs"))throw new Error("audit failure");return {rows:[]};});
  await assert.rejects(()=>addWorkspaceMember(database,{workspaceId:"w",email:"person@example.test",role:"viewer",actorRole:"owner",actorSubject:"auth-owner"}),/audit failure/);assert.ok(calls.some(x=>x.sql==="ROLLBACK"));
 });
 

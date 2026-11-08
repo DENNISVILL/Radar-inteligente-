@@ -30,6 +30,8 @@ async function buildApp({role="owner",accessibleWorkspaces=[workspaceA],reportRo
    return {
     async query(sql,values=[]){
      calls.push({sql,values});
+     if(sql.includes("FROM workspaces WHERE"))return {rows:accessibleWorkspaces.includes(values[0])?[{id:values[0]}]:[]};
+     if(sql.includes("FROM workspace_members wm"))return {rows:accessibleWorkspaces.includes(values[0])?[{role}]:[]};
      if(sql.includes("FROM researches WHERE workspace_id=$1 AND id=$2"))return {rows:[{id:researchId,title:"Estudio",country:"Ecuador",sector:"Retail",objective:"Analizar el mercado",status:"draft"}]};
      if(sql.includes("SELECT COUNT(*)::int AS total"))return {rows:[{total:0,sourced:0,opportunities:0,risks:0}]};
      if(sql.includes("SELECT COALESCE(MAX(version),0)+1 AS version"))return {rows:[{version:1}]};

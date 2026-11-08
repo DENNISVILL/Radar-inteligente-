@@ -21,7 +21,8 @@ const messages={
  INVITATION_EMAIL_MISMATCH:[403,"INVITATION_EMAIL_MISMATCH","La invitación no corresponde al correo de la sesión."],
  WORKSPACE_NOT_FOUND:[404,"WORKSPACE_NOT_FOUND","El espacio ya no está disponible."],
  ALREADY_MEMBER:[409,"ALREADY_MEMBER","Esta cuenta ya pertenece al espacio."],
- ACCOUNT_DISABLED:[403,"ACCOUNT_DISABLED","La cuenta no está habilitada para utilizar Radar Comercial."],\n EMAIL_NOT_CONFIRMED:[403,"EMAIL_NOT_CONFIRMED","Confirma el correo electrónico de tu cuenta antes de aceptar una invitación."]
+ ACCOUNT_DISABLED:[403,"ACCOUNT_DISABLED","La cuenta no está habilitada para utilizar Radar Comercial."],
+ EMAIL_NOT_CONFIRMED:[403,"EMAIL_NOT_CONFIRMED","Confirma el correo electrónico de tu cuenta antes de aceptar una invitación."]
 };
 function fail(reply,error){
  const [status,code,message]=messages[error]??[400,"INVITATION_FAILED","No se pudo completar la operación."];
@@ -52,6 +53,7 @@ export async function workspaceInvitationRoutes(app,options){
   return {data:result};
  });
  app.post("/api/v1/invitations/accept",auth,async(r,p)=>{
+  if(options.config?.supabaseApiKey&&!r.identity.emailConfirmedAt)return p.code(403).send({error:"EMAIL_NOT_CONFIRMED",message:"Confirma el correo electrónico de tu cuenta antes de aceptar una invitación."});
   if(typeof r.identity.email!=="string"||!r.identity.email.trim())return p.code(403).send({error:"EMAIL_REQUIRED",message:"La sesión debe incluir un correo para aceptar la invitación."});
   const token=typeof r.body?.token==="string"?r.body.token:"";
   const result=await acceptWorkspaceInvitation(options.database,{token,identity:r.identity});

@@ -103,3 +103,14 @@ El cierre de 29/29 entregables describe la fase principal de construcción del b
 - No hay rutas HTTP para consultar o mutar registros de auditoría. No se ha añadido una superficie de lectura sin un requisito de producto y una matriz de permisos definida.
 - Límite del control: un propietario/superusuario de PostgreSQL puede desactivar triggers o alterar el esquema. Antes de producción, crear un rol de runtime sin propiedad de tablas ni privilegios DDL, separado del rol de migraciones.
 - La CI incorpora pruebas PostgreSQL de rechazo de actualización, borrado y truncado, además de conservación del evento tras eliminar workspace/actor.
+
+
+## 10. Respaldo, restauración y recuperación de migraciones
+
+- Se añadieron `npm run db:backup` y `npm run db:restore`. El primero crea un dump PostgreSQL custom-format sin sobrescribir archivos y comprueba que `pg_restore --list` pueda leerlo.
+- El restaurador exige confirmación exacta del nombre de la base, que el destino esté vacío y que el usuario conectado sea `radar_migration_owner`, propietario de la base. Ejecuta `pg_restore` con `--exit-on-error --single-transaction --no-owner --no-privileges`; no usa `--clean`.
+- La CI realiza un ciclo completo en PostgreSQL 16: genera backup de la base de pruebas, restaura en una segunda base vacía propiedad del migrador, reaplica grants runtime y consulta el historial y las tablas restauradas.
+- Cada migración mantiene transacción individual. Una prueba fuerza el fallo de una migración y comprueba que se revierte esa migración, mientras que la anterior ya confirmada permanece aplicada. Los grants runtime también se ejecutan dentro de una transacción.
+- **No confundir validación CI con backups productivos:** no se ha configurado todavía almacenamiento externo cifrado, agenda, retención, alertas, PITR ni restauración en proveedor real. El archivo local no se cifra por sí mismo.
+- **Bloqueo antes de datos reales:** elegir proveedor, definir RPO/RTO, retención y responsable; activar backups administrados/cifrados y probar restauración periódica en un entorno aislado.
+

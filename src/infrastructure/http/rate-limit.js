@@ -14,6 +14,20 @@ export function createRateLimiter({
   const time=now();
   let bucket=buckets.get(key);
   if(!bucket||time>=bucket.resetAt){
+   if(!bucket){
+    for(const [bucketKey,value] of buckets){
+     if(time>=value.resetAt)buckets.delete(bucketKey);
+    }
+    if(buckets.size>=maxBuckets){
+     const nextResetAt=Math.min(...Array.from(buckets.values(),value=>value.resetAt));
+     const retryAfter=Math.max(1,Math.ceil((nextResetAt-time)/1000));
+     reply.header("Retry-After",String(retryAfter));
+     return reply.code(503).send({
+      error:"RATE_LIMIT_CAPACITY",
+      message:"El limitador alcanzó temporalmente su capacidad. Inténtalo nuevamente más tarde."
+     });
+    }
+   }
    bucket={count:0,resetAt:time+windowMs};
    buckets.set(key,bucket);
   }
@@ -29,13 +43,6 @@ export function createRateLimiter({
     error:"RATE_LIMITED",
     message:"Se alcanzó el límite temporal de solicitudes. Inténtalo nuevamente más tarde."
    });
-  }
-  if(buckets.size>maxBuckets){
-   for(const [bucketKey,value] of buckets){
-    if(time>=value.resetAt)buckets.delete(bucketKey);
-    if(buckets.size<=maxBuckets)break;
-   }
-   while(buckets.size>maxBuckets)buckets.delete(buckets.keys().next().value);
   }
  };
 }

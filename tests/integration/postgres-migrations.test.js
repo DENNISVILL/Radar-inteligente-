@@ -278,7 +278,7 @@ test("PostgreSQL migration runner grants runtime DML but protects audit and migr
    can_read_migrations:false,can_create_objects:false
   });
  }finally{
-  if(createdRole)await pool.query("DROP ROLE radar_runtime");
+  if(createdRole){await pool.query("DROP OWNED BY radar_runtime");await pool.query("DROP ROLE radar_runtime");}
   await pool.end();
  }
 });

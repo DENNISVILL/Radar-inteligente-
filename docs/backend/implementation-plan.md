@@ -142,3 +142,11 @@ Estos puntos requieren cuentas, credenciales, configuración o decisiones del pr
 ## Regla de entrega
 
 Los cambios se desarrollan en `backend/foundation`, se prueban en CI y se mantienen en el PR draft. No fusionar a `main` ni afirmar que existe un servicio externo conectado sin una verificación real.
+
+
+### Seguridad de PostgreSQL
+- [x] Separar credenciales `DATABASE_URL` (runtime) y `MIGRATION_DATABASE_URL` (migraciones); exigir esta última en producción.
+- [x] Crear bootstrap de roles `radar_runtime` y `radar_migration_owner` con privilegio mínimo para una base nueva.
+- [x] Aplicar grants de runtime después de migrar: DML operativo, INSERT únicamente en auditoría, sin acceso a `schema_migrations` ni CREATE en `public`.
+- [x] Añadir pruebas de resolución de credenciales y privilegios PostgreSQL; CI ejecuta aprovisionamiento y migraciones usando el rol propietario dedicado.
+- [ ] Ejecutar el procedimiento con el proveedor PostgreSQL real, validar TLS/red/propietarios y probar restauración; aún no hay infraestructura productiva conectada.

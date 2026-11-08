@@ -15,7 +15,7 @@ const token="abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG";
 test("creates an invitation with a one-time token and stores only its SHA-256 hash",async()=>{
  const {calls,database}=setup(sql=>{
   if(sql.includes("SELECT id FROM workspaces"))return {rows:[{id:"workspace-1"}]};
-  if(sql.includes("FROM workspace_members wm"))return {rows:[{role:"owner"}]};
+  if(sql.includes("FROM workspace_members wm"))return {rows:[{role:"owner",actor_user_id:"owner-1"}]};
   if(sql.includes("INSERT INTO workspace_invitations"))return {rows:[{id:"invite-1",email:"new@example.test",role:"analyst",expires_at:invitation.expires_at,created_at:new Date()}]};
   return {rows:[]};
  });
@@ -98,7 +98,7 @@ test("revokes a pending invitation and records an audit event",async()=>{
 test("rejects invitation creation when the actor was demoted before the transaction lock",async()=>{
  const {calls,database}=setup(sql=>{
   if(sql.includes("SELECT id FROM workspaces"))return {rows:[{id:"workspace-1"}]};
-  if(sql.includes("FROM workspace_members wm"))return {rows:[{role:"viewer"}]};
+  if(sql.includes("FROM workspace_members wm"))return {rows:[{role:"viewer",actor_user_id:"owner-1"}]};
   return {rows:[]};
  });
  const result=await createWorkspaceInvitation(database,{workspaceId:"workspace-1",email:"new@example.test",role:"admin",actorRole:"owner",actorUserId:"owner-1",actorSubject:"auth-owner"});

@@ -89,14 +89,18 @@ test("Supabase JWT verification protects identity and workspace-access HTTP rout
     });
     assert.equal(malformedAccess.statusCode, 400);
     assert.equal(malformedAccess.json().error, "INVALID_WORKSPACE_ID");
-    assert.equal(calls.length, 2);
+    assert.equal(calls.length, 3);
 
     const invalidTokens = [
       await token({ expiration: Math.floor(Date.now() / 1000) - 60 }),
       await token({ audience: "wrong-audience" }),
       await token({ issuer: "https://wrong-issuer.example.test/auth/v1" }),
       await token({ subject: null }),
-      await token({ signingKey: wrongPrivateKey })
+      await token({ signingKey: wrongPrivateKey }),
+      await token({ includeIssuedAt: false }),
+      await token({ includeExpiration: false }),
+      await token({ issuedAt: Math.floor(Date.now() / 1000) - 7200 }),
+      await token({ sessionId: "not-a-session-uuid" })
     ];
     for (const [index, invalidToken] of invalidTokens.entries()) {
       const response = await app.inject({
@@ -107,7 +111,7 @@ test("Supabase JWT verification protects identity and workspace-access HTTP rout
       assert.equal(response.statusCode, 401, "invalid token fixture index " + index);
       assert.equal(response.json().error, "INVALID_TOKEN");
     }
-    assert.equal(calls.length, 2, "invalid tokens must not reach workspace data queries");
+    assert.equal(calls.length, 3, "invalid tokens must not reach workspace data queries");
   } finally {
     await app.close();
     await new Promise(resolve => server.close(resolve));
@@ -136,7 +140,7 @@ test("JWKS provider outages return 503 instead of misclassifying valid sessions 
   try {
     await app.register(identityRoutes, { database, config: { supabaseUrl } });
     await app.ready();
-    const jwt = await new SignJWT({ email: "user@example.test", role: "authenticated" })
+    const jwt = await new SignJWT({ email: "user@example.test", role: "authenticated", session_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" })
       .setProtectedHeader({ alg: "RS256", kid: "provider-outage-key" })
       .setIssuer(`${supabaseUrl}/auth/v1`)
       .setAudience("authenticated")

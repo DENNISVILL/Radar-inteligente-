@@ -1,6 +1,6 @@
-import { createHash } from "node:crypto";
+import { createHash, createPrivateKey, createPublicKey, sign, verify } from "node:crypto";
 import { createReadStream, createWriteStream } from "node:fs";
-import { lstat, readFile, writeFile, unlink, mkdtemp, rm, open } from "node:fs/promises";
+import { lstat, readFile, unlink, mkdtemp, rm, open } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { Transform } from "node:stream";
@@ -10,17 +10,78 @@ export function backupManifestPath(backupPath) {
   return backupPath + ".sha256.json";
 }
 
-export async function calculateBackupDigest(backupPath) {
-  const hash = createHash("sha256");
-  let size = 0;
-  for await (const chunk of createReadStream(backupPath)) {
-    hash.update(chunk);
-    size += chunk.length;
-  }
-  return { algorithm: "sha256", digest: hash.digest("hex"), size };
+function normalizePem(value) {
+  return String(value).replace(/\\n/g, "\n");
 }
 
-async function readBackupManifest(backupPath) {
+function signaturePayload(manifest) {
+  return Buffer.from(JSON.stringify({
+    version: manifest.version,
+    algorithm: manifest.algorithm,
+    digest: manifest.digest,
+    size: manifest.size
+  }), "utf8");
+}
+
+function requiredSignature(options) {
+  return options.requireSignature === true ||
+    ["true", "1", "yes"].includes(String(process.env.BACKUP_REQUIRE_SIGNATURE ?? "").toLowerCase());
+}
+
+function signingPrivateKey(options) {
+  return options.privateKey ?? process.env.BACKUP_SIGNING_PRIVATE_KEY;
+}
+
+function verificationPublicKey(options) {
+  return options.publicKey ?? process.env.BACKUP_SIGNING_PUBLIC_KEY;
+}
+
+function parseEd25519Key(value, kind) {
+  if (!value) {
+    throw new Error("Falta la clave " + (kind === "private" ? "privada" : "pública") + " Ed25519.");
+  }
+  const key = kind === "private"
+    ? createPrivateKey(normalizePem(value))
+    : createPublicKey(normalizePem(value));
+  if (key.asymmetricKeyType !== "ed25519") {
+    throw new Error("La clave configurada no es una clave Ed25519.");
+  }
+  return key;
+}
+
+function verifyManifestSignature(manifest, options = {}) {
+  const signature = manifest.signature;
+  const mustSign = requiredSignature(options);
+  if (!signature) {
+    if (mustSign) {
+      throw new Error("Restauración bloqueada: el manifiesto no contiene una firma Ed25519 obligatoria.");
+    }
+    return false;
+  }
+  if (
+    !signature ||
+    signature.algorithm !== "ed25519" ||
+    typeof signature.value !== "string" ||
+    !/^[A-Za-z0-9+/]+={0,2}$/.test(signature.value)
+  ) {
+    throw new Error("La firma Ed25519 del manifiesto tiene un formato inválido.");
+  }
+  const publicKeyValue = verificationPublicKey(options);
+  if (!publicKeyValue) {
+    throw new Error("El manifiesto está firmado, pero falta BACKUP_SIGNING_PUBLIC_KEY para verificarlo.");
+  }
+  const publicKey = parseEd25519Key(publicKeyValue, "public");
+  const signatureBytes = Buffer.from(signature.value, "base64");
+  if (signatureBytes.toString("base64") !== signature.value) {
+    throw new Error("La firma Ed25519 del manifiesto no contiene Base64 canónico.");
+  }
+  if (!verify(null, signaturePayload(manifest), publicKey, signatureBytes)) {
+    throw new Error("La firma Ed25519 del manifiesto no es válida; se bloquea la restauración.");
+  }
+  return true;
+}
+
+async function readBackupManifest(backupPath, options = {}) {
   const manifestPath = backupManifestPath(backupPath);
   const info = await lstat(manifestPath);
   if (!info.isFile() || info.isSymbolicLink()) {
@@ -44,14 +105,35 @@ async function readBackupManifest(backupPath) {
   ) {
     throw new Error("El manifiesto SHA-256 del respaldo tiene un formato inválido.");
   }
+  verifyManifestSignature(manifest, options);
   return manifest;
 }
 
-export async function writeBackupManifest(backupPath) {
+export async function calculateBackupDigest(backupPath) {
+  const hash = createHash("sha256");
+  let size = 0;
+  for await (const chunk of createReadStream(backupPath)) {
+    hash.update(chunk);
+    size += chunk.length;
+  }
+  return { algorithm: "sha256", digest: hash.digest("hex"), size };
+}
+
+export async function writeBackupManifest(backupPath, options = {}) {
   const manifest = {
     version: 1,
     ...await calculateBackupDigest(backupPath)
   };
+  const privateKeyValue = signingPrivateKey(options);
+  if (privateKeyValue) {
+    const privateKey = parseEd25519Key(privateKeyValue, "private");
+    manifest.signature = {
+      algorithm: "ed25519",
+      value: sign(null, signaturePayload(manifest), privateKey).toString("base64")
+    };
+  } else if (requiredSignature(options)) {
+    throw new Error("BACKUP_REQUIRE_SIGNATURE está activo, pero falta BACKUP_SIGNING_PRIVATE_KEY.");
+  }
   const path = backupManifestPath(backupPath);
   const handle = await open(path, "wx", 0o600);
   try {
@@ -66,8 +148,8 @@ export async function writeBackupManifest(backupPath) {
   return manifest;
 }
 
-export async function verifyBackupManifest(backupPath) {
-  const manifest = await readBackupManifest(backupPath);
+export async function verifyBackupManifest(backupPath, options = {}) {
+  const manifest = await readBackupManifest(backupPath, options);
   const info = await lstat(backupPath);
   if (!info.isFile() || info.isSymbolicLink()) {
     throw new Error("El respaldo debe ser un archivo regular y no un enlace simbólico.");
@@ -79,8 +161,8 @@ export async function verifyBackupManifest(backupPath) {
   return actual;
 }
 
-export async function stageVerifiedBackup(backupPath) {
-  const manifest = await readBackupManifest(backupPath);
+export async function stageVerifiedBackup(backupPath, options = {}) {
+  const manifest = await readBackupManifest(backupPath, options);
   const sourceInfo = await lstat(backupPath);
   if (!sourceInfo.isFile() || sourceInfo.isSymbolicLink()) {
     throw new Error("El respaldo debe ser un archivo regular y no un enlace simbólico.");
@@ -111,6 +193,7 @@ export async function stageVerifiedBackup(backupPath) {
     return {
       filePath: stagedPath,
       integrity: actual,
+      signed: Boolean(manifest.signature),
       cleanup: () => rm(directory, { recursive: true, force: true })
     };
   } catch (error) {

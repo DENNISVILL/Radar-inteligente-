@@ -4,6 +4,7 @@ import pg from "pg";
 import { resolve } from "node:path";
 import { withPostgresCliEnv } from "./postgres-cli.js";
 import { postgresConnectionOptions } from "../src/infrastructure/database/postgres-ssl.js";
+import { verifyBackupManifest } from "./backup-integrity.js";
 
 function run(command, args, extraEnv = {}) {
   return new Promise((resolvePromise, reject) => {
@@ -19,10 +20,12 @@ if (!backup || !connection) throw new Error("Define RESTORE_FILE y RESTORE_DATAB
 const file = resolve(backup);
 const info = await stat(file);
 if (!info.isFile() || info.size === 0) throw new Error("El respaldo no existe o está vacío.");
+const integrity = await verifyBackupManifest(file);
+console.info("Integridad SHA-256 del respaldo confirmada: " + integrity.digest);
 await run("pg_restore", ["--list", file]);
 
 const target = new URL(connection);
-const database = decodeURIComponent(target.pathname.replace(/^\//, ""));
+const database = decodeURIComponent(target.pathname.replace(/^\\//, ""));
 if (!database || process.env.RESTORE_CONFIRM_DATABASE !== database) {
   throw new Error("Restauración bloqueada: RESTORE_CONFIRM_DATABASE debe coincidir exactamente con el nombre de la base destino.");
 }

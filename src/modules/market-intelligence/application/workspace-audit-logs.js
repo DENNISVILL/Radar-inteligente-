@@ -61,3 +61,31 @@ export async function listWorkspaceAuditLogs(pool,{workspaceId,authSubject,limit
   client.release();
  }
 }
+
+
+import { createHash } from "node:crypto";
+
+function canonicalize(value) {
+ if(Array.isArray(value))return value.map(canonicalize);
+ if(value&&typeof value==="object"&&!(value instanceof Date)){
+  return Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonicalize(value[key])]));
+ }
+ if(value instanceof Date)return value.toISOString();
+ return value;
+}
+
+export function serializeAuditLogNdjson(rows) {
+ const body=rows.map(row=>JSON.stringify(canonicalize({
+  id:row.id,
+  event_type:row.event_type,
+  resource_type:row.resource_type,
+  resource_id:row.resource_id??null,
+  metadata:row.metadata??{},
+  created_at:row.created_at instanceof Date?row.created_at.toISOString():new Date(row.created_at).toISOString()
+ }))).join("\n")+(rows.length?"\n":"");
+ return {
+  body,
+  count:rows.length,
+  sha256:createHash("sha256").update(body,"utf8").digest("hex")
+ };
+}

@@ -24,7 +24,12 @@ test("PostgreSQL migrations are executable, repeatable and enforce tenant relati
   userId=user.rows[0].id;
   const research=await pool.query("INSERT INTO researches(workspace_id,created_by,title,country,sector,objective) VALUES($1,$2,'Research','Ecuador','Retail','Test') RETURNING id",[workspaceA,userId]);
   const competitor=await pool.query("INSERT INTO competitors(workspace_id,created_by,name) VALUES($1,$2,'Competitor A') RETURNING id",[workspaceA,userId]);
+  const researchB=await pool.query("INSERT INTO researches(workspace_id,created_by,title,country,sector,objective) VALUES($1,$2,'Research B','Ecuador','Retail','Cross tenant test') RETURNING id",[workspaceB,userId]);
+  const competitorB=await pool.query("INSERT INTO competitors(workspace_id,created_by,name) VALUES($1,$2,'Competitor B') RETURNING id",[workspaceB,userId]);
   await assert.rejects(()=>pool.query("INSERT INTO market_products(workspace_id,competitor_id,name) VALUES($1,$2,'Cross tenant product')",[workspaceB,competitor.rows[0].id]),/foreign key/i);
+  await assert.rejects(()=>pool.query("INSERT INTO market_observations(workspace_id,research_id,competitor_id,observation_type,title,content,observed_on) VALUES($1,$2,$3,'risk','Cross tenant','Must be rejected','2026-11-07')",[workspaceA,research.rows[0].id,competitorB.rows[0].id]),/foreign key/i);
+  await assert.rejects(()=>pool.query("INSERT INTO market_reports(workspace_id,research_id,version,report_data,generated_by) VALUES($1,$2,1,'{}'::jsonb,$3)",[workspaceB,research.rows[0].id,userId]),/foreign key/i);
+  assert.ok(researchB.rows[0].id);
   const product=await pool.query("INSERT INTO market_products(workspace_id,competitor_id,research_id,created_by,name) VALUES($1,$2,$3,$4,'Product A') RETURNING id",[workspaceA,competitor.rows[0].id,research.rows[0].id,userId]);
   await pool.query("INSERT INTO price_observations(workspace_id,product_id,recorded_by,price,currency,observed_on) VALUES($1,$2,$3,12.50,'USD','2026-11-07')",[workspaceA,product.rows[0].id,userId]);
   const history=await pool.query("SELECT count(*)::int AS count FROM price_observations WHERE workspace_id=$1 AND product_id=$2",[workspaceA,product.rows[0].id]);

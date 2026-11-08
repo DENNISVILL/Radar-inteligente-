@@ -31,7 +31,23 @@ export async function marketReportRoutes(app,o){
   let lockAcquired=false,transactionStarted=false,report,saved,researchNotFound=false;
   try{
    await client.query("SELECT pg_advisory_lock(hashtextextended($1,0))",[lockKey]);lockAcquired=true;
-   await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ");transactionStarted=true;
+   await client.query("BEGIN");transactionStarted=true;
+   const lockedWorkspace=await client.query(
+    "SELECT id FROM workspaces WHERE id=$1 AND status='active' FOR UPDATE",
+    [r.params.workspaceId]
+   );
+   const currentMembership=await client.query(`SELECT wm.role
+    FROM workspace_members wm JOIN users u ON u.id=wm.user_id
+    WHERE wm.workspace_id=$1 AND u.auth_subject=$2 AND u.id=$3 AND u.status='active'
+    FOR UPDATE OF wm`,
+    [r.params.workspaceId,r.identity.subject,user.id]
+   );
+   if(!lockedWorkspace.rows[0]||!currentMembership.rows[0]||!writers.includes(currentMembership.rows[0].role)){
+    const error=new Error("Ya no tienes permisos para generar informes en este espacio.");
+    error.statusCode=403;
+    error.code="WORKSPACE_ACCESS_REVOKED";
+    throw error;
+   }
    report=await buildMarketReport(client,r.params.workspaceId,r.params.researchId);
    if(!report){await client.query("ROLLBACK");transactionStarted=false;researchNotFound=true;}
    else{

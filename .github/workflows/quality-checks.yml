@@ -62,18 +62,29 @@ jobs:
       - name: Create empty database for restore verification
         run: psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE DATABASE radar_restore_test OWNER radar_migration_owner"
 
-      - name: Create and verify PostgreSQL backup
+      - name: Create ephemeral Ed25519 test keys
+        run: |
+          openssl genpkey -algorithm ED25519 -out /tmp/radar-ci-signing-private.pem
+          openssl pkey -in /tmp/radar-ci-signing-private.pem -pubout -out /tmp/radar-ci-signing-public.pem
+      - name: Create and verify signed PostgreSQL backup
         env:
           BACKUP_DATABASE_URL: postgres://radar:radar_test@localhost:5432/radar_test
           BACKUP_FILE: /tmp/radar-ci-backup.dump
-        run: npm run db:backup
+        run: |
+          export BACKUP_SIGNING_PRIVATE_KEY="$(cat /tmp/radar-ci-signing-private.pem)"
+          export BACKUP_REQUIRE_SIGNATURE=true
+          npm run db:backup
 
-      - name: Restore backup into an empty database
+      - name: Restore signed backup into an empty database
         env:
           RESTORE_DATABASE_URL: postgres://radar_migration_owner:radar_migration_test@localhost:5432/radar_restore_test
           RESTORE_FILE: /tmp/radar-ci-backup.dump
           RESTORE_CONFIRM_DATABASE: radar_restore_test
-        run: npm run db:restore
+        run: |
+          export BACKUP_SIGNING_PUBLIC_KEY="$(cat /tmp/radar-ci-signing-public.pem)"
+          export BACKUP_REQUIRE_SIGNATURE=true
+          npm run db:restore
+          rm -f /tmp/radar-ci-signing-private.pem /tmp/radar-ci-signing-public.pem
 
       - name: Reapply runtime privileges after restore
         env:

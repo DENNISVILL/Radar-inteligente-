@@ -146,3 +146,13 @@ El cierre de 29/29 entregables describe la fase principal de construcción del b
 - Se añadieron pruebas para verificar permisos del archivo, escape de `:` y `\\`, ausencia de `PGPASSWORD` y limpieza del archivo temporal al finalizar o fallar.
 - `METRICS_ENABLED` permanece desactivado por defecto. Si se activa, `/metrics` debe quedar accesible únicamente desde la red de monitorización o detrás de controles de acceso del proxy; no publicarlo abiertamente en Internet.
 - No hay todavía un backend remoto de métricas/trazas ni reglas de alertas. Los logs actuales se emiten por el logger de la aplicación y su retención depende del entorno de ejecución.
+
+
+## 12. Runbook de observabilidad y alertas (2026-11-08)
+
+- Se añadió `docs/backend/observability-runbook.md` con consultas Prometheus de referencia para tasa 5xx, p95, solicitudes activas y disponibilidad de scrape.
+- El runbook diferencia expresamente las métricas que Radar ya emite de las señales que requieren un proveedor externo: disponibilidad HTTP desde fuera, conexiones/uso de PostgreSQL, antigüedad de backups y resultado de restauraciones.
+- Se documentaron umbrales iniciales de referencia (5xx >5% durante 10 minutos; p95 >1 segundo durante 10 minutos), sujetos a calibración con tráfico y pruebas de staging. No son reglas activas ni objetivos de servicio aprobados.
+- Se documentó respuesta ante incidentes, correlación mediante trace ID, restricción de acceso a `/metrics`, retención y prohibición de etiquetas de alta cardinalidad o datos sensibles.
+- La instrumentación actual mantiene métricas en memoria por proceso; no agrega réplicas ni persiste series tras reinicio. No existe aún exportador OpenTelemetry, backend remoto, dashboard, alert manager ni métricas de pool/backup.
+- **Estado:** documentación operativa preparada; observabilidad productiva todavía no habilitada ni validada. Requiere proveedor, red privada, alertas, retención, responsables y simulacro en staging.

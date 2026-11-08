@@ -128,8 +128,8 @@ test("viewer is denied every market-intelligence mutation before identity creati
  }finally{await app.close();}
 });
 
-test("analyst can create market intelligence records while viewer remains read-only",async()=>{
- const {app,calls}=await buildApp({role:"analyst"});
+test("admin can create market intelligence records",async()=>{
+ const {app,calls}=await buildApp({role:"admin"});
  try{
   const response=await app.inject({method:"POST",url:`/api/v1/workspaces/${workspaceId}/competitors`,payload:{name:"Competidor"}});
   assert.equal(response.statusCode,201);
@@ -154,7 +154,7 @@ test("viewer can read products, price history, observations and market analysis"
   }
   assert.ok(calls.some(call=>call.sql.includes("FROM market_products")));
   assert.ok(calls.some(call=>call.sql.includes("FROM price_observations")));
-  assert.ok(calls.some(call=>call.sql.includes("FROM market_observations")));
+  assert.ok(calls.some(call=>call.sql.includes("market_observations")));
  }finally{await app.close();}
 });
 

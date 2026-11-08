@@ -40,3 +40,47 @@ test("rolls back mutation when audit insertion fails",async()=>{
  assert.ok(calls.some(x=>x.sql==="ROLLBACK"));
  assert.equal(calls.at(-1).sql,"RELEASE");
 });
+
+
+test("rejects a member whose role was downgraded before the write transaction",async()=>{
+ const calls=[];
+ const client={
+  async query(sql,values){
+   calls.push({sql,values});
+   if(sql.includes("FROM workspaces WHERE"))return {rows:[{id:"w1"}]};
+   if(sql.includes("FROM workspace_members wm"))return {rows:[{role:"viewer"}]};
+   return {rows:[]};
+  },
+  release(){calls.push({sql:"RELEASE"});}
+ };
+ const pool={async connect(){return client;}};
+ let mutated=false;
+ await assert.rejects(
+  ()=>executeAuditedMutation(pool,{workspaceId:"w1",actorUserId:"u1",actorSubject:"auth-u1",eventType:"test",resourceType:"test"},async()=>{mutated=true;return {id:"r1"};}),
+  error=>error.statusCode===403&&error.code==="WORKSPACE_ACCESS_REVOKED"
+ );
+ assert.equal(mutated,false);
+ assert.ok(calls.some(call=>call.sql==="ROLLBACK"));
+ assert.equal(calls.some(call=>call.sql==="COMMIT"),false);
+});
+
+test("rejects a membership revoked before the write transaction without running mutation",async()=>{
+ const calls=[];
+ const client={
+  async query(sql,values){
+   calls.push({sql,values});
+   if(sql.includes("FROM workspaces WHERE"))return {rows:[{id:"w1"}]};
+   if(sql.includes("FROM workspace_members wm"))return {rows:[]};
+   return {rows:[]};
+  },
+  release(){calls.push({sql:"RELEASE"});}
+ };
+ const pool={async connect(){return client;}};
+ let mutated=false;
+ await assert.rejects(
+  ()=>executeAuditedMutation(pool,{workspaceId:"w1",actorUserId:"u1",actorSubject:"auth-u1",eventType:"test",resourceType:"test"},async()=>{mutated=true;return {id:"r1"};}),
+  error=>error.statusCode===403&&error.code==="WORKSPACE_ACCESS_REVOKED"
+ );
+ assert.equal(mutated,false);
+ assert.ok(calls.some(call=>call.sql==="ROLLBACK"));
+});

@@ -22,3 +22,16 @@ export function postgresSslConfig(connection, forceSsl = false) {
   if (rootCertificate) ssl.ca = readFileSync(rootCertificate, "utf8");
   return ssl;
 }
+
+/**
+ * Remove libpq TLS query parameters before passing the URL to node-postgres.
+ * node-postgres can otherwise replace an explicit ssl object with URL options.
+ */
+export function postgresConnectionOptions(connection, forceSsl = false) {
+  const url = new URL(connection);
+  const ssl = postgresSslConfig(connection, forceSsl);
+  for (const key of ["sslmode", "sslrootcert", "sslcert", "sslkey"]) {
+    url.searchParams.delete(key);
+  }
+  return { connectionString: url.toString(), ssl };
+}

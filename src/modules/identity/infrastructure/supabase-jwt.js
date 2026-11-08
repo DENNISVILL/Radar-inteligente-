@@ -30,6 +30,11 @@ export async function verifySupabaseAccessToken(token, supabaseUrl, { maxTokenAg
     error.statusCode = 401;
     throw error;
   }
+  if (typeof payload.session_id !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(payload.session_id)) {
+    const error = new Error("El token no contiene un identificador de sesión válido.");
+    error.statusCode = 401;
+    throw error;
+  }
   return Object.freeze({
     subject: payload.sub,
     sessionId: payload.session_id,

@@ -87,7 +87,7 @@ test("rejects expired, revoked and previously accepted invitations",async t=>{
 });
 
 test("revokes a pending invitation and records an audit event",async()=>{
- const {calls,database}=setup(sql=>sql.includes("SELECT id FROM workspaces")?{rows:[{id:"workspace-1"}]}:sql.includes("FROM workspace_members wm")?{rows:[{role:"owner"}]}:sql.includes("UPDATE workspace_invitations SET revoked_at")?{rows:[{id:"invite-1",email:"new@example.test",role:"viewer"}]}:{rows:[]});
+ const {calls,database}=setup(sql=>sql.includes("SELECT id FROM workspaces")?{rows:[{id:"workspace-1"}]}:sql.includes("FROM workspace_members wm")?{rows:[{role:"owner",actor_user_id:"owner-1"}]}:sql.includes("UPDATE workspace_invitations SET revoked_at")?{rows:[{id:"invite-1",email:"new@example.test",role:"viewer"}]}:{rows:[]});
  const result=await revokeWorkspaceInvitation(database,{workspaceId:"workspace-1",invitationId:"invite-1",actorUserId:"owner-1",actorSubject:"auth-owner"});
  assert.deepEqual(result,{id:"invite-1",revoked:true});
  assert.ok(calls.some(call=>call.sql.includes("INSERT INTO audit_logs")));

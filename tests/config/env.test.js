@@ -5,6 +5,14 @@ test("loads safe defaults", () => { const c = loadConfig({}); assert.equal(c.hos
 test("rejects invalid port", () => assert.throws(() => loadConfig({ PORT: "70000" }), /PORT/));
 test("rejects unsupported environment", () => assert.throws(() => loadConfig({ NODE_ENV: "staging" }), /NODE_ENV/));
 test("parses database SSL", () => assert.equal(loadConfig({ DB_SSL: "true" }).databaseSsl, true));
+test("accepts explicit false values for boolean environment settings", () => {
+ assert.equal(loadConfig({ DB_SSL: "no", METRICS_ENABLED: "0" }).databaseSsl, false);
+ assert.equal(loadConfig({ DB_SSL: "1", METRICS_ENABLED: "yes" }).metricsEnabled, true);
+});
+test("rejects unrecognized boolean environment values instead of silently disabling controls", () => {
+ assert.throws(() => loadConfig({ DB_SSL: "treu" }), /DB_SSL/);
+ assert.throws(() => loadConfig({ METRICS_ENABLED: "enabled" }), /METRICS_ENABLED/);
+});
 test("keeps application and migration database URLs separate", () => {
  const c=loadConfig({DATABASE_URL:"postgres://runtime",MIGRATION_DATABASE_URL:"postgres://migrator"});
  assert.equal(c.databaseUrl,"postgres://runtime");

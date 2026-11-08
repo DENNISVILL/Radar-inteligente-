@@ -72,3 +72,8 @@ La verificación CI demuestra que el procedimiento funciona en PostgreSQL 16 ef�
 ## TLS de la validación previa de restauración
 
 La conexión PostgreSQL que verifica el rol y que la base destino esté vacía usa la misma intención TLS que la conexión CLI de `pg_restore`: `sslmode=require`, `verify-ca` o `verify-full` habilitan TLS con validación de certificado; `DB_SSL=true` fuerza TLS incluso si la URL contiene `sslmode=disable`. Los modos de downgrade `allow` y `prefer` se rechazan en esta validación. Si no se indica modo ni `DB_SSL=true`, se conserva la conexión sin TLS para desarrollo local. En producción se debe configurar TLS y certificados confiables según el proveedor.
+
+
+## TLS consistente entre API, migraciones y utilidades PostgreSQL
+
+La API, el runner de migraciones y la validación previa de restauración comparten la resolución de TLS: `DB_SSL=true` fuerza TLS; `sslmode=require`, `verify-ca` o `verify-full` en la URL activan TLS con verificación de certificado y nombre de host; `sslmode=disable` desactiva TLS salvo que `DB_SSL=true`. Las utilidades `pg_dump`/`pg_restore` convierten los modos TLS permitidos a `verify-full` para mantener el mismo nivel de verificación. Se rechazan los modos de downgrade `allow` y `prefer`. Si el proveedor usa una CA privada, indicar `sslrootcert` en la URL. En producción, validar la cadena y el nombre de host con el certificado real del proveedor.

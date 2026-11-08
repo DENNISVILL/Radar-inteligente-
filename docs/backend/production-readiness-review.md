@@ -196,3 +196,11 @@ El cierre de 29/29 entregables describe la fase principal de construcción del b
 - Si falla la comprobación inicial de PostgreSQL o el bind del servidor, se intenta cerrar tanto Fastify como el pool y se conserva el código de salida de error.
 - Se añadieron pruebas para señales simultáneas y para garantizar que PostgreSQL se cierre incluso si Fastify falla. El helper también quedó incluido en el chequeo de sintaxis.
 - **Alcance:** pruebas unitarias del coordinador de apagado; el comportamiento final de señales y terminación deberá observarse también en staging bajo el supervisor/proveedor elegido.
+
+
+## 18. Protección de respuestas ante errores internos (2026-11-08)
+
+- Se añadió una prueba HTTP de regresión que provoca un error interno con una cadena que simula credenciales y detalles de conexión PostgreSQL.
+- La prueba verifica que el cliente reciba únicamente HTTP 500, el código estable `INTERNAL_SERVER_ERROR` y un mensaje genérico; no deben aparecer credenciales, host interno ni stack trace en el cuerpo de respuesta.
+- El error original sigue registrándose en el logger del servidor para diagnóstico. La retención, el acceso y la protección de esos logs deben configurarse en el entorno de despliegue.
+- **Alcance:** la prueba valida la respuesta HTTP de Fastify; no demuestra por sí sola la seguridad del destino de logs ni sustituye la revisión de permisos operativos.

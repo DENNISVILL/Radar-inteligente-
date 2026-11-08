@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile, stat, access } from "node:fs/promises";
+import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { withPostgresCliEnv } from "../../scripts/postgres-cli.js";
 import { postgresSslConfig } from "../../src/infrastructure/database/postgres-ssl.js";
 
@@ -76,4 +79,19 @@ test("restore preflight honors explicit DB_SSL and refuses downgrade modes", () 
     () => postgresSslConfig("postgres://radar:secret@db.example.test/radar?sslmode=allow"),
     /sslmode inseguro/
   );
+});
+
+test("PostgreSQL TLS helper loads a provider CA certificate from sslrootcert", () => {
+  const directory = mkdtempSync(join(tmpdir(), "radar-ca-test-"));
+  const certificatePath = join(directory, "provider-ca.pem");
+  const certificate = "-----BEGIN CERTIFICATE-----\\nTEST CA MATERIAL\\n-----END CERTIFICATE-----\\n";
+  try {
+    writeFileSync(certificatePath, certificate, "utf8");
+    assert.deepEqual(
+      postgresSslConfig("postgres://radar:secret@db.example.test/radar?sslmode=verify-full&sslrootcert=" + encodeURIComponent(certificatePath)),
+      { rejectUnauthorized: true, ca: certificate }
+    );
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });

@@ -13,6 +13,7 @@ async function buildApp({role="owner"}={}){
    calls.push({sql,values});
    if(sql.includes("FROM workspace_members wm"))return {rows:[{workspace_id:workspaceId,workspace_name:"Test workspace",role}]};
    if(sql.includes("FROM competitors"))return {rows:[]};
+   if(sql.includes("INSERT INTO users"))return {rows:[{id:"local-user",email:"owner@example.test",status:"active"}]};
    return {rows:[]};
   },
   async connect(){
@@ -149,3 +150,30 @@ test("viewer can read products, price history, observations and market analysis"
  }finally{await app.close();}
 });
 
+
+
+test("foreign competitor and product IDs cannot be updated or archived across workspaces",async()=>{
+ const {app,calls}=await buildApp();
+ const requests=[
+  {method:"PATCH",url:`/api/v1/workspaces/${workspaceId}/competitors/${productId}`,payload:{name:"Cambio externo"},table:"competitors"},
+  {method:"DELETE",url:`/api/v1/workspaces/${workspaceId}/competitors/${productId}`,table:"competitors"},
+  {method:"PATCH",url:`/api/v1/workspaces/${workspaceId}/products/${productId}`,payload:{name:"Cambio externo"},table:"market_products"},
+  {method:"DELETE",url:`/api/v1/workspaces/${workspaceId}/products/${productId}`,table:"market_products"}
+ ];
+ try{
+  for(const request of requests){
+   const response=await app.inject({method:request.method,url:request.url,payload:request.payload});
+   assert.equal(response.statusCode,404,request.method+" "+request.url);
+   assert.equal(response.json().error,"NOT_FOUND");
+  }
+  for(const table of ["competitors","market_products"]){
+   const mutations=calls.filter(call=>call.sql?.includes("UPDATE "+table));
+   assert.ok(mutations.length>=2);
+   for(const mutation of mutations){
+    assert.deepEqual(mutation.values.slice(0,2),[workspaceId,productId]);
+    assert.match(mutation.sql,/WHERE workspace_id=\$1 AND id=\$2 AND status='active'/);
+   }
+  }
+  assert.equal(calls.some(call=>call.sql?.includes("INSERT INTO audit_logs")),false);
+ }finally{await app.close();}
+});

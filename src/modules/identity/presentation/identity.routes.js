@@ -11,7 +11,21 @@ async function requireIdentity(request,reply,options){
  const token=readBearerToken(request.headers.authorization);
  if(!token)return reply.code(401).send({error:"UNAUTHORIZED",message:"Se requiere un token Bearer válido."});
  try{request.identity=await verifySupabaseAccessToken(token,options.config.supabaseUrl);}
- catch(error){const status=error.code==="ERR_JWT_EXPIRED"||error.code==="ERR_JWS_INVALID"||error.code==="ERR_JWT_CLAIM_VALIDATION_FAILED"?401:(error.statusCode??401);return reply.code(status).send({error:status===503?"AUTH_NOT_CONFIGURED":"INVALID_TOKEN",message:status===503?error.message:"El token no es válido o ha expirado."});}
+ catch(error){
+  const invalidTokenCodes=new Set([
+   "ERR_JWT_EXPIRED",
+   "ERR_JWT_INVALID",
+   "ERR_JWT_CLAIM_VALIDATION_FAILED",
+   "ERR_JWS_INVALID",
+   "ERR_JWS_SIGNATURE_VERIFICATION_FAILED",
+   "ERR_JOSE_ALG_NOT_ALLOWED",
+   "ERR_JWKS_NO_MATCHING_KEY"
+  ]);
+  if(error.statusCode===503)return reply.code(503).send({error:"AUTH_NOT_CONFIGURED",message:"La autenticación todavía no está configurada."});
+  if(invalidTokenCodes.has(error.code))return reply.code(401).send({error:"INVALID_TOKEN",message:"El token no es válido o ha expirado."});
+  request.log?.error?.({err:error},"No se pudo verificar el token con el proveedor de identidad");
+  return reply.code(503).send({error:"AUTH_PROVIDER_UNAVAILABLE",message:"El servicio de autenticación no está disponible temporalmente."});
+ }
 }
 export async function identityRoutes(app,options){
  const routeOptions={database:options.database,requireIdentity:(request,reply)=>requireIdentity(request,reply,options)};

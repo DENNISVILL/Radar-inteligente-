@@ -11,7 +11,7 @@
 
 SELECT format('CREATE ROLE radar_migration_owner LOGIN PASSWORD %L', :'migration_password')
 WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'radar_migration_owner') \gexec
-SELECT format('ALTER ROLE radar_migration_owner LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD %L', :'migration_password') \gexec
+SELECT format('ALTER ROLE radar_migration_owner LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD %L', :'migration_password') \gexec
 
 SELECT format('CREATE ROLE radar_runtime LOGIN PASSWORD %L', :'runtime_password')
 WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'radar_runtime') \gexec

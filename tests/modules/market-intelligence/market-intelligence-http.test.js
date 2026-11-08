@@ -18,7 +18,11 @@ async function buildApp({role="owner"}={}){
   },
   async connect(){
    return {
-    async query(sql,values=[]){calls.push({sql,values});return {rows:[]};},
+    async query(sql,values=[]){
+     calls.push({sql,values});
+     if(sql.includes("INSERT INTO competitors"))return {rows:[{id:"competitor-1",workspace_id:workspaceId,name:values[2]}]};
+     return {rows:[]};
+    },
     release(){calls.push({sql:"RELEASE",values:[]});}
    };
   }
@@ -176,4 +180,23 @@ test("foreign competitor and product IDs cannot be updated or archived across wo
   }
   assert.equal(calls.some(call=>call.sql?.includes("INSERT INTO audit_logs")),false);
  }finally{await app.close();}
+});
+
+
+test("market-intelligence write permissions follow owner, admin, analyst and viewer roles",async()=>{
+ for(const role of ["owner","admin","analyst","viewer"]){
+  const {app,calls}=await buildApp({role});
+  try{
+   const response=await app.inject({method:"POST",url:`/api/v1/workspaces/${workspaceId}/competitors`,payload:{name:"Competidor de prueba"}});
+   if(role==="viewer"){
+    assert.equal(response.statusCode,403);
+    assert.equal(response.json().error,"FORBIDDEN");
+    assert.equal(calls.some(call=>call.sql?.includes("INSERT INTO users")||call.sql?.includes("INSERT INTO competitors")),false);
+   }else{
+    assert.equal(response.statusCode,201,role+" should create competitors");
+    assert.ok(calls.some(call=>call.sql?.includes("INSERT INTO competitors")));
+    assert.ok(calls.some(call=>call.sql?.includes("INSERT INTO audit_logs")));
+   }
+  }finally{await app.close();}
+ }
 });

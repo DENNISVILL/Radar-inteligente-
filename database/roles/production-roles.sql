@@ -1,8 +1,10 @@
 -- Bootstrap de roles para una base PostgreSQL NUEVA.
 -- Ejecutar una sola vez como administrador de la base:
--- MIGRATION_DB_PASSWORD='...' RUNTIME_DB_PASSWORD='...' psql "$ADMIN_DATABASE_URL" \
---   -v database_name=radar_comercial -f database/roles/production-roles.sql
--- No guardar contraseñas reales en el repositorio, shell history ni archivos compartidos.
+-- En Bash, introducir secretos sin escribirlos en el historial:
+-- read -s -p "Migration password: " MIGRATION_DB_PASSWORD; export MIGRATION_DB_PASSWORD; echo
+-- read -s -p "Runtime password: " RUNTIME_DB_PASSWORD; export RUNTIME_DB_PASSWORD; echo
+-- psql "$ADMIN_DATABASE_URL" -v database_name=radar_comercial -f database/roles/production-roles.sql
+-- No guardar contraseñas reales en el repositorio ni archivos compartidos.
 \set ON_ERROR_STOP on
 \getenv migration_password MIGRATION_DB_PASSWORD
 \getenv runtime_password RUNTIME_DB_PASSWORD

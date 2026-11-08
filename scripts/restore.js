@@ -18,7 +18,7 @@ const connection = process.env.RESTORE_DATABASE_URL;
 if (!backup || !connection) throw new Error("Define RESTORE_FILE y RESTORE_DATABASE_URL.");
 
 const target = new URL(connection);
-const database = decodeURIComponent(target.pathname.replace(/^\\//, ""));
+const database = decodeURIComponent(target.pathname.slice(1));
 if (!database || process.env.RESTORE_CONFIRM_DATABASE !== database) {
   throw new Error("Restauración bloqueada: RESTORE_CONFIRM_DATABASE debe coincidir exactamente con el nombre de la base destino.");
 }

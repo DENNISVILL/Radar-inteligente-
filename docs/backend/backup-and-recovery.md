@@ -67,3 +67,8 @@ Antes de aceptar datos reales, el propietario debe definir:
 - Prueba periódica de restauración y evidencia de su duración y resultado.
 
 La verificación CI demuestra que el procedimiento funciona en PostgreSQL 16 efímero. No demuestra que exista una copia externa, cifrado en reposo, recuperación PITR ni restauración en el proveedor final.
+
+
+## TLS de la validación previa de restauración
+
+La conexión PostgreSQL que verifica el rol y que la base destino esté vacía usa la misma intención TLS que la conexión CLI de `pg_restore`: `sslmode=require`, `verify-ca` o `verify-full` habilitan TLS con validación de certificado; `DB_SSL=true` fuerza TLS incluso si la URL contiene `sslmode=disable`. Los modos de downgrade `allow` y `prefer` se rechazan en esta validación. Si no se indica modo ni `DB_SSL=true`, se conserva la conexión sin TLS para desarrollo local. En producción se debe configurar TLS y certificados confiables según el proveedor.

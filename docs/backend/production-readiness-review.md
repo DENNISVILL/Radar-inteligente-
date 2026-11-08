@@ -171,3 +171,11 @@ El cierre de 29/29 entregables describe la fase principal de construcción del b
 - Se revoca explícitamente `CREATE` sobre la base de datos al rol runtime y a `PUBLIC`; el permiso se reserva al rol de migraciones para la instalación de extensiones y cambios de esquema.
 - La prueba PostgreSQL de migraciones ahora consulta `pg_roles` y falla si el rol runtime tiene cualquiera de esos atributos administrativos o `BYPASSRLS` activo.
 - **Alcance:** validación automatizada en PostgreSQL efímero de CI. No reemplaza la revisión de membresías heredadas ni el inventario de roles de una base administrada real.
+
+
+## 15. Consistencia TLS en todas las conexiones PostgreSQL (2026-11-08)
+
+- Se centralizó la selección TLS de `node-postgres` en `src/infrastructure/database/postgres-ssl.js`; API, migraciones y prevalidación de restauración respetan `DB_SSL` y `sslmode`, con verificación de certificado y soporte de `sslrootcert`.
+- `pg_dump` y `pg_restore` ahora reciben `PGSSLMODE=verify-full` cuando TLS está habilitado, y `disable` cuando no lo está, para evitar que libpq degrade silenciosamente la conexión. Se rechazan `allow` y `prefer`.
+- Se añadieron pruebas unitarias para CA privada, modos TLS, rechazo de downgrade y paridad entre la configuración de Node y las herramientas CLI.
+- **Alcance:** pruebas de configuración. No se ha conectado un certificado ni servidor real de proveedor; la aceptación final exige prueba de staging con CA, hostname y política TLS reales.

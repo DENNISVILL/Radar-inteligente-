@@ -282,3 +282,43 @@ test("PostgreSQL migration runner grants runtime DML but protects audit and migr
   await pool.end();
  }
 });
+
+
+test("PostgreSQL blocks an audited tenant mutation after workspace membership is revoked",{
+ skip:!process.env.TEST_DATABASE_URL
+},async()=>{
+ const {randomUUID}=await import("node:crypto");
+ const {executeAuditedMutation}=await import("../../src/modules/market-intelligence/application/audit-transaction.js");
+ const pool=new pg.Pool({connectionString:process.env.TEST_DATABASE_URL});
+ const suffix=randomUUID();
+ const subject="revoked-writer-"+suffix;
+ let workspaceId,userId;
+ try{
+  await applyMigrations(pool);
+  const workspace=await pool.query("INSERT INTO workspaces(name,slug) VALUES('Revoked writer',$1) RETURNING id",["revoked-writer-"+suffix]);
+  workspaceId=workspace.rows[0].id;
+  const user=await pool.query("INSERT INTO users(auth_subject,email) VALUES($1,$2) RETURNING id",[subject,"revoked-"+suffix+"@example.test"]);
+  userId=user.rows[0].id;
+  await pool.query("INSERT INTO workspace_members(workspace_id,user_id,role) VALUES($1,$2,'analyst')",[workspaceId,userId]);
+  await pool.query("DELETE FROM workspace_members WHERE workspace_id=$1 AND user_id=$2",[workspaceId,userId]);
+  let mutationExecuted=false;
+  await assert.rejects(
+   ()=>executeAuditedMutation(pool,{
+    workspaceId,actorUserId:userId,actorSubject:subject,eventType:"tenant.test",resourceType:"test"
+   },async client=>{
+    mutationExecuted=true;
+    return (await client.query("INSERT INTO competitors(workspace_id,created_by,name) VALUES($1,$2,'Must not exist') RETURNING id",[workspaceId,userId])).rows[0];
+   }),
+   error=>error.statusCode===403&&error.code==="WORKSPACE_ACCESS_REVOKED"
+  );
+  assert.equal(mutationExecuted,false);
+  const persisted=await pool.query("SELECT count(*)::int AS total FROM competitors WHERE workspace_id=$1 AND name='Must not exist'",[workspaceId]);
+  assert.equal(persisted.rows[0].total,0);
+  const audit=await pool.query("SELECT count(*)::int AS total FROM audit_logs WHERE workspace_id=$1 AND event_type='tenant.test'",[workspaceId]);
+  assert.equal(audit.rows[0].total,0);
+ }finally{
+  if(workspaceId)await pool.query("DELETE FROM workspaces WHERE id=$1",[workspaceId]);
+  if(userId)await pool.query("DELETE FROM users WHERE id=$1",[userId]);
+  await pool.end();
+ }
+});

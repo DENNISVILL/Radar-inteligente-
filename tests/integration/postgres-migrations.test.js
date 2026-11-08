@@ -119,7 +119,7 @@ test("PostgreSQL persists, lists, rejects duplicates and revokes workspace invit
   const revoked=await revokeWorkspaceInvitation(pool,{workspaceId,invitationId:first.id,actorUserId:ownerId,actorSubject:`owner-${suffix}`});
   assert.deepEqual(revoked,{id:first.id,revoked:true});
   assert.equal((await listWorkspaceInvitations(pool,workspaceId)).length,0);
-  const replacement=await createWorkspaceInvitation(pool,{workspaceId,email,role:"viewer",actorRole:"owner",actorUserId:ownerId});
+  const replacement=await createWorkspaceInvitation(pool,{workspaceId,email,role:"viewer",actorRole:"owner",actorUserId:ownerId,actorSubject:`owner-${suffix}`});
   assert.equal(replacement.email,email);
   const events=await pool.query("SELECT event_type,count(*)::int AS count FROM audit_logs WHERE workspace_id=$1 AND event_type IN ('workspace_invitation.created','workspace_invitation.revoked') GROUP BY event_type",[workspaceId]);
   const counts=Object.fromEntries(events.rows.map(row=>[row.event_type,row.count]));

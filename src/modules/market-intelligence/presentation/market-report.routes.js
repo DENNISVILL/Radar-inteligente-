@@ -42,7 +42,7 @@ export async function marketReportRoutes(app,o){
      [r.params.workspaceId,r.params.researchId,versionResult.rows[0].version,JSON.stringify(report),user.id]);
     saved=inserted.rows[0];
     await client.query(`INSERT INTO audit_logs(workspace_id,actor_user_id,event_type,resource_type,resource_id,metadata)
-     VALUES($1,$2,'market_report.snapshot_created','market_report',$3,jsonb_build_object('research_id',$4::uuid,'version',$5,'report_hash',$6))`,
+     VALUES($1,$2,'market_report.snapshot_created','market_report',$3,jsonb_build_object('research_id',$4::uuid,'version',$5::integer,'report_hash',$6))`,
      [r.params.workspaceId,user.id,saved.id,r.params.researchId,saved.version,saved.report_hash]);
     await client.query("COMMIT");transactionStarted=false;
    }

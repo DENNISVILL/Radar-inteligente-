@@ -165,3 +165,34 @@ test("non-members cannot read report history, report snapshots or PDF exports",a
   assert.equal(calls.some(call=>call.sql.includes("FROM market_reports")),false);
  }finally{await app.close();}
 });
+
+
+test("audit-log access follows the owner/admin-only role matrix",async()=>{
+ for(const role of ["owner","admin","analyst","viewer"]){
+  const {app,calls}=await buildApp({role});
+  try{
+   const response=await app.inject({method:"GET",url:`/api/v1/workspaces/${workspaceA}/audit-logs`});
+   if(role==="owner"||role==="admin"){
+    assert.equal(response.statusCode,200,role+" should read audit logs");
+    assert.ok(calls.some(call=>call.sql.includes("FROM audit_logs")));
+   }else{
+    assert.equal(response.statusCode,403,role+" must not read audit logs");
+    assert.equal(response.json().error,"FORBIDDEN");
+    assert.equal(calls.some(call=>call.sql.includes("FROM audit_logs")),false);
+   }
+  }finally{await app.close();}
+ }
+});
+
+test("report snapshot creation is denied to viewers and non-members before opening a transaction",async()=>{
+ for(const scenario of [{role:"viewer",accessibleWorkspaces:[workspaceA]},{role:"owner",accessibleWorkspaces:[]} ]){
+  const {app,calls,getConnectCalls}=await buildApp(scenario);
+  try{
+   const response=await app.inject({method:"POST",url:`/api/v1/workspaces/${workspaceA}/researches/${researchId}/reports`});
+   assert.equal(response.statusCode,403);
+   assert.equal(response.json().error,"FORBIDDEN");
+   assert.equal(getConnectCalls(),0);
+   assert.equal(calls.some(call=>call.sql.includes("INSERT INTO users")),false);
+  }finally{await app.close();}
+ }
+});

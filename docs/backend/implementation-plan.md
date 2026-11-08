@@ -77,6 +77,7 @@ El 100 % de los 29 entregables principales no incluye el cierre de infraestructu
 
 - [x] Verificación de JWT de Supabase mediante JWKS (requiere `SUPABASE_URL` real); los tokens inválidos responden 401 y las caídas del proveedor JWKS responden 503, con prueba HTTP de regresión.
 - [x] Usuarios, workspaces y membresías.
+- [x] Auditoría atómica de creación de workspace y asignación del propietario inicial (`workspace.created` y `workspace_member.added`), con rollback probado ante fallo de auditoría.
 - [x] Roles `owner`, `admin`, `analyst` y `viewer`.
 - [x] Gestión de miembros, cambios de rol y restricciones de privilegios.
 - [x] Invitaciones de un solo uso, hash SHA-256, expiración, revocación y auditoría.
@@ -89,6 +90,7 @@ El 100 % de los 29 entregables principales no incluye el cierre de infraestructu
 ### 3. Investigaciones — backend implementado
 
 - [x] CRUD, validaciones, estados y aislamiento por workspace.
+- [ ] Añadir auditoría transaccional a creación, actualización y archivo de investigaciones; el CRUD actual aún no registra estos eventos.
 
 ### 4. Inteligencia de mercado — backend implementado
 
@@ -109,7 +111,8 @@ El 100 % de los 29 entregables principales no incluye el cierre de infraestructu
 ### 6. Seguridad y operación — parcial
 
 - [x] Autorización multiempresa en servidor.
-- [x] Auditoría de operaciones relevantes.
+- [x] Auditoría de operaciones relevantes en miembros, invitaciones, creación de workspaces e inteligencia de mercado.
+- [ ] Completar auditoría atómica del CRUD de investigaciones y sus pruebas de rollback.
 - [x] Pruebas de migraciones, relaciones, integridad, concurrencia y rutas HTTP de invitaciones.
 - [x] Rate limiting por IP/ruta (120 solicitudes por 60 s por defecto; 10 para aceptar invitaciones), con límites configurables, cabeceras 429 y capacidad acotada; al llenarse, preserva ventanas activas y rechaza temporalmente nuevos buckets con 503 `RATE_LIMIT_CAPACITY`.
 - [ ] Sustituir el almacenamiento en memoria por un backend compartido antes de escalar a múltiples instancias; el control de capacidad actual evita expulsar ventanas activas, pero no comparte contadores entre procesos.

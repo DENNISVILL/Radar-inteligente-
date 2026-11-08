@@ -50,7 +50,7 @@ test("snapshot and audit event are written in the same explicit transaction",asy
  assert.match(source,/INSERT INTO audit_logs\(workspace_id,actor_user_id,event_type,resource_type,resource_id,metadata\)/);
  assert.match(source,/canAccessWorkspace\(membership,\["owner","admin"\]\)/);
  assert.match(source,/FROM audit_logs WHERE workspace_id=\$1/);
- const begin=source.indexOf('await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ")');
+ const begin=source.indexOf('await client.query("BEGIN")');
  const build=source.indexOf("buildMarketReport(client");
  const snapshot=source.indexOf("INSERT INTO market_reports");
  const audit=source.indexOf("INSERT INTO audit_logs");
@@ -60,10 +60,10 @@ test("snapshot and audit event are written in the same explicit transaction",asy
  assert.ok(rollback>commit,"transaction must provide rollback handling");
 });
 
-test("snapshot versioning serializes creators before opening a repeatable-read snapshot",async()=>{
+test("snapshot versioning serializes workspace writes and rechecks membership before reading report data",async()=>{
  const source=await readFile(new URL("../../../src/modules/market-intelligence/presentation/market-report.routes.js",import.meta.url),"utf8");
  assert.match(source,/pg_advisory_lock\(hashtextextended/);
- assert.match(source,/BEGIN ISOLATION LEVEL REPEATABLE READ/);
+ assert.match(source,/SELECT id FROM workspaces WHERE id=\\$1 AND status=\x27active\x27 FOR UPDATE/);\n assert.match(source,/FOR UPDATE OF wm/);\n assert.match(source,/BEGIN/);
  assert.match(source,/SELECT COALESCE\(MAX\(version\),0\)\+1 AS version/);
  assert.match(source,/pg_advisory_unlock\(hashtextextended/);
  assert.match(source,/client\.release\(releaseError\)/);

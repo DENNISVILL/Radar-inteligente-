@@ -24,12 +24,16 @@ Ajustar el selector `job="radar-api"` al nombre real del scrape job.
 ### Tasa de errores HTTP 5xx
 
 ```promql
-sum(rate(radar_http_requests_total{job="radar-api",status=~"5.."}[5m]))
-/
-clamp_min(sum(rate(radar_http_requests_total{job="radar-api"}[5m])), 1)
+(
+  sum(rate(radar_http_requests_total{job="radar-api",status=~"5.."}[5m]))
+  /
+  clamp_min(sum(rate(radar_http_requests_total{job="radar-api"}[5m])), 0.001)
+) > 0.05
+and
+sum(rate(radar_http_requests_total{job="radar-api"}[5m])) > 0.1
 ```
 
-Umbral inicial sugerido: mayor a 5% durante 10 minutos, con tráfico suficiente. Tratarlo como punto de partida y calibrarlo con datos de staging.
+La expresión incluye una condición de tráfico mínimo de 0,1 solicitudes/segundo para evitar alertas por divisiones con denominadores casi nulos. Configurar `for: 10m` en la regla de alerta. Umbral inicial sugerido: ratio mayor a 5%; calibrarlo con datos de staging.
 
 ### Latencia HTTP p95
 

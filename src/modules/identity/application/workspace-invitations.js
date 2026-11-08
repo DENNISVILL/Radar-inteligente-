@@ -12,7 +12,7 @@ export async function listWorkspaceInvitations(database,workspaceId){
  return result.rows;
 }
 
-export async function createWorkspaceInvitation(database,{workspaceId,email,role,actorRole,actorUserId,actorSubject}){
+export async function createWorkspaceInvitation(database,{workspaceId,email,role,actorRole,actorSubject}){
  if(!manageableRoles.includes(role))return {error:"INVALID_ROLE"};
  if(actorRole==="admin"&&role!=="analyst"&&role!=="viewer")return {error:"FORBIDDEN_ROLE"};
  const normalizedEmail=normalizeEmail(email);
@@ -23,11 +23,12 @@ export async function createWorkspaceInvitation(database,{workspaceId,email,role
   await client.query("BEGIN");
   const workspace=await client.query("SELECT id FROM workspaces WHERE id=$1 AND status='active' FOR UPDATE",[workspaceId]);
   if(!workspace.rows[0]){await client.query("ROLLBACK");return null;}
-  const actor=await client.query(`SELECT wm.role FROM workspace_members wm
+  const actor=await client.query(`SELECT wm.role,u.id AS actor_user_id FROM workspace_members wm
    JOIN users u ON u.id=wm.user_id
    WHERE wm.workspace_id=$1 AND u.auth_subject=$2 AND u.status='active'
    FOR UPDATE OF wm`,[workspaceId,actorSubject]);
   const currentActorRole=actor.rows[0]?.role;
+  const currentActorUserId=actor.rows[0]?.actor_user_id;
   if(!["owner","admin"].includes(currentActorRole)||
    (currentActorRole==="admin"&&role!=="analyst"&&role!=="viewer")){
    await client.query("ROLLBACK");return {error:"FORBIDDEN_ROLE"};
@@ -36,11 +37,11 @@ export async function createWorkspaceInvitation(database,{workspaceId,email,role
   const result=await client.query(`INSERT INTO workspace_invitations(workspace_id,email,role,token_hash,invited_by,expires_at)
    VALUES($1,$2,$3,$4,$5,NOW()+INTERVAL '7 days')
    RETURNING id,email,role,expires_at,created_at`,
-   [workspaceId,normalizedEmail,role,tokenHash,actorUserId]);
+   [workspaceId,normalizedEmail,role,tokenHash,currentActorUserId]);
   const invitation=result.rows[0];
   await client.query(`INSERT INTO audit_logs(workspace_id,actor_user_id,event_type,resource_type,resource_id,metadata)
    VALUES($1,$2,'workspace_invitation.created','workspace_invitation',$3,jsonb_build_object('email',$4::text,'role',$5::text,'expires_at',$6::timestamptz))`,
-   [workspaceId,actorUserId,invitation.id,invitation.email,invitation.role,invitation.expires_at]);
+   [workspaceId,currentActorUserId,invitation.id,invitation.email,invitation.role,invitation.expires_at]);
   await client.query("COMMIT");
   return {...invitation,token};
  }catch(error){
@@ -91,26 +92,27 @@ export async function acceptWorkspaceInvitation(database,{token,identity}){
  finally{client.release();}
 }
 
-export async function revokeWorkspaceInvitation(database,{workspaceId,invitationId,actorUserId,actorSubject}){
+export async function revokeWorkspaceInvitation(database,{workspaceId,invitationId,actorSubject}){
  const client=await database.connect();
  try{
   await client.query("BEGIN");
   const workspace=await client.query("SELECT id FROM workspaces WHERE id=$1 AND status='active' FOR UPDATE",[workspaceId]);
   if(!workspace.rows[0]){await client.query("ROLLBACK");return null;}
-  const actor=await client.query(`SELECT wm.role FROM workspace_members wm
+  const actor=await client.query(`SELECT wm.role,u.id AS actor_user_id FROM workspace_members wm
    JOIN users u ON u.id=wm.user_id
    WHERE wm.workspace_id=$1 AND u.auth_subject=$2 AND u.status='active'
    FOR UPDATE OF wm`,[workspaceId,actorSubject]);
   if(!["owner","admin"].includes(actor.rows[0]?.role)){
    await client.query("ROLLBACK");return {error:"FORBIDDEN"};
   }
+  const currentActorUserId=actor.rows[0].actor_user_id;
   const result=await client.query(`UPDATE workspace_invitations SET revoked_at=NOW()
    WHERE workspace_id=$1 AND id=$2 AND accepted_at IS NULL AND revoked_at IS NULL AND expires_at>NOW()
    RETURNING id,email,role`,[workspaceId,invitationId]);
   if(!result.rows[0]){await client.query("ROLLBACK");return null;}
   await client.query(`INSERT INTO audit_logs(workspace_id,actor_user_id,event_type,resource_type,resource_id,metadata)
    VALUES($1,$2,'workspace_invitation.revoked','workspace_invitation',$3,jsonb_build_object('email',$4::text,'role',$5::text))`,
-   [workspaceId,actorUserId,result.rows[0].id,result.rows[0].email,result.rows[0].role]);
+   [workspaceId,currentActorUserId,result.rows[0].id,result.rows[0].email,result.rows[0].role]);
   await client.query("COMMIT");
   return {id:result.rows[0].id,revoked:true};
  }catch(error){try{await client.query("ROLLBACK");}catch{}throw error;}

@@ -17,3 +17,8 @@ test("rejects out-of-range rate limit settings", () => {
  assert.throws(() => loadConfig({RATE_LIMIT_AUTH_MAX:"1001"}),/RATE_LIMIT_AUTH_MAX/);
  assert.throws(() => loadConfig({RATE_LIMIT_WINDOW_MS:"999"}),/RATE_LIMIT_WINDOW_MS/);
 });
+
+test("metrics are enabled by default and can be disabled", () => {
+ assert.equal(loadConfig({}).metricsEnabled, true);
+ assert.equal(loadConfig({ METRICS_ENABLED: "false" }).metricsEnabled, false);
+});

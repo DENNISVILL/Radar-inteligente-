@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { lstat, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { lstat, mkdtemp, readFile, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -74,6 +74,23 @@ test("restore staging rejects a symbolic-link backup", async () => {
     await symlink(source, backup);
     await writeFile(backupManifestPath(backup), await readFile(backupManifestPath(source)));
     await assert.rejects(stageVerifiedBackup(backup), /archivo regular y no un enlace simbólico/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+
+test("restore staging rejects a symbolic-link integrity manifest", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "radar-backup-manifest-"));
+  const backup = join(directory, "radar.dump");
+  const manifest = backupManifestPath(backup);
+  const storedManifest = join(directory, "stored-manifest.json");
+  try {
+    await writeFile(backup, "backup");
+    await writeBackupManifest(backup);
+    await rename(manifest, storedManifest);
+    await symlink(storedManifest, manifest);
+    await assert.rejects(stageVerifiedBackup(backup), /manifiesto SHA-256 debe ser un archivo regular y no un enlace simbólico/);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

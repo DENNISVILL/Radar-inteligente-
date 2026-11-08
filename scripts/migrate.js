@@ -4,9 +4,16 @@ import { pathToFileURL } from "node:url";
 import pg from "pg";
 import { loadConfig } from "../src/config/env.js";
 
+const MIGRATION_LOCK_KEY = "radar-comercial-schema-migrations";
+
 export async function applyMigrations(pool, migrationsDirectory = new URL("../database/migrations/", import.meta.url)) {
   const client = await pool.connect();
+  let lockAcquired = false;
   try {
+    // Serialize migration runners that share the same PostgreSQL database.
+    await client.query("SELECT pg_advisory_lock(hashtextextended($1, 0))", [MIGRATION_LOCK_KEY]);
+    lockAcquired = true;
+
     await client.query("CREATE TABLE IF NOT EXISTS schema_migrations (version VARCHAR(120) PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())");
     const files = (await readdir(migrationsDirectory))
       .filter(file => /^\d+_[a-z0-9_-]+\.sql$/i.test(file))
@@ -32,7 +39,13 @@ export async function applyMigrations(pool, migrationsDirectory = new URL("../da
     }
     return { discovered: files.length, versions: files.map(file => file.replace(/\.sql$/i, "")) };
   } finally {
-    client.release();
+    try {
+      if (lockAcquired) {
+        await client.query("SELECT pg_advisory_unlock(hashtextextended($1, 0))", [MIGRATION_LOCK_KEY]);
+      }
+    } finally {
+      client.release();
+    }
   }
 }
 

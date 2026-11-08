@@ -50,14 +50,18 @@ test("Supabase JWT verification protects identity and workspace-access HTTP rout
       issuer = `${supabaseUrl}/auth/v1`,
       audience = "authenticated",
       subject = "auth-user",
-      expiration = "5m"
+      expiration = "5m",
+      issuedAt = Math.floor(Date.now() / 1000),
+      includeIssuedAt = true,
+      includeExpiration = true,
+      sessionId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
     } = {}) {
-      const jwt = new SignJWT({ email: "user@example.test", role: "authenticated" })
+      const jwt = new SignJWT({ email: "user@example.test", role: "authenticated", session_id: sessionId })
         .setProtectedHeader({ alg: "RS256", kid })
         .setIssuer(issuer)
-        .setAudience(audience)
-        .setIssuedAt()
-        .setExpirationTime(expiration);
+        .setAudience(audience);
+      if (includeIssuedAt) jwt.setIssuedAt(issuedAt);
+      if (includeExpiration) jwt.setExpirationTime(expiration);
       if (typeof subject === "string") jwt.setSubject(subject);
       return jwt.sign(signingKey);
     }

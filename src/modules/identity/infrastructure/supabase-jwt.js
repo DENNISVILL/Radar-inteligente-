@@ -14,6 +14,7 @@ export async function verifySupabaseAccessToken(token, supabaseUrl, { maxTokenAg
   if (!supabaseUrl) {
     const error = new Error("La autenticación todavía no está configurada.");
     error.statusCode = 503;
+    error.code = "AUTH_NOT_CONFIGURED";
     throw error;
   }
   const { payload } = await jwtVerify(token, getJwks(supabaseUrl), {

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {randomUUID} from "node:crypto";
 import pg from "pg";
 import {applyMigrations} from "../../scripts/migrate.js";
-import {listWorkspaceAuditLogs} from "../../src/modules/market-intelligence/application/workspace-audit-logs.js";
+import {listWorkspaceAuditLogs,parseAuditCursor} from "../../src/modules/market-intelligence/application/workspace-audit-logs.js";
 
 test("PostgreSQL audit history is workspace-scoped, keyset-paginated and reauthorizes current role",{
  skip:!process.env.TEST_DATABASE_URL
@@ -31,7 +31,7 @@ test("PostgreSQL audit history is workspace-scoped, keyset-paginated and reautho
   assert.equal(first.data.length,2);
   assert.ok(first.nextCursor);
   assert.equal(first.data[0].event_type,"test.event.2");
-  const second=await listWorkspaceAuditLogs(pool,{workspaceId,authSubject:subject,limit:2,cursor:(await import("../../src/modules/market-intelligence/application/workspace-audit-logs.js")).parseAuditCursor(first.nextCursor)});
+  const second=await listWorkspaceAuditLogs(pool,{workspaceId,authSubject:subject,limit:2,cursor:parseAuditCursor(first.nextCursor)});
   assert.equal(second.data.length,1);
   assert.equal(second.data[0].event_type,"test.event.0");
   assert.equal(second.nextCursor,null);

@@ -31,7 +31,7 @@ test("Supabase JWT verification protects identity and workspace-access HTTP rout
     async query(sql, values = []) {
       calls.push({ sql, values });
       if (sql.includes("FROM workspace_members wm")) {
-        return { rows: [{ workspace_id: workspaceId, workspace_name: "Workspace de prueba", role: "viewer" }] };
+        return { rows: values[1] === workspaceId ? [{ workspace_id: workspaceId, workspace_name: "Workspace de prueba", role: "viewer" }] : [] };
       }
       return { rows: [] };
     },
@@ -74,7 +74,22 @@ test("Supabase JWT verification protects identity and workspace-access HTTP rout
     });
     assert.equal(access.statusCode, 200);
     assert.deepEqual(access.json(), { workspaceId, workspaceName: "Workspace de prueba", role: "viewer" });
-    assert.equal(calls.length, 1);
+    const foreignAccess = await app.inject({
+      method: "GET",
+      url: "/api/v1/workspaces/33333333-3333-4333-8333-333333333333/access",
+      headers: { authorization: `Bearer ${validToken}` }
+    });
+    assert.equal(foreignAccess.statusCode, 403);
+    assert.equal(foreignAccess.json().error, "FORBIDDEN");
+
+    const malformedAccess = await app.inject({
+      method: "GET",
+      url: "/api/v1/workspaces/not-a-uuid/access",
+      headers: { authorization: `Bearer ${validToken}` }
+    });
+    assert.equal(malformedAccess.statusCode, 400);
+    assert.equal(malformedAccess.json().error, "INVALID_WORKSPACE_ID");
+    assert.equal(calls.length, 2);
 
     const invalidTokens = [
       await token({ expiration: Math.floor(Date.now() / 1000) - 60 }),
@@ -92,7 +107,7 @@ test("Supabase JWT verification protects identity and workspace-access HTTP rout
       assert.equal(response.statusCode, 401);
       assert.equal(response.json().error, "INVALID_TOKEN");
     }
-    assert.equal(calls.length, 1, "invalid tokens must not reach workspace data queries");
+    assert.equal(calls.length, 2, "invalid tokens must not reach workspace data queries");
   } finally {
     await app.close();
     await new Promise(resolve => server.close(resolve));

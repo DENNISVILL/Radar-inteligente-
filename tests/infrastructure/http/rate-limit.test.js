@@ -96,3 +96,18 @@ test("unmatched URLs share one bounded rate-limit bucket per IP",async()=>{
  assert.equal(reply.statusCode,429);
  assert.equal(reply.payload.error,"RATE_LIMITED");
 });
+
+
+test("API responses include baseline security and no-store headers",async()=>{
+ const app=buildApp({config:loadConfig(),database:{async query(){return {rows:[]};}},logger:false});
+ try{
+  for(const url of ["/health","/route-that-does-not-exist"]){
+   const response=await app.inject({method:"GET",url});
+   assert.equal(response.headers["cache-control"],"no-store");
+   assert.equal(response.headers["x-content-type-options"],"nosniff");
+   assert.equal(response.headers["x-frame-options"],"DENY");
+   assert.equal(response.headers["referrer-policy"],"no-referrer");
+   assert.equal(response.headers["cross-origin-resource-policy"],"same-origin");
+  }
+ }finally{await app.close();}
+});

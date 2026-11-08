@@ -131,3 +131,33 @@ test("HTTP member removal cannot remove the last owner",async()=>{
   assert.ok(calls.some(call=>call.sql==="ROLLBACK"));
  }finally{await app.close();}
 });
+
+test("HTTP non-members cannot list or mutate workspace members",async()=>{
+ const {app,calls}=await buildApp({member:false});
+ const requests=[
+  {method:"GET",url:`/api/v1/workspaces/${workspaceId}/members`},
+  {method:"POST",url:`/api/v1/workspaces/${workspaceId}/members`,payload:{email:"person@example.test",role:"analyst"}},
+  {method:"PATCH",url:`/api/v1/workspaces/${workspaceId}/members/${userId}`,payload:{role:"viewer"}},
+  {method:"DELETE",url:`/api/v1/workspaces/${workspaceId}/members/${userId}`}
+ ];
+ try{
+  for(const request of requests){
+   const response=await app.inject(request);
+   assert.equal(response.statusCode,403,request.method+" "+request.url);
+   assert.equal(response.json().error,"FORBIDDEN");
+  }
+  assert.equal(calls.some(call=>call.sql?.includes("joined_at")),false);
+  assert.equal(calls.some(call=>call.sql?.includes("INSERT INTO workspace_members")||call.sql?.includes("UPDATE workspace_members")||call.sql?.includes("DELETE FROM workspace_members")),false);
+  assert.equal(calls.some(call=>call.sql==="RELEASE"),false);
+ }finally{await app.close();}
+});
+
+test("HTTP member routes reject malformed workspace IDs before membership lookup",async()=>{
+ const {app,calls}=await buildApp();
+ try{
+  const response=await app.inject({method:"GET",url:"/api/v1/workspaces/not-a-uuid/members"});
+  assert.equal(response.statusCode,400);
+  assert.equal(response.json().error,"INVALID_WORKSPACE_ID");
+  assert.equal(calls.length,0);
+ }finally{await app.close();}
+});

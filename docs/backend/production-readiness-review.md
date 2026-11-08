@@ -212,3 +212,12 @@ El cierre de 29/29 entregables describe la fase principal de construcción del b
 - La ruta valida el parámetro `limit`; valores no enteros, inferiores a 1 o superiores a 100 se rechazan con HTTP 400 antes de consultar la tabla de invitaciones.
 - OpenAPI documenta el parámetro compartido `limit100`; las pruebas HTTP verifican el límite por defecto, un valor explícito y entradas inválidas.
 - **Alcance:** se limita el tamaño de cada respuesta, no se implementa paginación por cursor ni una política de retención. La lista devuelve las invitaciones pendientes más recientes; una interfaz que necesite recorrer más de 100 registros deberá solicitar paginación en una mejora posterior.
+
+
+## 20. Protección contra borrado directo de snapshots de informes (2026-11-08)
+
+- La revisión detectó que la migración 008 impedía modificar snapshots (UPDATE), pero no impedía borrarlos directamente (DELETE).
+- La migración 011 añade un trigger BEFORE DELETE que rechaza el borrado directo de filas de market_reports con SQLSTATE 55000.
+- Se conserva el borrado en cascada cuando se elimina la investigación o el workspace padre; el trigger distingue la acción referencial mediante la profundidad de triggers de PostgreSQL.
+- Se añadieron pruebas: verificación estática de la migración y una prueba de integración PostgreSQL que confirma que el borrado directo falla, el snapshot permanece y la eliminación del padre sí ejecuta la cascada.
+- **Alcance:** la protección cubre DML ordinario del rol runtime. Un superusuario/propietario de esquema puede alterar triggers o migraciones; se mantiene la separación de roles y el control de acceso administrativo como requisito operativo.

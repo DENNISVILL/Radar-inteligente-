@@ -75,3 +75,23 @@ test("cursor parser normalizes a valid timestamp and retains the stable UUID",()
  const value=Buffer.from(JSON.stringify({createdAt:"2026-11-08T10:00:00Z",id})).toString("base64url");
  assert.deepEqual(parseAuditCursor(value),{createdAt:"2026-11-08T10:00:00.000Z",id});
 });
+
+
+test("NDJSON audit export is deterministic, newline-delimited and SHA-256 verifiable",async()=>{
+ const {createHash}=await import("node:crypto");
+ const {serializeAuditLogNdjson}=await import("../../../src/modules/market-intelligence/application/workspace-audit-logs.js");
+ const rows=[{
+  id:"11111111-1111-4111-8111-111111111111",
+  event_type:"research.created",
+  resource_type:"research",
+  resource_id:null,
+  metadata:{zeta:2,alpha:{y:1,x:0}},
+  created_at:"2026-11-08T10:00:00.000Z"
+ }];
+ const result=serializeAuditLogNdjson(rows);
+ assert.equal(result.count,1);
+ assert.equal(result.body.endsWith("\n"),true);
+ assert.match(result.body,/"alpha":\{"x":0,"y":1\}/);
+ assert.equal(result.sha256,createHash("sha256").update(result.body,"utf8").digest("hex"));
+ assert.deepEqual(serializeAuditLogNdjson(rows),result);
+});

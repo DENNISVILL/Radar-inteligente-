@@ -195,3 +195,14 @@ Los cambios se desarrollan en `backend/foundation`, se prueban en CI y se mantie
 - [x] Incorporar paginación keyset estable por `(created_at,id)`, límite 50 por defecto / 100 máximo y cursor opaco validado.
 - [x] Documentar el endpoint owner/admin en OpenAPI y modelo de amenazas.
 - [x] Añadir pruebas unitarias, HTTP y PostgreSQL para permisos actuales, cursores y recorrido de páginas.
+
+
+### Verificación de integridad de respaldos
+
+- [x] Generar manifiesto lateral versionado con SHA-256 y tamaño del archivo.
+- [x] Verificar digest y tamaño antes de restaurar; rechazar manifiestos ausentes o malformados.
+- [x] Copiar y verificar el respaldo dentro de un directorio temporal privado y restaurar exclusivamente desde esa copia para cerrar la ventana TOCTOU del archivo de origen.
+- [x] Rechazar enlaces simbólicos como archivo de respaldo y limpiar la copia temporal ante éxito o error.
+- [x] Añadir pruebas para corrupción, manifiestos inválidos, permisos de staging y sustitución posterior del archivo de origen.
+- [ ] Confirmar una ejecución CI exitosa sobre el head final del PR; la validación anterior no cubre los últimos commits.
+- [ ] Para autenticidad frente a un atacante con capacidad de reemplazar respaldo y manifiesto, definir firma digital/HMAC y gestión separada de claves. SHA-256 por sí solo detecta corrupción accidental, no autentica el origen.

@@ -19,8 +19,8 @@ async function buildApp({role="owner",accessibleWorkspaces=[workspaceA],research
    }
    if(sql.includes("INSERT INTO users"))return {rows:[{id:"local-user",email:"user@example.test",status:"active"}]};
    if(sql.includes("INSERT INTO researches"))return {rows:[{id:researchId,workspace_id:values[0],created_by:values[1],title:values[2],status:"draft"}]};
-   if(sql.startsWith("UPDATE researches SET status='archived'"))return {rowCount:1,rows:[{id:researchId}]};
-   if(sql.startsWith("UPDATE researches SET"))return {rows:[{id:researchId,workspace_id:values[0],title:values[2]??"Actualizado",status:"draft"}]};
+   if(sql.startsWith("UPDATE researches SET status='archived'"))return {rowCount:researchExists?1:0,rows:researchExists?[{id:researchId}]:[]};
+   if(sql.startsWith("UPDATE researches SET"))return {rows:researchExists?[{id:researchId,workspace_id:values[0],title:values[2]??"Actualizado",status:"draft"}]:[]};
    if(sql.includes("FROM researches")){
     return {rows:researchExists?[{id:researchId,workspace_id:values[0],title:"Estudio",status:"draft"}]:[]};
    }

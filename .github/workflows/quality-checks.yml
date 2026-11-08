@@ -59,6 +59,29 @@ jobs:
       - name: Run PostgreSQL-backed API performance baseline
         run: npm run perf
 
+      - name: Create empty database for restore verification
+        run: psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE DATABASE radar_restore_test"
+
+      - name: Create and verify PostgreSQL backup
+        env:
+          BACKUP_DATABASE_URL: postgres://radar:radar_test@localhost:5432/radar_test
+          BACKUP_FILE: /tmp/radar-ci-backup.dump
+        run: npm run db:backup
+
+      - name: Restore backup into an empty database
+        env:
+          RESTORE_DATABASE_URL: postgres://radar:radar_test@localhost:5432/radar_restore_test
+          RESTORE_FILE: /tmp/radar-ci-backup.dump
+          RESTORE_CONFIRM_DATABASE: radar_restore_test
+        run: npm run db:restore
+
+      - name: Verify restored schema and migration history
+        env:
+          RESTORE_DATABASE_URL: postgres://radar:radar_test@localhost:5432/radar_restore_test
+        run: |
+          psql "$RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -c "SELECT COUNT(*) AS restored_migrations FROM schema_migrations"
+          psql "$RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -c "SELECT COUNT(*) AS restored_tables FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'"
+
       - name: Validate OpenAPI contract
         run: npm run openapi:lint
 

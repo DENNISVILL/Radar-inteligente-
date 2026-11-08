@@ -24,7 +24,7 @@
 
 | Prioridad | Hallazgo | Estado actual | Acción para cerrar |
 |---|---|---|---|
-| Crítica antes de usuarios reales | Aceptación de invitaciones no exige correo confirmado | El verificador JWT expone `sub` y `email`, pero no consulta el estado de confirmación. La referencia oficial de claims JWT de Supabase no incluye `email_verified` entre los claims estándar; no se debe asumir que ese claim existe en un access token. | Al conectar el proyecto, validar el access token contra `GET /auth/v1/user` con `apikey` publicable y `Authorization: Bearer <access_token>`; exigir `email_confirmed_at` no nulo y que el correo devuelto coincida con el correo invitado. Cubrir confirmación ausente, correo cambiado y error del proveedor con pruebas. |
+| Crítica antes de usuarios reales | Aceptación de invitaciones no exige correo confirmado | Corregido en código y CI: con introspección Supabase habilitada se consulta `GET /auth/v1/user`, se usa el correo devuelto por Auth y se exige `email_confirmed_at` antes de aceptar. | Conectar el proyecto real y ejecutar pruebas de aceptación contra su configuración Auth; CI cubre respuestas simuladas. |
 | Alta | No hay copias automáticas ni restauración probada | No existe infraestructura de backup/restore configurada en el repositorio | Elegir hosting/servicio PostgreSQL, definir RPO/RTO, automatizar backups cifrados y ejecutar una restauración documentada |
 | Alta | Rate limiter no distribuido | Contadores en memoria por proceso | Antes de ejecutar más de una instancia, usar Redis u otro almacén compartido con límites atómicos |
 | Alta | Métricas expuestas por ruta sin autenticación propia | Corregido y probado en CI #275 y #346: `/metrics` queda deshabilitado por defecto; solo se registra con `METRICS_ENABLED=true`. La opción de habilitarlo sigue requiriendo red privada o restricción de proxy/firewall. | Antes de producción, habilitarlo solo si el entorno lo necesita y comprobar desde fuera que no sea accesible públicamente |
@@ -114,3 +114,16 @@ El cierre de 29/29 entregables describe la fase principal de construcción del b
 - **No confundir validación CI con backups productivos:** no se ha configurado todavía almacenamiento externo cifrado, agenda, retención, alertas, PITR ni restauración en proveedor real. El archivo local no se cifra por sí mismo.
 - **Bloqueo antes de datos reales:** elegir proveedor, definir RPO/RTO, retención y responsable; activar backups administrados/cifrados y probar restauración periódica en un entorno aislado.
 
+
+## 11. Ciclo de vida JWT, sesión y cuentas — controles implementados
+
+- El verificador exige claims `sub`, `iat`, `exp` y `session_id`, valida firma mediante JWKS, emisor, audiencia y algoritmos asimétricos permitidos (ES256/RS256). Rechaza tokens sin expiración, sin fecha de emisión, demasiado antiguos o con identificador de sesión mal formado.
+- La antigüedad máxima se configura mediante `SUPABASE_JWT_MAX_AGE_SECONDS`, con valor por defecto 3600 segundos y límites de 300 a 86400. Debe mantenerse alineada con la expiración JWT configurada en el proyecto Supabase.
+- Cuando se configura `SUPABASE_URL`, la configuración exige una clave pública `SUPABASE_PUBLISHABLE_KEY` o la clave heredada `SUPABASE_ANON_KEY`. En cada solicitud autenticada, Radar consulta `GET /auth/v1/user` con la clave pública y el access token del usuario. No se utiliza `service_role`.
+- La introspección remota actualiza el correo desde la respuesta de Auth y expone internamente `email_confirmed_at`; la aceptación de invitaciones rechaza correos no confirmados. No se confía en un claim `email_verified` no garantizado.
+- Una respuesta 401/403 del proveedor se transforma en 401; un timeout, error de red, 429 o error 5xx del proveedor se transforma en 503. El backend no acepta el token solo por la firma si la comprobación remota configurada falla.
+- `GET /api/v1/me` consulta el estado de la cuenta local y devuelve 403 si está deshabilitada. Las rutas de workspace ya exigen usuarios activos mediante `findWorkspaceAccess` y `ensureIdentityUser`.
+- La API recibe solo access tokens. La renovación y el cierre de sesión se realizan en el cliente oficial Supabase Auth; no se añade un endpoint propio de refresh ni se almacena el refresh token.
+- **Limitación inherente:** Supabase usa access tokens JWT stateless. Tras signOut o revocación, un token emitido puede seguir siendo válido hasta su expiración si solo se verifica localmente. La consulta remota por solicitud está activada cuando se configura la clave pública y permite detectar sesiones que Auth ya no reconoce. El proyecto real todavía no está conectado, por lo que CI usa un servidor HTTP local simulado y no acredita la configuración del proyecto de producción.
+- Pruebas añadidas: claims ausentes, token expirado, token antiguo, session_id mal formado, sesión revocada (401), Auth indisponible (503), cuenta local deshabilitada (403), correo sin confirmar y correo confirmado.
+- Variables nuevas: `SUPABASE_PUBLISHABLE_KEY` (o `SUPABASE_ANON_KEY`) y `SUPABASE_JWT_MAX_AGE_SECONDS`.

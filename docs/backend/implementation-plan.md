@@ -160,3 +160,12 @@ Los cambios se desarrollan en `backend/foundation`, se prueban en CI y se mantie
 - [x] CI valida copia/restauración real en una segunda base PostgreSQL y reaplica permisos runtime.
 - [x] Prueba de integración demuestra rollback de la migración fallida y conservación de la migración previa confirmada.
 - [ ] Configurar almacenamiento externo cifrado, programación/retención, alertas, RPO/RTO y recuperación PITR según proveedor.
+
+
+### Aislamiento multi-tenant y autorización transaccional
+- [x] Revisión de rutas HTTP de investigación, competidores, productos, observaciones, precios, análisis, informes, PDF y auditoría.
+- [x] Consultas de lectura y relaciones PostgreSQL limitadas por `workspace_id`; claves foráneas compuestas impiden asociar productos, observaciones e informes con recursos de otro workspace.
+- [x] Revalidar dentro de la transacción el usuario activo, la membresía actual y el rol antes de cada mutación de investigación/inteligencia comercial y antes de crear snapshots.
+- [x] Bloqueo consistente workspace → membresía, alineado con revocación/cambio de miembros para cerrar la carrera TOCTOU.
+- [x] Pruebas unitarias de membresía revocada/degradada y prueba PostgreSQL de que una membresía retirada no puede insertar ni auditar recursos.
+- [ ] Evaluar RLS únicamente si se habilita acceso directo de clientes a PostgreSQL; actualmente la API es la frontera de autorización.

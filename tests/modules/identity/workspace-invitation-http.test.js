@@ -129,3 +129,32 @@ test("HTTP revocation is available to managers and returns a revoked state",asyn
   assert.ok(calls.some(call=>call.sql?.includes("workspace_invitation.revoked")));
  }finally{await app.close();}
 });
+
+test("HTTP non-members cannot list, create or revoke workspace invitations",async()=>{
+ const {app,calls}=await buildApp({member:false});
+ const requests=[
+  {method:"GET",url:`/api/v1/workspaces/${workspaceId}/invitations`},
+  {method:"POST",url:`/api/v1/workspaces/${workspaceId}/invitations`,payload:{email:"new@example.test",role:"analyst"}},
+  {method:"DELETE",url:`/api/v1/workspaces/${workspaceId}/invitations/${invitationId}`}
+ ];
+ try{
+  for(const request of requests){
+   const response=await app.inject(request);
+   assert.equal(response.statusCode,403,request.method+" "+request.url);
+   assert.equal(response.json().error,"FORBIDDEN");
+  }
+  assert.equal(calls.some(call=>call.sql?.includes("FROM workspace_invitations")),false);
+  assert.equal(calls.some(call=>call.sql?.includes("INSERT INTO users")||call.sql?.includes("INSERT INTO workspace_invitations")||call.sql?.includes("UPDATE workspace_invitations")),false);
+  assert.equal(calls.some(call=>call.sql==="RELEASE"),false);
+ }finally{await app.close();}
+});
+
+test("HTTP invitation routes reject malformed workspace IDs before membership lookup",async()=>{
+ const {app,calls}=await buildApp();
+ try{
+  const response=await app.inject({method:"GET",url:"/api/v1/workspaces/not-a-uuid/invitations"});
+  assert.equal(response.statusCode,400);
+  assert.equal(response.json().error,"INVALID_WORKSPACE_ID");
+  assert.equal(calls.length,0);
+ }finally{await app.close();}
+});

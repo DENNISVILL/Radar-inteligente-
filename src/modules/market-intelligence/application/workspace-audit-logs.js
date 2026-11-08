@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function parseAuditCursor(value){
@@ -62,8 +64,6 @@ export async function listWorkspaceAuditLogs(pool,{workspaceId,authSubject,limit
  }
 }
 
-
-import { createHash } from "node:crypto";
 
 function canonicalize(value) {
  if(Array.isArray(value))return value.map(canonicalize);

@@ -42,20 +42,3 @@ export async function withPostgresCliEnv(connection, operation) {
     await rm(directory, { recursive: true, force: true });
   }
 }
-
-/**
- * Keep node-postgres validation connections at least as strict as the
- * PostgreSQL CLI connection used by pg_restore. Explicit DB_SSL=true is a
- * deployment override; insecure downgrade modes are rejected.
- */
-export function postgresClientSsl(connection, forceSsl = false) {
-  const url = new URL(connection);
-  const mode = url.searchParams.get("sslmode")?.toLowerCase();
-  if (mode && !["disable", "require", "verify-ca", "verify-full"].includes(mode)) {
-    throw new TypeError("sslmode inseguro o no soportado para la validación de restauración.");
-  }
-  if (forceSsl || (mode && mode !== "disable")) {
-    return { rejectUnauthorized: true };
-  }
-  return false;
-}

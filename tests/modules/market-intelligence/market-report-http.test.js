@@ -31,7 +31,7 @@ async function buildApp({role="owner",accessibleWorkspaces=[workspaceA],reportRo
      calls.push({sql,values});
      if(sql.includes("FROM workspaces WHERE"))return {rows:accessibleWorkspaces.includes(values[0])?[{id:values[0]}]:[]};
      if(sql.includes("FROM workspace_members wm"))return {rows:accessibleWorkspaces.includes(values[0])?[{role}]:[]};
-     if(sql.includes("FROM audit_logs"))return {rows:[{id:"audit-1",event_type:"market_report.snapshot_created",created_at:"2026-11-08T10:00:00.000Z"}]};
+     if(sql.includes("FROM audit_logs"))return {rows:[{id:"11111111-1111-4111-8111-111111111111",event_type:"market_report.snapshot_created",created_at:"2026-11-08T10:00:00.000Z"},{id:"22222222-2222-4222-8222-222222222222",event_type:"market_product.created",created_at:"2026-11-08T09:00:00.000Z"}]};
      if(sql.includes("FROM researches WHERE workspace_id=$1 AND id=$2"))return {rows:[{id:researchId,title:"Estudio",country:"Ecuador",sector:"Retail",objective:"Analizar el mercado",status:"draft"}]};
      if(sql.includes("SELECT COUNT(*)::int AS total"))return {rows:[{total:0,sourced:0,opportunities:0,risks:0}]};
      if(sql.includes("SELECT COALESCE(MAX(version),0)+1 AS version"))return {rows:[{version:1}]};
@@ -249,4 +249,33 @@ test("all four workspace roles can read report history and an authorized snapsho
    assert.ok(calls.filter(call=>call.sql.includes("FROM market_reports")).length>=2);
   }finally{await app.close();}
  }
+});
+
+
+test("audit-log reads revalidate owner membership under workspace and membership locks",async()=>{
+ const {app,calls}=await buildApp({role:"admin"});
+ try{
+  const response=await app.inject({method:"GET",url:`/api/v1/workspaces/${workspaceA}/audit-logs?limit=1`});
+  assert.equal(response.statusCode,200);
+  assert.equal(response.json().data.length,1);
+  assert.equal(typeof response.json().nextCursor,"string");
+  const begin=calls.findIndex(call=>call.sql==="BEGIN");
+  const workspace=calls.findIndex(call=>call.sql.includes("FROM workspaces WHERE id=$1 AND status='active' FOR UPDATE"));
+  const membership=calls.findIndex(call=>call.sql.includes("FROM workspace_members wm")&&call.sql.includes("FOR UPDATE OF wm"));
+  const logs=calls.findIndex(call=>call.sql.includes("FROM audit_logs"));
+  const commit=calls.findIndex(call=>call.sql==="COMMIT");
+  assert.ok(begin>=0&&begin<workspace&&workspace<membership&&membership<logs&&logs<commit);
+  const query=calls[logs];
+  assert.deepEqual(query.values,[workspaceA,null,null,2]);
+ }finally{await app.close();}
+});
+
+test("audit-log endpoint rejects malformed cursors before opening a database transaction",async()=>{
+ const {app,calls}=await buildApp({role:"admin"});
+ try{
+  const response=await app.inject({method:"GET",url:`/api/v1/workspaces/${workspaceA}/audit-logs?cursor=not-a-cursor`});
+  assert.equal(response.statusCode,400);
+  assert.equal(response.json().error,"INVALID_CURSOR");
+  assert.equal(calls.some(call=>call.sql==="BEGIN"),false);
+ }finally{await app.close();}
 });

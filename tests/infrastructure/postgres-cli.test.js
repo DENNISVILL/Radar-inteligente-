@@ -123,3 +123,14 @@ test("node-postgres connection options strip TLS URL flags after resolving stric
   assert.equal(parsed.searchParams.get("application_name"), "radar");
   assert.deepEqual(options.ssl, { rejectUnauthorized: true });
 });
+
+test("PostgreSQL TLS requires client certificate and key as a pair", () => {
+  assert.throws(
+    () => postgresSslConfig("postgres://radar:secret@db.example.test/radar?sslmode=require&sslcert=%2Ftmp%2Fclient.crt"),
+    /sslcert y sslkey/
+  );
+  assert.throws(
+    () => postgresConnectionOptions("postgres://radar:secret@db.example.test/radar?sslmode=require&sslkey=%2Ftmp%2Fclient.key"),
+    /sslcert y sslkey/
+  );
+});

@@ -23,7 +23,7 @@ async function buildApp({role="owner",email="new@example.test",member=true,trans
    return {async query(sql,values=[]){
     calls.push({sql,values});
     if(sql.includes("SELECT id FROM workspaces"))return {rows:[{id:workspaceId}]};
-    if(sql.includes("FROM workspace_members wm"))return {rows:member?[{role:transactionRole}]:[]};
+    if(sql.includes("FROM workspace_members wm"))return {rows:member?[{role:transactionRole,actor_user_id:"owner-user"}]:[]};
     if(sql.includes("INSERT INTO workspace_invitations"))return {rows:[{id:invitationId,email:"new@example.test",role:"analyst",expires_at:invite.expires_at,created_at:new Date()}]};
     if(sql.includes("FROM workspace_invitations WHERE token_hash"))return {rows:[invite]};
     if(sql.includes("INSERT INTO users(auth_subject,email)"))return {rows:[{id:"invitee-user",status:"active"}]};

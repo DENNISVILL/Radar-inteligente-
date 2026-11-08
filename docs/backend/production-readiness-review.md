@@ -25,7 +25,7 @@
 | Crítica antes de usuarios reales | Aceptación de invitaciones no exige correo confirmado | El verificador JWT expone `sub` y `email`, pero no consulta el estado de confirmación. La referencia oficial de claims JWT de Supabase no incluye `email_verified` entre los claims estándar; no se debe asumir que ese claim existe en un access token. | Al conectar el proyecto, validar el access token contra `GET /auth/v1/user` con `apikey` publicable y `Authorization: Bearer <access_token>`; exigir `email_confirmed_at` no nulo y que el correo devuelto coincida con el correo invitado. Cubrir confirmación ausente, correo cambiado y error del proveedor con pruebas. |
 | Alta | No hay copias automáticas ni restauración probada | No existe infraestructura de backup/restore configurada en el repositorio | Elegir hosting/servicio PostgreSQL, definir RPO/RTO, automatizar backups cifrados y ejecutar una restauración documentada |
 | Alta | Rate limiter no distribuido | Contadores en memoria por proceso | Antes de ejecutar más de una instancia, usar Redis u otro almacén compartido con límites atómicos |
-| Alta | Métricas expuestas por ruta sin autenticación propia | `/metrics` se registra cuando `METRICS_ENABLED=true` | Mantenerlo en red privada o restringirlo en proxy/firewall; verificar que no quede expuesto públicamente |
+| Alta | Métricas expuestas por ruta sin autenticación propia | Corregido en código: `/metrics` queda deshabilitado por defecto; solo se registra con `METRICS_ENABLED=true`. La opción de habilitarlo sigue requiriendo red privada o restricción de proxy/firewall. | Antes de producción, habilitarlo solo si el entorno lo necesita y comprobar desde fuera que no sea accesible públicamente |
 | Alta | Sin alertas ni política de retención | Logs y métricas se generan, pero no hay destino/alertas configurados | Definir proveedor de observabilidad, alertas de errores/latencia/DB/429, retención y responsables |
 | Alta | Privilegios y conectividad de PostgreSQL no verificados en entorno real | Pool configurado con máximo 10 conexiones; TLS opcional vía `DB_SSL` | Crear rol de mínimo privilegio, restringir red, activar TLS con certificados verificados y dimensionar pool según límite del hosting |
 | Media | Proxy de confianza depende del despliegue | Fastify no habilita `trustProxy` en la configuración actual | Mantener desactivado salvo necesidad; si se usa proxy, confiar solo en IPs/CIDRs del proxy administrado |
@@ -50,7 +50,7 @@ Referencias oficiales:
 - Fastify no confía por defecto en cabeceras de proxy.
 - Rate limit por IP/ruta con cabeceras RateLimit y respuesta 429; capacidad acotada, limpieza de ventanas expiradas y rechazo temporal 503 cuando no hay espacio para un cliente nuevo sin alterar ventanas activas. Prueba de regresión incluida.
 - Logs estructurados con redacción de Authorization y Cookie.
-- Endpoint de métricas con rutas registradas como etiquetas para limitar cardinalidad.
+- Endpoint de métricas con rutas registradas como etiquetas para limitar cardinalidad; deshabilitado por defecto y opt-in mediante `METRICS_ENABLED=true`.
 - Migraciones protegidas con advisory lock y transacciones.
 - CI ejecuta pruebas PostgreSQL, benchmark, OpenAPI y sintaxis.
 

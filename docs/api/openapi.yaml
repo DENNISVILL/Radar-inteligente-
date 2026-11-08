@@ -606,6 +606,37 @@ paths:
           headers:
             X-Audit-Export-SHA256:
               description: SHA-256 hexadecimal del cuerpo exacto de la respuesta.
+              schema: { type: string, minLength: 64, maxLength: 64 }
+            X-Audit-Export-Count:
+              description: Número de eventos incluidos en esta página.
+              schema: { type: integer, minimum: 0, maximum: 100 }
+            X-Audit-Export-Next-Cursor:
+              description: Cursor para solicitar la siguiente página; ausente cuando no hay más eventos.
+              schema: { type: string, maxLength: 512 }
+          content:
+            application/x-ndjson:
+              schema: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+        - { $ref: '#/components/parameters/workspaceId' }
+        - { $ref: '#/components/parameters/limit100' }
+        - name: cursor
+          in: query
+          description: Cursor opaco de la página anterior.
+          schema: { type: string, maxLength: 512 }
+      responses:
+        '200':
+          description: Página NDJSON con digest y contador verificables.
+          headers:
+            X-Audit-Export-SHA256:
+              description: SHA-256 hexadecimal del cuerpo exacto de la respuesta.
               schema: { type: string, pattern: '^[a-f0-9]{64}
     bearerAuth:
       type: http

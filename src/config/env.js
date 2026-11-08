@@ -21,6 +21,7 @@ export function loadConfig(env = process.env) {
     nodeEnv,host:env.HOST??"127.0.0.1",port,databaseUrl:env.DATABASE_URL??"",
     databaseSsl:parseBoolean(env.DB_SSL),logLevel:env.LOG_LEVEL??"info",
     supabaseUrl:supabaseUrl.replace(/\/$/,""),
-    rateLimitMax,rateLimitAuthMax,rateLimitWindowMs
+    rateLimitMax,rateLimitAuthMax,rateLimitWindowMs,
+    metricsEnabled: parseBoolean(env.METRICS_ENABLED, true)
   });
 }

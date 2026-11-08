@@ -53,11 +53,11 @@ export async function createWorkspaceInvitation(database,{workspaceId,email,role
 
 export async function acceptWorkspaceInvitation(database,{token,identity}){
  if(typeof token!=="string"||token.length<32||token.length>128)return {error:"INVALID_INVITATION"};
+ const tokenHash=hashToken(token);
+ const preview=await database.query("SELECT workspace_id FROM workspace_invitations WHERE token_hash=$1",[tokenHash]);
+ if(!preview.rows[0])return {error:"INVALID_INVITATION"};
  const client=await database.connect();
  try{
-  const tokenHash=hashToken(token);
-  const preview=await database.query("SELECT workspace_id FROM workspace_invitations WHERE token_hash=$1",[tokenHash]);
-  if(!preview.rows[0])return {error:"INVALID_INVITATION"};
   await client.query("BEGIN");
   const workspace=await client.query("SELECT id FROM workspaces WHERE id=$1 AND status='active' FOR UPDATE",[preview.rows[0].workspace_id]);
   if(!workspace.rows[0]){await client.query("ROLLBACK");return {error:"WORKSPACE_NOT_FOUND"};}

@@ -45,7 +45,7 @@ try {
   const manifest = await writeBackupManifest(target);
   manifestCreated = true;
   await chmod(manifestPath, 0o600);
-  console.info("Respaldo creado y verificable: " + target + " (" + info.size + " bytes, SHA-256 " + manifest.digest + ").");
+  console.info("Respaldo creado y verificable: " + target + " (" + info.size + " bytes, SHA-256 " + manifest.digest + ", firma Ed25519: " + (manifest.signature ? "sí" : "no") + ").");
 } catch (error) {
   if (manifestCreated) await unlink(manifestPath).catch(() => {});
   if (created) await unlink(target).catch(() => {});

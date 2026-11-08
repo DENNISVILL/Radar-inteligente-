@@ -44,6 +44,9 @@ jobs:
       - name: Run automated tests including PostgreSQL integration
         run: npm test
 
+      - name: Run PostgreSQL-backed API performance baseline
+        run: npm run perf
+
       - name: Validate OpenAPI contract
         run: npm run openapi:lint
 

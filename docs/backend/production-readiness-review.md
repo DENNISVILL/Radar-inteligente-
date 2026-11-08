@@ -187,3 +187,12 @@ El cierre de 29/29 entregables describe la fase principal de construcción del b
 - Se agregó una prueba HTTP con Fastify inject que verifica las cinco cabeceras tanto en una ruta existente como en una ruta inexistente.
 - No se fuerza HSTS desde la aplicación porque TLS puede terminar en un proxy administrado; HSTS debe configurarse en el punto de terminación TLS después de confirmar dominio y HTTPS. Tampoco se habilita CORS global: no hay orígenes frontend de producción definidos y permitir `*` sería una ampliación innecesaria de superficie.
 - Fastify mantiene `trustProxy` desactivado por defecto. Si el despliegue incorpora proxy, la confianza deberá limitarse a las IP/CIDR reales del proxy.
+
+
+## 17. Cierre ordenado ante señales y errores de inicio (2026-11-08)
+
+- Se centralizó el apagado en `createShutdownHandler`: procesa una sola secuencia aunque lleguen SIGINT y SIGTERM casi simultáneamente, cierra Fastify y después PostgreSQL.
+- Si el cierre de Fastify falla, el cierre del pool PostgreSQL se intenta igualmente; los errores se registran y el proceso marca `exitCode=1`, sin forzar `process.exit()` antes de liberar recursos.
+- Si falla la comprobación inicial de PostgreSQL o el bind del servidor, se intenta cerrar tanto Fastify como el pool y se conserva el código de salida de error.
+- Se añadieron pruebas para señales simultáneas y para garantizar que PostgreSQL se cierre incluso si Fastify falla. El helper también quedó incluido en el chequeo de sintaxis.
+- **Alcance:** pruebas unitarias del coordinador de apagado; el comportamiento final de señales y terminación deberá observarse también en staging bajo el supervisor/proveedor elegido.

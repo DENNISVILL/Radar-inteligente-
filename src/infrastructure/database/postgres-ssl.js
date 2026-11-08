@@ -19,7 +19,16 @@ export function postgresSslConfig(connection, forceSsl = false) {
 
   const ssl = { rejectUnauthorized: true };
   const rootCertificate = url.searchParams.get("sslrootcert");
+  const clientCertificate = url.searchParams.get("sslcert");
+  const clientKey = url.searchParams.get("sslkey");
+  if (Boolean(clientCertificate) !== Boolean(clientKey)) {
+    throw new TypeError("sslcert y sslkey deben configurarse juntos.");
+  }
   if (rootCertificate) ssl.ca = readFileSync(rootCertificate, "utf8");
+  if (clientCertificate) {
+    ssl.cert = readFileSync(clientCertificate, "utf8");
+    ssl.key = readFileSync(clientKey, "utf8");
+  }
   return ssl;
 }
 

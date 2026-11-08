@@ -67,3 +67,21 @@ test("Fastify enforces the configured rate limit before protected route handlers
   assert.equal(second.json().error,"RATE_LIMITED");
  }finally{await app.close();}
 });
+
+
+test("rate limiter preserves active client windows when bucket capacity is reached",async()=>{
+ let now=10_000;
+ const limit=createRateLimiter({maxRequests:1,windowMs:10_000,now:()=>now,maxBuckets:1});
+ const firstRequest={ip:"192.0.2.10",routeOptions:{url:"/api/v1/me"}};
+ let reply=fakeReply();await limit(firstRequest,reply);
+ assert.equal(reply.statusCode,200);
+ reply=fakeReply();await limit({...firstRequest},reply);
+ assert.equal(reply.statusCode,429);
+ reply=fakeReply();await limit({ip:"192.0.2.11",routeOptions:{url:"/api/v1/me"}},reply);
+ assert.equal(reply.statusCode,503);
+ assert.equal(reply.payload.error,"RATE_LIMIT_CAPACITY");
+ assert.equal(reply.headers["Retry-After"],"10");
+ now+=10_001;
+ reply=fakeReply();await limit({ip:"192.0.2.11",routeOptions:{url:"/api/v1/me"}},reply);
+ assert.equal(reply.statusCode,200);
+});

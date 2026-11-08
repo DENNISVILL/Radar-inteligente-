@@ -3,7 +3,7 @@ import { spawn } from "node:child_process";
 import pg from "pg";
 import { resolve } from "node:path";
 import { withPostgresCliEnv } from "./postgres-cli.js";
-import { postgresSslConfig } from "../src/infrastructure/database/postgres-ssl.js";
+import { postgresConnectionOptions } from "../src/infrastructure/database/postgres-ssl.js";
 
 function run(command, args, extraEnv = {}) {
   return new Promise((resolvePromise, reject) => {
@@ -27,10 +27,10 @@ if (!database || process.env.RESTORE_CONFIRM_DATABASE !== database) {
   throw new Error("Restauración bloqueada: RESTORE_CONFIRM_DATABASE debe coincidir exactamente con el nombre de la base destino.");
 }
 
-const client = new pg.Client({
-  connectionString: connection,
-  ssl: postgresSslConfig(connection, ["true", "1", "yes"].includes(String(process.env.DB_SSL ?? "").toLowerCase()))
-});
+const client = new pg.Client(postgresConnectionOptions(
+  connection,
+  ["true", "1", "yes"].includes(String(process.env.DB_SSL ?? "").toLowerCase())
+));
 await client.connect();
 try {
   const identity = await client.query(

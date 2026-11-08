@@ -112,6 +112,7 @@ El 100 % de los 29 entregables principales no incluye el cierre de infraestructu
 
 - [x] Autorización multiempresa en servidor.
 - [x] Auditoría de operaciones relevantes en miembros, invitaciones, creación de workspaces e inteligencia de mercado.
+- [x] Inmutabilidad de auditoría en PostgreSQL: bloquear UPDATE/DELETE/TRUNCATE y conservar eventos al eliminar workspace/actor mediante referencias SET NULL.
 - [x] Completar auditoría atómica del CRUD de investigaciones y sus pruebas de rollback.
 - [x] Pruebas de migraciones, relaciones, integridad, concurrencia y rutas HTTP de invitaciones.
 - [x] Rate limiting por IP/ruta (120 solicitudes por 60 s por defecto; 10 para aceptar invitaciones), con límites configurables, cabeceras 429 y capacidad acotada; al llenarse, preserva ventanas activas y rechaza temporalmente nuevos buckets con 503 `RATE_LIMIT_CAPACITY`.

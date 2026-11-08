@@ -27,7 +27,14 @@ El backend está en desarrollo y cuenta con una base funcional: autenticación m
 
 Comandos disponibles: `npm test`, `npm run check`, `npm start`.
 
-Rutas de salud: `GET /health` y `GET /ready`.
+Rutas de salud: `GET /health` y `GET /ready`. Métricas Prometheus: `GET /metrics` (configurable con `METRICS_ENABLED=true|false`).
+
+## Observabilidad
+
+- Logs JSON estructurados de Fastify con redacción de `Authorization` y cookies.
+- Cada respuesta incluye `x-trace-id`; acepta `traceparent` W3C válido y genera un span ID de servidor para correlación. No sustituye todavía una integración OpenTelemetry/exportador distribuido.
+- `GET /metrics` expone contadores HTTP, histogramas de latencia y solicitudes activas en formato Prometheus. Usa rutas registradas como etiquetas para evitar cardinalidad por URL/ID; no registra el endpoint de métricas.
+- Desactiva el endpoint con `METRICS_ENABLED=false` cuando el entorno no deba exponerlo. Limita su acceso en la infraestructura de red si se publica fuera de una red privada.
 
 ## Capacidades del backend
 

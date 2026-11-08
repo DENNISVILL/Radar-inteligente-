@@ -3,9 +3,9 @@ import { constants } from "node:fs";
 import { spawn } from "node:child_process";
 import { resolve } from "node:path";
 
-function run(command, args) {
+function run(command, args, extraEnv = {}) {
   return new Promise((resolvePromise, reject) => {
-    const child = spawn(command, args, { stdio: "inherit" });
+    const child = spawn(command, args, { stdio: "inherit", env: { ...process.env, ...extraEnv } });
     child.once("error", reject);
     child.once("close", code => code === 0 ? resolvePromise() : reject(new Error(command + " terminó con código " + code)));
   });
@@ -31,7 +31,8 @@ try {
   const handle = await open(target, "wx", 0o600);
   await handle.close();
   created = true;
-  await run("pg_dump", [...backupArguments(target), "--dbname=" + connection]);
+  // Keep the connection URL (and password) out of process arguments; libpq reads PGDATABASE.
+  await run("pg_dump", backupArguments(target), { PGDATABASE: connection });
   await chmod(target, 0o600);
   const info = await stat(target);
   if (info.size === 0) throw new Error("El archivo de respaldo quedó vacío.");

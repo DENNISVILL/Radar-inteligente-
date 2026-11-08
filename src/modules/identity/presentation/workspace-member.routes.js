@@ -9,7 +9,7 @@ async function authorize(options,request,reply){
  return member;
 }
 function respondError(reply,error){
- const map={INVALID_ROLE:[400,"INVALID_ROLE","El rol solicitado no es válido."],FORBIDDEN_ROLE:[403,"FORBIDDEN_ROLE","No tienes permisos para asignar o modificar ese rol."],USER_NOT_FOUND:[404,"USER_NOT_FOUND","No existe una cuenta activa con ese correo."],ALREADY_MEMBER:[409,"ALREADY_MEMBER","La persona ya pertenece a este espacio."],LAST_OWNER:[409,"LAST_OWNER","El espacio debe conservar al menos un propietario."]};
+ const map={FORBIDDEN:[403,"FORBIDDEN","Ya no tienes permisos para gestionar los miembros de este espacio."],INVALID_ROLE:[400,"INVALID_ROLE","El rol solicitado no es válido."],FORBIDDEN_ROLE:[403,"FORBIDDEN_ROLE","No tienes permisos para asignar o modificar ese rol."],USER_NOT_FOUND:[404,"USER_NOT_FOUND","No existe una cuenta activa con ese correo."],ALREADY_MEMBER:[409,"ALREADY_MEMBER","La persona ya pertenece a este espacio."],LAST_OWNER:[409,"LAST_OWNER","El espacio debe conservar al menos un propietario."]};
  const [status,code,message]=map[error]??[400,"MEMBER_OPERATION_FAILED","No se pudo completar la operación."];
  return reply.code(status).send({error:code,message});
 }

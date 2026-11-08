@@ -553,14 +553,39 @@ paths:
       tags: [Reports]
       summary: Consultar registro de auditoría
       operationId: listAuditLogs
-      description: Solo owner y admin.
+      description: Solo owner y admin. Paginación por cursor estable (created_at, id).
       parameters:
         - { $ref: '#/components/parameters/workspaceId' }
         - name: limit
           in: query
           schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+        - name: cursor
+          in: query
+          description: Cursor opaco devuelto en la página anterior.
+          schema: { type: string, maxLength: 512 }
       responses:
-        '200': { $ref: '#/components/responses/GenericList' }
+        '200':
+          description: Página de eventos de auditoría.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, nextCursor]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, event_type, resource_type, metadata, created_at]
+                      properties:
+                        id: { type: string, format: uuid }
+                        event_type: { type: string }
+                        resource_type: { type: string }
+                        resource_id: { type: string, format: uuid, nullable: true }
+                        metadata: { type: object, additionalProperties: true }
+                        created_at: { type: string, format: date-time }
+                  nextCursor: { type: string, nullable: true }
+        '400': { description: Identificador, límite o cursor no válido. }
         '403': { $ref: '#/components/responses/Forbidden' }
 components:
   securitySchemes:

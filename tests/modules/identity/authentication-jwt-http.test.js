@@ -113,3 +113,46 @@ test("Supabase JWT verification protects identity and workspace-access HTTP rout
     await new Promise(resolve => server.close(resolve));
   }
 });
+
+
+test("JWKS provider outages return 503 instead of misclassifying valid sessions as invalid tokens", async () => {
+  const { privateKey } = await generateKeyPair("RS256");
+  const server = createServer((_request, response) => {
+    response.writeHead(503, { "content-type": "application/json" });
+    response.end(JSON.stringify({ message: "temporarily unavailable" }));
+  });
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  const address = server.address();
+  const supabaseUrl = `http://127.0.0.1:${address.port}`;
+  const database = {
+    async query() {
+      throw new Error("No debe consultar la base de datos si falla el proveedor JWKS.");
+    }
+  };
+  const app = Fastify({ logger: false });
+  try {
+    await app.register(identityRoutes, { database, config: { supabaseUrl } });
+    await app.ready();
+    const jwt = await new SignJWT({ email: "user@example.test", role: "authenticated" })
+      .setProtectedHeader({ alg: "RS256", kid: "provider-outage-key" })
+      .setIssuer(`${supabaseUrl}/auth/v1`)
+      .setAudience("authenticated")
+      .setSubject("auth-user")
+      .setIssuedAt()
+      .setExpirationTime("5m")
+      .sign(privateKey);
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/v1/me",
+      headers: { authorization: `Bearer ${jwt}` }
+    });
+    assert.equal(response.statusCode, 503);
+    assert.equal(response.json().error, "AUTH_PROVIDER_UNAVAILABLE");
+  } finally {
+    await app.close();
+    await new Promise(resolve => server.close(resolve));
+  }
+});

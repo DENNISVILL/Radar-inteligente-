@@ -33,9 +33,15 @@ export async function withPostgresCliEnv(connection, operation) {
       PGUSER: username,
       PGPASSFILE: passfile
     };
-    const sslmode = url.searchParams.get("sslmode");
+    const requestedSslMode = url.searchParams.get("sslmode")?.toLowerCase();
+    if (requestedSslMode && !["disable", "require", "verify-ca", "verify-full"].includes(requestedSslMode)) {
+      throw new TypeError("sslmode inseguro o no soportado para PostgreSQL.");
+    }
+    const forceSsl = ["true", "1", "yes"].includes(String(process.env.DB_SSL ?? "").toLowerCase());
+    const tlsEnabled = forceSsl || (requestedSslMode != null && requestedSslMode !== "disable");
+    // Keep pg_dump/pg_restore at least as strict as node-postgres.
+    env.PGSSLMODE = tlsEnabled ? "verify-full" : "disable";
     const sslrootcert = url.searchParams.get("sslrootcert");
-    if (sslmode) env.PGSSLMODE = sslmode;
     if (sslrootcert) env.PGSSLROOTCERT = sslrootcert;
     return await operation(env);
   } finally {

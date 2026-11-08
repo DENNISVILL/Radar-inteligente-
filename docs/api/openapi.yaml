@@ -581,10 +581,10 @@ paths:
                         id: { type: string, format: uuid }
                         event_type: { type: string }
                         resource_type: { type: string }
-                        resource_id: { type: string, format: uuid, nullable: true }
+                        resource_id: { type: [string, 'null'], format: uuid }
                         metadata: { type: object, additionalProperties: true }
                         created_at: { type: string, format: date-time }
-                  nextCursor: { type: string, nullable: true }
+                  nextCursor: { type: [string, 'null'] }
         '400': { description: Identificador, límite o cursor no válido. }
         '403': { $ref: '#/components/responses/Forbidden' }
 components:

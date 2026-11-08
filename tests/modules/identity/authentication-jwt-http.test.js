@@ -58,7 +58,7 @@ test("Supabase JWT verification protects identity and workspace-access HTTP rout
         .setAudience(audience)
         .setIssuedAt()
         .setExpirationTime(expiration);
-      if (subject !== undefined) jwt.setSubject(subject);
+      if (typeof subject === "string") jwt.setSubject(subject);
       return jwt.sign(signingKey);
     }
 
@@ -95,7 +95,7 @@ test("Supabase JWT verification protects identity and workspace-access HTTP rout
       await token({ expiration: Math.floor(Date.now() / 1000) - 60 }),
       await token({ audience: "wrong-audience" }),
       await token({ issuer: "https://wrong-issuer.example.test/auth/v1" }),
-      await token({ subject: undefined }),
+      await token({ subject: null }),
       await token({ signingKey: wrongPrivateKey })
     ];
     for (const invalidToken of invalidTokens) {

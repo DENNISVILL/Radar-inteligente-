@@ -35,7 +35,7 @@ test("PostgreSQL protects report snapshots from direct deletion but permits pare
 
   await assert.rejects(
    () => pool.query("DELETE FROM market_reports WHERE id=$1", [reportId]),
-   /immutable.*DELETE/i
+   error => error.code === "55000" && /immutable.*DELETE/i.test(error.message)
   );
   const retained = await pool.query("SELECT id FROM market_reports WHERE id=$1", [reportId]);
   assert.equal(retained.rowCount, 1);
@@ -47,8 +47,8 @@ test("PostgreSQL protects report snapshots from direct deletion but permits pare
   assert.equal(cascaded.rowCount, 0);
   reportId = null;
  } finally {
-  if (workspaceId) await pool.query("DELETE FROM workspaces WHERE id=$1", [workspaceId]);
-  if (userId) await pool.query("DELETE FROM users WHERE id=$1", [userId]);
+  if (workspaceId) await pool.query("DELETE FROM workspaces WHERE id=$1", [workspaceId]).catch(() => {});
+  if (userId) await pool.query("DELETE FROM users WHERE id=$1", [userId]).catch(() => {});
   await pool.end();
  }
 });

@@ -32,7 +32,7 @@ La API ya aplica autenticación Bearer, autorización por rol y comprobaciones d
 | Amenaza | Impacto | Controles existentes | Riesgo / acción requerida |
 |---|---|---|---|
 | Lectura o modificación de datos de otro workspace (IDOR / elevación de privilegios) | Alto | Verificación de membresía y rol en servidor; consultas con workspace; restricciones relacionales PostgreSQL; pruebas de aislamiento parciales | Ampliar la matriz HTTP a todos los módulos y rutas de informes/PDF antes de producción. |
-| Uso de invitación por una identidad cuyo correo no está verificado | Alto | Token aleatorio de 32 bytes, hash almacenado, expiración, revocación, comparación de correo y consumo transaccional de un solo uso | Confirmar el claim de verificación del proveedor real y exigir correo verificado antes de aceptar. Actualmente la identidad local conserva el correo, pero el flujo no exige un claim de correo verificado. |
+| Uso de invitación por una identidad cuyo correo no está verificado | Alto | Token aleatorio de 32 bytes, hash almacenado, expiración, revocación, comparación de correo y consumo transaccional de un solo uso; con clave pública Supabase configurada, la API consulta `GET /auth/v1/user` y exige `email_confirmed_at` | Validar el flujo contra el proyecto Supabase real antes de producción; CI usa un proveedor HTTP simulado y no sustituye esa integración. |
 | Robo o exposición de tokens de invitación | Alto | Solo se almacena SHA-256; el token se devuelve al crear y no se guarda en texto plano | No registrar cuerpos/respuestas sensibles; distribuir por canal seguro; no activar correo hasta definir remitente y protección contra abuso. |
 | Fuerza bruta / abuso de endpoints | Medio | Rate limit por IP y ruta, límites específicos para aceptación, 429 y cabeceras | El contador es en memoria y no coordina instancias. Sustituir por almacenamiento compartido antes de escalar. |
 | Suplantación de IP detrás de proxy | Medio | Fastify no confía por defecto en cabeceras de proxy | Configurar únicamente proxies conocidos mediante una lista de confianza; no habilitar confianza indiscriminada. |
@@ -45,14 +45,14 @@ La API ya aplica autenticación Bearer, autorización por rol y comprobaciones d
 
 - JWT: validación criptográfica con JWKS, issuer, audience `authenticated` y lista explícita de algoritmos ES256/RS256.
 - Autorización: los roles se resuelven desde membresías persistidas; no se debe confiar en un rol enviado por el cliente.
-- Invitaciones: token de 256 bits, hash SHA-256, caducidad de siete días, revocación y transacción con bloqueo.
+- Invitaciones: token de 256 bits, hash SHA-256, caducidad de siete días, revocación y transacción con bloqueo. Con `SUPABASE_URL` y clave pública configurados, se consulta Auth por solicitud y se exige `email_confirmed_at` para aceptar; no se confía en claims de correo no verificado.
 - HTTP: límite de cuerpo de 1 MiB, timeout de 15 segundos, errores internos genéricos y redacción de Authorization/Cookie en logs.
 - Rate limiting: límite por IP/ruta y tamaño máximo de buckets para acotar memoria.
 - PostgreSQL: relaciones con workspace y restricciones de integridad; pruebas concurrentes para aceptación de invitaciones y cambios de miembros.
 
 ## 6. Acciones obligatorias antes de producción
 
-1. Exigir y probar correo verificado para aceptar invitaciones, según el claim real del proveedor de identidad.
+1. Mantener la exigencia de correo confirmado en el flujo de invitaciones y validar la integración contra el proyecto Supabase real; la CI simula JWKS/Auth.
 2. Completar pruebas HTTP de aislamiento, autorización, respuestas 401/403/404/409 y acceso a informes/PDF.
 3. Decidir y probar RLS si se habilita acceso directo desde clientes; mantener la API como frontera de autorización mientras tanto.
 4. Sustituir el rate limiter en memoria por un almacén compartido cuando exista más de una instancia.
@@ -91,3 +91,12 @@ La API ya aplica autenticación Bearer, autorización por rol y comprobaciones d
 - Las escrituras de negocio de estos módulos pasan por el mismo bloqueo de workspace; esto también serializa cambios de datos del workspace mientras se construye un snapshot, conservando una vista coherente sin mantener un snapshot REPEATABLE READ anterior a la revalidación de membresía.
 - Se añadieron pruebas unitarias para membresía revocada/degradada y una prueba de integración PostgreSQL que confirma que una persona eliminada del workspace no puede insertar el recurso ni su auditoría.
 - Este control cubre las mutaciones de investigación, inteligencia comercial y snapshots. Las lecturas HTTP siguen usando autorización previa y consultas filtradas por workspace; si se habilita acceso directo de clientes a PostgreSQL, se deberá diseñar y probar RLS con claims de tenant confiables, no confiar en el UUID enviado por el navegador.
+
+## 10. Rate limiting: rutas no registradas y agotamiento de buckets
+
+- El limitador usa la plantilla de ruta registrada (`routeOptions.url`) como parte de la clave, no la URL literal enviada por el cliente.
+- Las solicitudes que no coinciden con una ruta registrada comparten el bucket `__unmatched__` por IP. Esto evita que un cliente cree un bucket distinto por cada URL aleatoria y consuma toda la capacidad con rutas inexistentes.
+- La capacidad sigue acotada por `maxBuckets`; los buckets activos no se expulsan para admitir claves nuevas. Si no hay capacidad libre ni ventanas expiradas que limpiar, la API responde temporalmente 503 `RATE_LIMIT_CAPACITY` con `Retry-After`.
+- Prueba de regresión: dos URLs inexistentes distintas desde la misma IP comparten el mismo contador y la segunda solicitud alcanza el límite.
+- Validación: CI #543 aprobada, incluyendo pruebas automatizadas, integración PostgreSQL, benchmark de API, backup/restauración, OpenAPI y sintaxis. [Ejecución CI #543](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42486715691).
+- Límite restante: el contador sigue en memoria por proceso. Antes de operar varias instancias, se requiere un almacén compartido con incrementos atómicos y pruebas de concurrencia.

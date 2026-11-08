@@ -41,7 +41,7 @@ test("PostgreSQL migrations are executable, repeatable and enforce tenant relati
   await assert.rejects(()=>pool.query("UPDATE market_reports SET report_data='{}'::jsonb WHERE id=$1",[snapshot.rows[0].id]),/immutable/i);
   const membership=await pool.query("INSERT INTO workspace_members(workspace_id,user_id,role) VALUES($1,$2,'owner')",[workspaceA,userId]);
   assert.equal(membership.rowCount,1);
-  const audit=await pool.query("INSERT INTO audit_logs(workspace_id,actor_user_id,event_type,resource_type,resource_id,metadata) VALUES($1,$2,'integration.created','workspace',$1,'{"source":"migration-test"}'::jsonb) RETURNING id",[workspaceA,userId]);
+  const audit=await pool.query("INSERT INTO audit_logs(workspace_id,actor_user_id,event_type,resource_type,resource_id,metadata) VALUES($1,$2,'integration.created','workspace',$1,$3::jsonb) RETURNING id",[workspaceA,userId,JSON.stringify({source:"migration-test"})]);
   auditId=audit.rows[0].id;
   await assert.rejects(()=>pool.query("UPDATE audit_logs SET metadata='{}'::jsonb WHERE id=$1",[auditId]),/immutable/i);
   await assert.rejects(()=>pool.query("DELETE FROM audit_logs WHERE id=$1",[auditId]),/immutable/i);

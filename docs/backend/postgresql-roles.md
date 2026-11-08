@@ -23,7 +23,7 @@ El usuario administrador usado para el aprovisionamiento no debe utilizarse en l
 
 ## Permisos aplicados
 
-El ejecutor de migraciones, al terminar, aplica al rol `radar_runtime`:
+El rol `radar_migration_owner` tiene `CREATE` en la base únicamente para poder instalar extensiones requeridas por el esquema inicial (como `pgcrypto`) y crear objetos durante despliegues. Esta credencial no se usa en el servidor API.\n\nEl ejecutor de migraciones, al terminar, aplica al rol `radar_runtime`:
 
 - SELECT, INSERT, UPDATE y DELETE sobre tablas operativas.
 - USAGE/SELECT sobre secuencias.

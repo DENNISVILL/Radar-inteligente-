@@ -12,7 +12,7 @@ export async function listWorkspaceInvitations(database,workspaceId){
  return result.rows;
 }
 
-export async function createWorkspaceInvitation(database,{workspaceId,email,role,actorRole,actorUserId}){
+export async function createWorkspaceInvitation(database,{workspaceId,email,role,actorRole,actorUserId,actorSubject}){
  if(!manageableRoles.includes(role))return {error:"INVALID_ROLE"};
  if(actorRole==="admin"&&role!=="analyst"&&role!=="viewer")return {error:"FORBIDDEN_ROLE"};
  const normalizedEmail=normalizeEmail(email);
@@ -23,6 +23,15 @@ export async function createWorkspaceInvitation(database,{workspaceId,email,role
   await client.query("BEGIN");
   const workspace=await client.query("SELECT id FROM workspaces WHERE id=$1 AND status='active' FOR UPDATE",[workspaceId]);
   if(!workspace.rows[0]){await client.query("ROLLBACK");return null;}
+  const actor=await client.query(`SELECT wm.role FROM workspace_members wm
+   JOIN users u ON u.id=wm.user_id
+   WHERE wm.workspace_id=$1 AND u.auth_subject=$2 AND u.status='active'
+   FOR UPDATE OF wm`,[workspaceId,actorSubject]);
+  const currentActorRole=actor.rows[0]?.role;
+  if(!["owner","admin"].includes(currentActorRole)||
+   (currentActorRole==="admin"&&role!=="analyst"&&role!=="viewer")){
+   await client.query("ROLLBACK");return {error:"FORBIDDEN_ROLE"};
+  }
   await client.query("UPDATE workspace_invitations SET revoked_at=NOW() WHERE workspace_id=$1 AND accepted_at IS NULL AND revoked_at IS NULL AND expires_at<=NOW()",[workspaceId]);
   const result=await client.query(`INSERT INTO workspace_invitations(workspace_id,email,role,token_hash,invited_by,expires_at)
    VALUES($1,$2,$3,$4,$5,NOW()+INTERVAL '7 days')
@@ -45,9 +54,14 @@ export async function acceptWorkspaceInvitation(database,{token,identity}){
  if(typeof token!=="string"||token.length<32||token.length>128)return {error:"INVALID_INVITATION"};
  const client=await database.connect();
  try{
+  const tokenHash=hashToken(token);
+  const preview=await database.query("SELECT workspace_id FROM workspace_invitations WHERE token_hash=$1",[tokenHash]);
+  if(!preview.rows[0])return {error:"INVALID_INVITATION"};
   await client.query("BEGIN");
+  const workspace=await client.query("SELECT id FROM workspaces WHERE id=$1 AND status='active' FOR UPDATE",[preview.rows[0].workspace_id]);
+  if(!workspace.rows[0]){await client.query("ROLLBACK");return {error:"WORKSPACE_NOT_FOUND"};}
   const found=await client.query(`SELECT id,workspace_id,email,role,expires_at,accepted_at,revoked_at
-   FROM workspace_invitations WHERE token_hash=$1 FOR UPDATE`,[hashToken(token)]);
+   FROM workspace_invitations WHERE token_hash=$1 FOR UPDATE`,[tokenHash]);
   const invitation=found.rows[0];
   if(!invitation){await client.query("ROLLBACK");return {error:"INVALID_INVITATION"};}
   if(invitation.accepted_at){await client.query("ROLLBACK");return {error:"INVITATION_ALREADY_USED"};}
@@ -77,10 +91,19 @@ export async function acceptWorkspaceInvitation(database,{token,identity}){
  finally{client.release();}
 }
 
-export async function revokeWorkspaceInvitation(database,{workspaceId,invitationId,actorUserId}){
+export async function revokeWorkspaceInvitation(database,{workspaceId,invitationId,actorUserId,actorSubject}){
  const client=await database.connect();
  try{
   await client.query("BEGIN");
+  const workspace=await client.query("SELECT id FROM workspaces WHERE id=$1 AND status='active' FOR UPDATE",[workspaceId]);
+  if(!workspace.rows[0]){await client.query("ROLLBACK");return null;}
+  const actor=await client.query(`SELECT wm.role FROM workspace_members wm
+   JOIN users u ON u.id=wm.user_id
+   WHERE wm.workspace_id=$1 AND u.auth_subject=$2 AND u.status='active'
+   FOR UPDATE OF wm`,[workspaceId,actorSubject]);
+  if(!["owner","admin"].includes(actor.rows[0]?.role)){
+   await client.query("ROLLBACK");return {error:"FORBIDDEN"};
+  }
   const result=await client.query(`UPDATE workspace_invitations SET revoked_at=NOW()
    WHERE workspace_id=$1 AND id=$2 AND accepted_at IS NULL AND revoked_at IS NULL AND expires_at>NOW()
    RETURNING id,email,role`,[workspaceId,invitationId]);

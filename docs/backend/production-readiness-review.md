@@ -247,3 +247,11 @@ El cierre de 29/29 entregables describe la fase principal de construcción del b
 - La respuesta es NDJSON por página, con límite máximo de 100 eventos, orden estable de campos (incluidos objetos metadata), contador y SHA-256 calculado sobre los bytes exactos de la respuesta. El cursor de continuación permite recorrer el historial sin una descarga ilimitada ni offsets.
 - Se documentó el endpoint en OpenAPI y se amplió la matriz HTTP de roles. Las pruebas cubren digest reproducible, formato NDJSON, paginación, rechazo de límites/cursores inválidos y denegación de analyst, viewer y no miembros antes de leer auditoría.
 - **Límite:** el digest permite detectar alteraciones del cuerpo exportado, pero no autentica el origen si el mismo actor puede reemplazar el archivo y su hash. Para evidencia externa de mayor garantía se requiere firma digital/HMAC con clave protegida y almacenamiento inmutable administrado por separado. No se ha configurado destino externo ni política de retención.
+
+## 24. Firma Ed25519 de manifiestos de respaldo (2026-11-08)
+
+- `scripts/backup-integrity.js` ahora firma de forma opcional el manifiesto SHA-256 con Ed25519 y verifica la firma antes de aceptar un respaldo para restauración. La firma cubre versión, algoritmo, digest y tamaño.
+- `BACKUP_SIGNING_PRIVATE_KEY` se usa para firmar y `BACKUP_SIGNING_PUBLIC_KEY` para verificar. `BACKUP_REQUIRE_SIGNATURE=true` activa el modo estricto; sin esa opción se conservan los respaldos históricos sin firma, mientras que cualquier manifiesto firmado siempre requiere clave pública y verificación correcta.
+- Se añadieron pruebas de firma válida, clave pública incorrecta, firma manipulada y rechazo de manifiesto sin firma en modo estricto. El proceso `pg_dump` no hereda la clave privada desde el entorno del proceso Node.
+- **Pendiente operativo:** generar y custodiar claves reales fuera del repositorio, configurar secretos del entorno, validar un ciclo firmado de backup/restore en staging, definir rotación y conservar claves públicas antiguas según la retención. La firma no cifra el archivo ni reemplaza almacenamiento externo cifrado, retención, PITR o alertas.
+- **Estado:** implementación de código y pruebas añadidas; la aprobación final depende de CI sobre el head actualizado. No se ha configurado ni desplegado una clave productiva.

@@ -41,6 +41,18 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Provision isolated least-privilege PostgreSQL roles
+        env:
+          MIGRATION_DB_PASSWORD: radar_migration_test
+          RUNTIME_DB_PASSWORD: radar_runtime_test
+        run: psql "$TEST_DATABASE_URL" -v database_name=radar_test -f database/roles/production-roles.sql
+
+      - name: Apply schema using the dedicated migration owner
+        env:
+          NODE_ENV: production
+          MIGRATION_DATABASE_URL: postgres://radar_migration_owner:radar_migration_test@localhost:5432/radar_test
+        run: npm run db:migrate
+
       - name: Run automated tests including PostgreSQL integration
         run: npm test
 

@@ -200,3 +200,39 @@ test("market-intelligence write permissions follow owner, admin, analyst and vie
   }finally{await app.close();}
  }
 });
+
+
+
+test("competitor and product update/archive routes enforce writer permissions for every role",async()=>{
+ for(const role of ["owner","admin","analyst","viewer"]){
+  const {app,calls}=await buildApp({role});
+  const requests=[
+   {method:"PATCH",url:`/api/v1/workspaces/${workspaceId}/competitors/${productId}`,payload:{name:"Cambio"}},
+   {method:"DELETE",url:`/api/v1/workspaces/${workspaceId}/competitors/${productId}`},
+   {method:"PATCH",url:`/api/v1/workspaces/${workspaceId}/products/${productId}`,payload:{name:"Cambio"}},
+   {method:"DELETE",url:`/api/v1/workspaces/${workspaceId}/products/${productId}`}
+  ];
+  try{
+   for(const request of requests){
+    const response=await app.inject(request);
+    if(role==="viewer"){
+     assert.equal(response.statusCode,403,request.method+" "+request.url);
+     assert.equal(response.json().error,"FORBIDDEN");
+    }else{
+     assert.notEqual(response.statusCode,403,role+" "+request.method+" "+request.url);
+    }
+   }
+   const mutations=calls.filter(call=>/UPDATE (competitors|market_products)/.test(call.sql||""));
+   if(role==="viewer"){
+    assert.equal(mutations.length,0);
+    assert.equal(calls.some(call=>call.sql==="RELEASE"),false);
+   }else{
+    assert.equal(mutations.length,4);
+    for(const mutation of mutations){
+     assert.deepEqual(mutation.values.slice(0,2),[workspaceId,productId]);
+     assert.match(mutation.sql,/WHERE workspace_id=\$1 AND id=\$2/);
+    }
+   }
+  }finally{await app.close();}
+ }
+});

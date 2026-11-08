@@ -28,8 +28,8 @@ test("PostgreSQL protects report snapshots from direct deletion but permits pare
   );
   researchId = research.rows[0].id;
   const report = await pool.query(
-   "INSERT INTO market_reports(workspace_id,research_id,version,report_data,generated_by) VALUES($1,$2,1,'{"title":"Immutable"}'::jsonb,$3) RETURNING id",
-   [workspaceId, researchId, userId]
+   "INSERT INTO market_reports(workspace_id,research_id,version,report_data,generated_by) VALUES($1,$2,1,$3::jsonb,$4) RETURNING id",
+   [workspaceId, researchId, JSON.stringify({ title: "Immutable" }), userId]
   );
   reportId = report.rows[0].id;
 

@@ -139,3 +139,10 @@ El cierre de 29/29 entregables describe la fase principal de construcción del b
 - Los scripts de backup/restauración y su runbook están en el repositorio; su validación CI en PostgreSQL efímero no demuestra backups externos, cifrado, retención, PITR ni restauración del proveedor de producción.
 - La instrumentación HTTP actual usa etiquetas de ruta registradas (y una etiqueta común `unmatched`), histogramas y un gauge de solicitudes activas. `/metrics` permanece deshabilitado por defecto. No hay exportador OpenTelemetry, destino remoto, retención ni alertas configuradas.
 
+
+## 9. Endurecimiento de credenciales de backup (2026-11-08)
+
+- `scripts/backup.js` y `scripts/restore.js` ya no colocan la URL de conexión PostgreSQL en los argumentos del proceso; la entregan a libpq mediante la variable de entorno `PGDATABASE`.
+- El objetivo es reducir la exposición accidental de contraseñas en listados de procesos. Las variables de entorno siguen siendo secretos: deben inyectarse desde un gestor de secretos, limitarse al proceso de backup/restauración y nunca imprimirse en logs.
+- `METRICS_ENABLED` permanece desactivado por defecto. Si se activa, `/metrics` debe quedar accesible únicamente desde la red de monitorización o detrás de controles de acceso del proxy; no publicarlo abiertamente en Internet.
+- No hay todavía un backend remoto de métricas/trazas ni reglas de alertas. Los logs actuales se emiten por el logger de la aplicación y su retención depende del entorno de ejecución.

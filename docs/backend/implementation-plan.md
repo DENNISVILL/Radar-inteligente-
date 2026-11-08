@@ -39,6 +39,22 @@ Este porcentaje mide únicamente el trabajo de API, lógica de aplicación, vali
 
 **Criterio del porcentaje:** 29 de 29 entregables principales de esta fase backend completados = 100 %. Este cierre no significa que el producto esté listo para producción: siguen pendientes alertas, recuperación probada, integraciones externas, frontend y despliegue.
 
+
+## Preparación operativa antes de producción — pendiente
+
+El 100 % de los 29 entregables principales no incluye el cierre de infraestructura ni el despliegue. La revisión operativa está documentada en `docs/backend/production-readiness-review.md`.
+
+- [x] Health/readiness y cierre ordenado del servidor/pool.
+- [x] Migraciones serializadas con advisory lock y transacciones.
+- [x] Métricas HTTP, correlación básica de trazas y logs estructurados.
+- [ ] Conectar Supabase real y exigir correo verificado al aceptar invitaciones.
+- [ ] Elegir hosting y PostgreSQL administrado; configurar TLS, red privada y rol SQL de mínimo privilegio.
+- [ ] Configurar backups automáticos y completar una restauración de prueba con RPO/RTO definidos.
+- [ ] Restringir `/metrics` a red privada o acceso autenticado en infraestructura.
+- [ ] Configurar alertas, retención de logs/métricas y procedimiento de incidentes.
+- [ ] Sustituir rate limiting en memoria por almacenamiento compartido antes de escalar a varias instancias.
+- [ ] Ejecutar prueba de carga de red real y aceptación de seguridad en staging.
+
 ## Principios
 
 - Monolito modular en Node.js 22+ y Fastify.

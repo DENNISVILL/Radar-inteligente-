@@ -185,3 +185,49 @@ test("PostgreSQL serializes concurrent member additions and owner role changes",
   await pool.end();
  }
 });
+
+
+test("PostgreSQL serializes invitation acceptance against revocation using one lock order",{
+ skip:!process.env.TEST_DATABASE_URL
+},async()=>{
+ const {createHash,randomUUID}=await import("node:crypto");
+ const {acceptWorkspaceInvitation,revokeWorkspaceInvitation}=await import("../../src/modules/identity/application/workspace-invitations.js");
+ const pool=new pg.Pool({connectionString:process.env.TEST_DATABASE_URL,max:4});
+ const suffix=randomUUID();
+ const ownerSubject=`race-owner-${suffix}`;
+ const invitedSubject=`race-invitee-${suffix}`;
+ const invitedEmail=`race-invitee-${suffix}@example.test`;
+ const token=`accept-or-revoke-${suffix}-one-time-token`;
+ let workspaceId,ownerId,invitationId;
+ try{
+  await applyMigrations(pool);
+  const workspace=await pool.query("INSERT INTO workspaces(name,slug) VALUES('Invitation accept revoke race',$1) RETURNING id",[`invite-race-${suffix}`]);
+  workspaceId=workspace.rows[0].id;
+  const owner=await pool.query("INSERT INTO users(auth_subject,email) VALUES($1,$2) RETURNING id",[ownerSubject,`race-owner-${suffix}@example.test`]);
+  ownerId=owner.rows[0].id;
+  await pool.query("INSERT INTO workspace_members(workspace_id,user_id,role) VALUES($1,$2,'owner')",[workspaceId,ownerId]);
+  const inserted=await pool.query("INSERT INTO workspace_invitations(workspace_id,email,role,token_hash,invited_by,expires_at) VALUES($1,$2,'analyst',$3,$4,NOW()+INTERVAL '1 day') RETURNING id",[workspaceId,invitedEmail,createHash("sha256").update(token,"utf8").digest("hex"),ownerId]);
+  invitationId=inserted.rows[0].id;
+  const [accepted,revoked]=await Promise.all([
+   acceptWorkspaceInvitation(pool,{token,identity:{subject:invitedSubject,email:invitedEmail}}),
+   revokeWorkspaceInvitation(pool,{workspaceId,invitationId,actorSubject:ownerSubject})
+  ]);
+  const stored=await pool.query("SELECT accepted_at,revoked_at FROM workspace_invitations WHERE id=$1",[invitationId]);
+  assert.ok(stored.rows[0]);
+  if(accepted.accepted){
+   assert.equal(revoked,null);
+   assert.ok(stored.rows[0].accepted_at);
+   assert.equal(stored.rows[0].revoked_at,null);
+  }else{
+   assert.equal(accepted.error,"INVITATION_REVOKED");
+   assert.deepEqual(revoked,{id:invitationId,revoked:true});
+   assert.equal(stored.rows[0].accepted_at,null);
+   assert.ok(stored.rows[0].revoked_at);
+  }
+ }finally{
+  if(workspaceId)await pool.query("DELETE FROM workspaces WHERE id=$1",[workspaceId]);
+  await pool.query("DELETE FROM users WHERE auth_subject=$1",[invitedSubject]).catch(()=>{});
+  if(ownerId)await pool.query("DELETE FROM users WHERE id=$1",[ownerId]);
+  await pool.end();
+ }
+});

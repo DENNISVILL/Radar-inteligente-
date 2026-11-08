@@ -22,6 +22,18 @@ function percentile(values, fraction) {
   return sorted[Math.max(0, Math.ceil(sorted.length * fraction) - 1)];
 }
 
+function parseConcurrencyLevels() {
+  const raw = process.env.PERF_CONCURRENCY_LEVELS
+    ?? (process.env.PERF_CONCURRENCY ? String(process.env.PERF_CONCURRENCY) : "1,5,20,50");
+  const levels = raw.split(",").map(value => Number(value.trim()));
+  if (!levels.length || levels.some(value =>
+    !Number.isInteger(value) || value < 1 || value > 100
+  )) {
+    throw new TypeError("PERF_CONCURRENCY_LEVELS debe contener enteros entre 1 y 100 separados por comas.");
+  }
+  return [...new Set(levels)];
+}
+
 try {
   await applyMigrations(pool);
   const workspace = await pool.query(
@@ -75,48 +87,58 @@ try {
     return response;
   };
 
+  // Warm-up outside the measured scenarios.
   for (let i = 0; i < 10; i += 1) await request(i % 2 ? productsUrl : pricesUrl);
 
-  const latencies = [];
-  const concurrency = Number(process.env.PERF_CONCURRENCY ?? 20);
+  const levels = parseConcurrencyLevels();
   const iterations = Number(process.env.PERF_ITERATIONS ?? 5);
-  if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 100) {
-    throw new TypeError("PERF_CONCURRENCY debe estar entre 1 y 100.");
-  }
+  const p95MaxMs = Number(process.env.PERF_P95_MAX_MS ?? 1000);
   if (!Number.isInteger(iterations) || iterations < 1 || iterations > 100) {
     throw new TypeError("PERF_ITERATIONS debe estar entre 1 y 100.");
   }
+  if (!Number.isFinite(p95MaxMs) || p95MaxMs <= 0) {
+    throw new TypeError("PERF_P95_MAX_MS debe ser un número positivo.");
+  }
 
-  const started = performance.now();
-  await Promise.all(Array.from({ length: concurrency }, async (_, worker) => {
-    for (let i = 0; i < iterations; i += 1) {
-      const url = (worker + i) % 2 ? productsUrl : pricesUrl;
-      const before = performance.now();
-      await request(url);
-      latencies.push(performance.now() - before);
-    }
-  }));
-  const elapsedMs = performance.now() - started;
-  const p50 = percentile(latencies, 0.50);
-  const p95 = percentile(latencies, 0.95);
-  const p99 = percentile(latencies, 0.99);
-  const result = {
+  const scenarios = [];
+  for (const concurrency of levels) {
+    const latencies = [];
+    const started = performance.now();
+    await Promise.all(Array.from({ length: concurrency }, async (_, worker) => {
+      for (let i = 0; i < iterations; i += 1) {
+        const url = (worker + i) % 2 ? productsUrl : pricesUrl;
+        const before = performance.now();
+        await request(url);
+        latencies.push(performance.now() - before);
+      }
+    }));
+    const elapsedMs = performance.now() - started;
+    const p50 = percentile(latencies, 0.50);
+    const p95 = percentile(latencies, 0.95);
+    const p99 = percentile(latencies, 0.99);
+    const scenario = {
+      concurrency,
+      requests: latencies.length,
+      elapsedMs: Number(elapsedMs.toFixed(2)),
+      throughputRps: Number((latencies.length / (elapsedMs / 1000)).toFixed(2)),
+      latencyMs: {
+        p50: Number(p50.toFixed(2)),
+        p95: Number(p95.toFixed(2)),
+        p99: Number(p99.toFixed(2)),
+        max: Number(Math.max(...latencies).toFixed(2))
+      },
+      threshold: { p95MaxMs }
+    };
+    scenarios.push(scenario);
+    assert.ok(p95 <= p95MaxMs,
+      `Concurrencia ${concurrency}: P95 ${p95.toFixed(2)} ms supera el límite ${p95MaxMs} ms.`);
+  }
+
+  console.log("RADAR_PERFORMANCE_BASELINE " + JSON.stringify({
     dataset: { products: 500, priceObservations: 2500 },
-    requests: latencies.length,
-    concurrency,
-    elapsedMs: Number(elapsedMs.toFixed(2)),
-    throughputRps: Number((latencies.length / (elapsedMs / 1000)).toFixed(2)),
-    latencyMs: {
-      p50: Number(p50.toFixed(2)),
-      p95: Number(p95.toFixed(2)),
-      p99: Number(p99.toFixed(2)),
-      max: Number(Math.max(...latencies).toFixed(2))
-    },
-    threshold: { p95MaxMs: Number(process.env.PERF_P95_MAX_MS ?? 1000) }
-  };
-  console.log("RADAR_PERFORMANCE_BASELINE " + JSON.stringify(result));
-  assert.ok(p95 <= result.threshold.p95MaxMs,
-    `P95 ${p95.toFixed(2)} ms supera el límite ${result.threshold.p95MaxMs} ms.`);
+    iterationsPerWorker: iterations,
+    scenarios
+  }));
 } finally {
   if (app) await app.close();
   if (workspaceId) await pool.query("DELETE FROM workspaces WHERE id=$1", [workspaceId]);

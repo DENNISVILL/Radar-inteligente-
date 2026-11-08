@@ -2,16 +2,14 @@
 
 ## Resultado validado en CI
 
-- Ejecución: [GitHub Actions #253](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42447192678)
-- Commit: `4dc87d0dea1a04862183c62c54dfcb21b2e2dc32`
+- Ejecución de referencia anterior: [GitHub Actions #253](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42447192678)
 - PostgreSQL: 16
 - Dataset aislado por workspace: 500 productos y 2.500 observaciones de precios
-- Rutas medidas: listado de productos y consulta del historial de precios
+- Rutas medidas: listado de productos e historial de precios
 - Incluye autorización real de membresía contra PostgreSQL
 - Calentamiento: 10 solicitudes
-- Muestra medida: 100 solicitudes
-- Concurrencia: 20 solicitudes simultáneas
-- Resultado: 189 pruebas funcionales aprobadas y baseline de rendimiento aprobado
+
+La primera medición, con 20 solicitudes simultáneas y 100 solicitudes medidas, obtuvo:
 
 | Métrica | Resultado |
 |---|---:|
@@ -22,9 +20,15 @@
 | Throughput | 822,30 solicitudes/s |
 | Umbral de aprobación P95 | 1.000 ms |
 
+## Benchmark escalonado
+
+El benchmark ahora ejecuta escenarios independientes con concurrencias de **1, 5, 20 y 50** (por defecto, cinco solicitudes por trabajador). Cada escenario informa P50, P95, P99, máximo, throughput y tiempo total. La ejecución falla si algún escenario supera el umbral P95 configurado.
+
+Los resultados de esta nueva matriz se incorporarán aquí después de que CI ejecute el cambio. No se deben confundir con la medición de referencia anterior.
+
 ## Alcance y límites
 
-La medición usa `Fastify.inject()` en el runner de GitHub Actions y un servicio PostgreSQL 16. Evalúa la ruta HTTP, la autorización y las consultas de base de datos bajo concurrencia, pero no mide latencia de red externa, TLS, proxy, balanceador ni infraestructura de producción.
+La medición usa `Fastify.inject()` en el runner de GitHub Actions y un servicio PostgreSQL 16. Evalúa las rutas HTTP dentro del proceso, la autorización y las consultas de base de datos bajo concurrencia, pero no mide latencia de red externa, TLS, proxy, balanceador ni infraestructura de producción.
 
 Los resultados son una línea base reproducible del entorno CI; **no constituyen una garantía de capacidad de producción** ni sustituyen una prueba de carga en staging con recursos equivalentes a producción.
 
@@ -38,12 +42,13 @@ npm run perf
 
 Variables opcionales:
 
-- `PERF_CONCURRENCY`: concurrencia (por defecto 20; rango 1–100).
-- `PERF_ITERATIONS`: solicitudes por trabajador (por defecto 5; rango 1–100).
+- `PERF_CONCURRENCY_LEVELS`: niveles separados por comas (por defecto `1,5,20,50`; rango individual 1–100).
+- `PERF_CONCURRENCY`: compatibilidad con la ejecución de un único nivel; se usa si no se define `PERF_CONCURRENCY_LEVELS`.
+- `PERF_ITERATIONS`: solicitudes por trabajador y nivel (por defecto 5; rango 1–100).
 - `PERF_P95_MAX_MS`: umbral P95 en milisegundos (por defecto 1.000).
 
 El script crea y elimina sus propios datos de prueba. No debe apuntarse a una base de datos de producción.
 
 ## Siguiente validación operativa
 
-Antes de declarar capacidad productiva, ejecutar pruebas con red real y staging, ampliar gradualmente el dataset, probar varios niveles de concurrencia, observar conexiones del pool y recursos de PostgreSQL, y establecer objetivos SLO acordes al hosting contratado.
+Antes de declarar capacidad productiva, ejecutar pruebas con red real y staging, ampliar gradualmente el dataset, observar conexiones del pool y recursos de PostgreSQL, y establecer objetivos SLO acordes al hosting contratado.

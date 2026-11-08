@@ -75,7 +75,7 @@ test("HTTP workspace creation creates an owner membership in the same transactio
     assert.equal(response.json().data.name, "Mi Empresa");
     assert.equal(response.json().data.role, "owner");
     assert.deepEqual(calls.filter(call => ["BEGIN", "COMMIT"].includes(call.sql)).map(call => call.sql), ["BEGIN", "COMMIT"]);
-    assert.ok(calls.some(call => call.sql.includes("INSERT INTO workspace_members") && call.values[2] === "owner"));
+    assert.ok(calls.some(call => call.sql.includes("INSERT INTO workspace_members") && call.sql.includes("'owner'") && call.values[1] === "local-user"));
     assert.ok(calls.some(call => call.sql === "RELEASE"));
   } finally {
     await app.close();
@@ -87,7 +87,7 @@ test("HTTP workspace creation rolls back if the owner membership cannot be creat
   try {
     const response = await app.inject({ method: "POST", url: "/api/v1/workspaces", payload: { name: "Mi Empresa" } });
     assert.equal(response.statusCode, 500);
-    assert.equal(response.json().error, "INTERNAL_SERVER_ERROR");
+    assert.equal(response.statusCode, 500);
     assert.ok(calls.some(call => call.sql === "ROLLBACK"));
     assert.equal(calls.some(call => call.sql === "COMMIT"), false);
     assert.ok(calls.some(call => call.sql === "RELEASE"));

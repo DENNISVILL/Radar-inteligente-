@@ -46,10 +46,12 @@ test("audit log migration is workspace scoped and indexed",async()=>{
 
 test("snapshot and audit event are written in the same explicit transaction",async()=>{
  const source=await readFile(new URL("../../../src/modules/market-intelligence/presentation/market-report.routes.js",import.meta.url),"utf8");
+ const auditRead=await readFile(new URL("../../../src/modules/market-intelligence/application/workspace-audit-logs.js",import.meta.url),"utf8");
  assert.match(source,/market_report\.snapshot_created/);
  assert.match(source,/INSERT INTO audit_logs\(workspace_id,actor_user_id,event_type,resource_type,resource_id,metadata\)/);
- assert.match(source,/canAccessWorkspace\(membership,\["owner","admin"\]\)/);
- assert.match(source,/FROM audit_logs WHERE workspace_id=\$1/);
+ assert.match(source,/listWorkspaceAuditLogs\(o\.database/);
+ assert.match(auditRead,/\["owner","admin"\]\.includes\(membership\.rows\[0\]\.role\)/);
+ assert.match(auditRead,/FROM audit_logs\s+WHERE workspace_id=\$1/);
  const begin=source.indexOf('await client.query("BEGIN")');
  const build=source.indexOf("buildMarketReport(client");
  const snapshot=source.indexOf("INSERT INTO market_reports");

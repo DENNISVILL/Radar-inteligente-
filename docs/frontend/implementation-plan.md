@@ -24,7 +24,7 @@ El frontend se desarrolla como una aplicación web responsive dentro de `apps/we
 | 8 | Centro de investigación | Listado por workspace, filtros, ficha, estado, observaciones y seguimiento | Completada por CI |
 | 9 | Competidores | Registro, listado, detalle, edición, archivo y comparación | Completada por CI |
 | 10 | Productos y precios | Catálogo, moneda, unidad, historial y comparación de precios | Completada y validada por CI |
-| 11 | Tendencias | Evolución temporal y variaciones descriptivas con datos disponibles | Implementada; CI pendiente |
+| 11 | Tendencias | Evolución temporal y variaciones descriptivas con datos disponibles | Completada y validada por CI |
 | 12 | Oportunidades y riesgos | Hallazgos, evidencia asociada, nivel de confianza y seguimiento | Pendiente |
 | 13 | Fuentes y evidencias | Fuente, URL, fecha, notas, confiabilidad y trazabilidad | Pendiente |
 | 14 | Informes y PDF | Vista de informe, versiones, descarga y estados de generación | Pendiente |
@@ -49,7 +49,7 @@ Las 16 tareas agrupan aproximadamente 40–50 subtareas verificables. El porcent
 ## Progreso
 
 - Backend: 29/29 entregables principales (100 %).
-- Frontend: **10/16 tareas principales implementadas y validadas por CI (62,5 %)**.
+- Frontend: **11/16 tareas principales implementadas y validadas por CI (68,75 %)**.
 - Tarea 1: estructura técnica creada y validada por CI.
 - Tarea 2: sistema visual y componentes compartidos implementados y validados por CI.
 - Tarea 3: landing pública implementada y validada en CI [42560159154](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42560159154) y [42560163862](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42560163862).

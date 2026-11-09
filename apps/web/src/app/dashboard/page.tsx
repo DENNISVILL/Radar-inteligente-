@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -35,6 +35,8 @@ export default function DashboardPage() {
   const [notice, setNotice] = useState("");
   const [workspaceName, setWorkspaceName] = useState("");
   const [creatingWorkspace, setCreatingWorkspace] = useState(false);
+  const workspaceRequestId = useRef(0);
+  const workspaceStorageKey = "radar-comercial:selected-workspace";
 
   useEffect(() => {
     let active = true;
@@ -53,12 +55,13 @@ export default function DashboardPage() {
       try {
         const result = await apiGet<{ data: Workspace[] }>("/api/v1/workspaces", session.access_token);
         const items = result.data ?? [];
-        const first = items[0] ?? null;
+        const savedId = window.localStorage.getItem(workspaceStorageKey);
+        const first = items.find((item) => (item.id ?? item.workspaceId) === savedId) ?? items[0] ?? null;
         if (!active) return;
         setWorkspaces(items);
         setWorkspace(first);
         if (!first) {
-          setNotice("Todavía no tienes un espacio de trabajo. La creación y administración se habilitarán en la siguiente fase.");
+          setNotice("Todavía no tienes un espacio de trabajo. Crea uno para comenzar a organizar tus investigaciones.");
           setLoading(false);
           return;
         }
@@ -69,8 +72,10 @@ export default function DashboardPage() {
           return;
         }
         setSelectedWorkspaceId(workspaceId);
+        window.localStorage.setItem(workspaceStorageKey, workspaceId);
+        const requestId = ++workspaceRequestId.current;
         const list = await apiGet<{ data: Research[] }>(`/api/v1/workspaces/${encodeURIComponent(workspaceId)}/researches?limit=10`, session.access_token);
-        if (active) setResearches(list.data ?? []);
+        if (active && requestId === workspaceRequestId.current) setResearches(list.data ?? []);
       } catch (cause) {
         if (active) setError(cause instanceof Error ? cause.message : "Ocurrió un error al cargar el dashboard.");
       } finally {
@@ -119,9 +124,11 @@ export default function DashboardPage() {
       const created = payload.data;
       const createdId = created.id ?? created.workspaceId;
       if (!createdId) throw new Error("El espacio se creó, pero la API no devolvió un identificador válido.");
+      workspaceRequestId.current += 1;
       setWorkspaces((current) => [...current, created]);
       setWorkspace(created);
       setSelectedWorkspaceId(createdId);
+      window.localStorage.setItem(workspaceStorageKey, createdId);
       setResearches([]);
       setWorkspaceName("");
       setNotice("Espacio de trabajo creado correctamente. Ya puedes comenzar a organizar tus investigaciones.");
@@ -134,7 +141,9 @@ export default function DashboardPage() {
 
   async function selectWorkspace(workspaceId: string) {
     const next = workspaces.find((item) => (item.id ?? item.workspaceId) === workspaceId) ?? null;
+    const requestId = ++workspaceRequestId.current;
     setSelectedWorkspaceId(workspaceId);
+    window.localStorage.setItem(workspaceStorageKey, workspaceId);
     setWorkspace(next);
     setResearches([]);
     setError("");
@@ -142,9 +151,9 @@ export default function DashboardPage() {
     if (!workspaceId || !accessToken) return;
     try {
       const list = await apiGet<{ data: Research[] }>(`/api/v1/workspaces/${encodeURIComponent(workspaceId)}/researches?limit=10`, accessToken);
-      setResearches(list.data ?? []);
+      if (requestId === workspaceRequestId.current) setResearches(list.data ?? []);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "No fue posible cargar las investigaciones del espacio.");
+      if (requestId === workspaceRequestId.current) setError(cause instanceof Error ? cause.message : "No fue posible cargar las investigaciones del espacio.");
     }
   }
 

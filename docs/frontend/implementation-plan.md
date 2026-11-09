@@ -2,7 +2,7 @@
 
 ## Alcance y criterio de avance
 
-El backend tiene **29 de 29 entregables principales completados (100 %)**, con CI #768 aprobada según el registro de backend. Esto no equivale a despliegue productivo: Supabase real, correo, hosting, alertas, backups externos y otros puntos operativos siguen dependiendo de configuración externa.
+El backend tiene **29 de 29 entregables principales completados (100 %)**. Esto no equivale a despliegue productivo: Supabase real, correo, hosting, alertas, backups externos y otros puntos operativos siguen dependiendo de configuración externa.
 
 El frontend se desarrolla como una aplicación web responsive con posibilidad de evolucionar a PWA. Se mantiene separado del backend dentro de `apps/web`, pero comparte el contrato HTTP documentado en `docs/api/openapi.yaml`.
 
@@ -17,8 +17,8 @@ El frontend se desarrolla como una aplicación web responsive con posibilidad de
 | 1 | Estructura técnica del frontend | Next.js, TypeScript, configuración, carpetas modulares, entorno y CI | Completada |
 | 2 | Sistema visual y componentes base | Tokens, tipografía, colores, botones, campos, tarjetas, tablas, estados y navegación | Completada |
 | 3 | Landing pública | Presentación, propuesta de valor, capacidades, beneficios y acceso | Completada |
-| 4 | Autenticación y acceso | Inicio de sesión, registro, recuperación, invitaciones y sesiones Supabase | En desarrollo |
-| 5 | Dashboard principal | Resumen, actividad, investigaciones recientes y accesos rápidos | Pendiente |
+| 4 | Autenticación y acceso | Inicio de sesión, registro, recuperación, confirmación y actualización de contraseña | Implementada y validada por CI; integración real pendiente |
+| 5 | Dashboard principal | Resumen, actividad, investigaciones recientes y accesos rápidos | En desarrollo |
 | 6 | Espacios de trabajo y administración | Selector de workspace, miembros, roles, invitaciones y preferencias | Pendiente |
 | 7 | Crear investigación | Formulario, ubicación, país/ciudad, sector, objetivo y validaciones | Pendiente |
 | 8 | Centro de investigación | Detalle, estado, observaciones, seguimiento y navegación por investigación | Pendiente |
@@ -31,7 +31,7 @@ El frontend se desarrolla como una aplicación web responsive con posibilidad de
 | 15 | Historial, perfil y auditoría | Historial de investigaciones/informes, perfil y registro de acciones según permisos | Pendiente |
 | 16 | Integración y aceptación final | Conexión API, manejo de errores, responsive, accesibilidad, pruebas y revisión integral | Pendiente |
 
-Las 16 tareas agrupan aproximadamente 40–50 subtareas verificables. El porcentaje se calcula por tareas principales completadas y validadas, no por archivos creados.
+Las 16 tareas agrupan aproximadamente 40–50 subtareas verificables. El porcentaje se calcula por tareas principales implementadas y validadas por CI. Las dependencias externas se informan por separado y no se simulan.
 
 ## Reglas técnicas
 
@@ -49,16 +49,18 @@ Las 16 tareas agrupan aproximadamente 40–50 subtareas verificables. El porcent
 ## Progreso
 
 - Backend: 29/29 entregables principales (100 %).
-- Frontend: 3/16 tareas principales completadas (18,75 %).
-- Tarea 1: estructura técnica creada y validada por CI (instalación, TypeScript y build de producción).
-- Tarea 2: sistema visual y componentes compartidos implementados; CI de corrección aprobada en [ejecución 42559725643](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42559725643).
+- Frontend: **4/16 tareas principales implementadas y validadas por CI (25 %)**.
+- Tarea 1: estructura técnica creada y validada por CI.
+- Tarea 2: sistema visual y componentes compartidos implementados y validados por CI.
 - Tarea 3: landing pública implementada y validada en CI [42560159154](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42560159154) y [42560163862](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42560163862).
+- Tarea 4: formularios de inicio de sesión, registro, recuperación y actualización de contraseña; confirmación de enlaces Supabase; cliente Supabase opcional según configuración; helper para consultar `/api/v1/me` con Bearer. Validada por CI [42562516137](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42562516137) y [42562511741](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42562511741).
+- Tarea 4 no se ha probado contra un proyecto Supabase real: la integración externa continúa pendiente.
 - Producto completo: no se calcula como promedio simple de backend y frontend; se reportarán ambos por separado.
 
 ## Dependencias externas pendientes
 
-- Proyecto Supabase real, URL y clave publicable para activar autenticación real.
+- Proyecto Supabase real, URL y clave publicable para activar y probar autenticación real.
 - Proveedor de correo transaccional para invitaciones.
 - Hosting y dominio para staging/producción.
 
-La tarea 4 está preparando los flujos de autenticación, pero no se considera conectada hasta configurar y probar el proyecto Supabase real. No se inventarán credenciales ni se marcarán integraciones externas como listas sin pruebas reales.
+No se inventarán credenciales ni se marcarán integraciones externas como listas sin pruebas reales.

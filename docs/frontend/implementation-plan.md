@@ -25,7 +25,7 @@ El frontend se desarrolla como una aplicación web responsive dentro de `apps/we
 | 9 | Competidores | Registro, listado, detalle, edición, archivo y comparación | Completada por CI |
 | 10 | Productos y precios | Catálogo, moneda, unidad, historial y comparación de precios | Completada y validada por CI |
 | 11 | Tendencias | Evolución temporal y variaciones descriptivas con datos disponibles | Completada y validada por CI |
-| 12 | Oportunidades y riesgos | Hallazgos, evidencia asociada, nivel de confianza y seguimiento | Pendiente |
+| 12 | Oportunidades y riesgos | Hallazgos, evidencia asociada, nivel de confianza y seguimiento | Implementada; CI pendiente |
 | 13 | Fuentes y evidencias | Fuente, URL, fecha, notas, confiabilidad y trazabilidad | Pendiente |
 | 14 | Informes y PDF | Vista de informe, versiones, descarga y estados de generación | Pendiente |
 | 15 | Historial, perfil y auditoría | Historial de investigaciones/informes, perfil y registro de acciones según permisos | Pendiente |
@@ -59,7 +59,7 @@ Las 16 tareas agrupan aproximadamente 40–50 subtareas verificables. El porcent
 - Tarea 7: formulario de creación de investigaciones con workspace, título, país, ciudad/región, sector, objetivo y estado inicial; CI integral aprobada en [42563524680](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42563524680).
 - Tarea 8: centro de investigación con listado por workspace, búsqueda y filtros por estado/título/sector/ubicación; ficha individual, cambio de estado, registro y timeline de observaciones con fecha, fuente, URL y nivel de confianza. Frontend typecheck/build y pruebas backend con PostgreSQL, restauración de backup firmado y validación OpenAPI aprobados en CI [42564481005](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42564481005).
 - Tarea 9: módulo de competidores con registro, búsqueda, edición, archivo y comparación descriptiva de hasta dos registros. CI frontend TypeScript/build y backend/PostgreSQL, backup firmado/restauración y OpenAPI aprobados en [42565334887](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42565334887).
-- Siguiente: tarea 12, oportunidades y riesgos.
+- Tarea 12: registro y consulta de oportunidades/riesgos por investigación, métricas, filtros, búsqueda, nivel de confianza y enlaces de evidencia. Usa exclusivamente el endpoint existente de observaciones y sus tipos `opportunity`/`risk`; implementación en `e082031293271fda82ec4f5549f0b886dd208cbf`, CI en ejecución.\n- Siguiente después de validar tarea 12: tarea 13, fuentes y evidencias.
 - Producto completo: no se calcula como promedio simple de backend y frontend; se reportarán ambos por separado.
 
 ## Dependencias externas pendientes

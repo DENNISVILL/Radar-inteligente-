@@ -30,6 +30,8 @@ export default function DashboardPage() {
   const [researches, setResearches] = useState<Research[]>([]);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [workspaceName, setWorkspaceName] = useState("");
+  const [creatingWorkspace, setCreatingWorkspace] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -69,6 +71,51 @@ export default function DashboardPage() {
     void load();
     return () => { active = false; };
   }, [router]);
+
+  async function createWorkspace(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const name = workspaceName.trim();
+    if (!name || name.length > 120) {
+      setError("El nombre del espacio debe tener entre 1 y 120 caracteres.");
+      return;
+    }
+
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) {
+      setError("La autenticación todavía no está configurada.");
+      return;
+    }
+
+    setCreatingWorkspace(true);
+    setError("");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.replace("/login");
+        return;
+      }
+      const response = await fetch(new URL("/api/v1/workspaces", API_URL), {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ name }),
+      });
+      const payload = await response.json().catch(() => null) as { data?: Workspace; message?: string } | null;
+      if (!response.ok || !payload?.data) {
+        throw new Error(payload?.message ?? "No fue posible crear el espacio de trabajo.");
+      }
+      setWorkspace(payload.data);
+      setWorkspaceName("");
+      setNotice("Espacio de trabajo creado correctamente. Ya puedes comenzar a organizar tus investigaciones.");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Ocurrió un error al crear el espacio.");
+    } finally {
+      setCreatingWorkspace(false);
+    }
+  }
 
   async function signOut() {
     const supabase = getSupabaseBrowserClient();
@@ -112,6 +159,13 @@ export default function DashboardPage() {
           {error && <div className="dashboard-state dashboard-state--error" role="alert">{error}</div>}
           {!loading && !error && <>
             {notice && <div className="dashboard-state" role="status">{notice}</div>}
+            {!workspace && <form className="dashboard-state" onSubmit={createWorkspace}>
+              <strong>Crear tu espacio de trabajo</strong>
+              <p>El espacio es el lugar donde se guardarán tus investigaciones y donde podrás incorporar a tu equipo.</p>
+              <label htmlFor="workspace-name">Nombre del espacio</label>
+              <input id="workspace-name" name="workspaceName" type="text" maxLength={120} required value={workspaceName} onChange={(event) => setWorkspaceName(event.target.value)} placeholder="Ej. Mi empresa" />
+              <button type="submit" disabled={creatingWorkspace}>{creatingWorkspace ? "Creando…" : "Crear espacio"}</button>
+            </form>}
             <div className="dashboard-section-heading"><div><h2>Resumen de actividad</h2><p>Datos del espacio de trabajo seleccionado.</p></div><span>{workspace?.name ?? "Sin espacio de trabajo"}</span></div>
             <div className="dashboard-metrics">
               <article><span className="metric-icon">⌕</span><small>Investigaciones visibles</small><strong>{researches.length}</strong><em>Últimos 10 registros</em></article>

@@ -1,0 +1,59 @@
+import { mkdtemp, writeFile, chmod, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+function escapePassfileField(value) {
+  return String(value).replace(/\\/g, "\\\\").replace(/:/g, "\\:");
+}
+
+export async function withPostgresCliEnv(connection, operation) {
+  const url = new URL(connection);
+  if (!["postgres:", "postgresql:"].includes(url.protocol)) {
+    throw new TypeError("La conexión PostgreSQL debe utilizar postgres:// o postgresql://.");
+  }
+  const host = url.hostname.replace(/^\[|\]$/g, "");
+  const port = url.port || "5432";
+  const database = decodeURIComponent(url.pathname.replace(/^\//, ""));
+  const username = decodeURIComponent(url.username);
+  const password = decodeURIComponent(url.password);
+  if (!host || !database || !username) {
+    throw new TypeError("La URL PostgreSQL debe incluir host, base de datos y usuario.");
+  }
+
+  const directory = await mkdtemp(join(tmpdir(), "radar-pgpass-"));
+  const passfile = join(directory, "pgpass");
+  try {
+    const line = [host, port, database, username, password].map(escapePassfileField).join(":") + "\n";
+    await writeFile(passfile, line, { mode: 0o600 });
+    await chmod(passfile, 0o600);
+    const env = {
+      PGHOST: host,
+      PGPORT: port,
+      PGDATABASE: database,
+      PGUSER: username,
+      PGPASSFILE: passfile
+    };
+    const requestedSslMode = url.searchParams.get("sslmode")?.toLowerCase();
+    if (requestedSslMode && !["disable", "require", "verify-ca", "verify-full"].includes(requestedSslMode)) {
+      throw new TypeError("sslmode inseguro o no soportado para PostgreSQL.");
+    }
+    const forceSsl = ["true", "1", "yes"].includes(String(process.env.DB_SSL ?? "").toLowerCase());
+    const tlsEnabled = forceSsl || (requestedSslMode != null && requestedSslMode !== "disable");
+    // Keep pg_dump/pg_restore at least as strict as node-postgres.
+    env.PGSSLMODE = tlsEnabled ? "verify-full" : "disable";
+    const sslrootcert = url.searchParams.get("sslrootcert");
+    const sslcert = url.searchParams.get("sslcert");
+    const sslkey = url.searchParams.get("sslkey");
+    if (Boolean(sslcert) !== Boolean(sslkey)) {
+      throw new TypeError("sslcert y sslkey deben configurarse juntos.");
+    }
+    if (sslrootcert) env.PGSSLROOTCERT = sslrootcert;
+    if (sslcert) {
+      env.PGSSLCERT = sslcert;
+      env.PGSSLKEY = sslkey;
+    }
+    return await operation(env);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+}

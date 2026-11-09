@@ -1,57 +1,49 @@
 # Radar Comercial
 
-Plataforma de investigación e inteligencia comercial para ayudar a emprendedores y pequeñas empresas a comprender mercados, comparar competidores, analizar productos y precios, identificar tendencias y documentar oportunidades con fuentes verificables.
-
-> **Nombre del producto:** Radar Comercial  
-> **Nombre del repositorio:** Radar-inteligente- (identificador técnico de GitHub)
+Plataforma de investigación e inteligencia comercial para organizar evidencia, comparar competidores y generar informes trazables.
 
 ## Estado del proyecto
 
-**Etapa actual:** fundación del proyecto. El repositorio comienza con documentación y un primer módulo de dominio. Todavía no es una plataforma desplegada ni recopila datos reales de mercado.
+- **Backend:** 29/29 entregables principales completados (100 %), con pruebas automatizadas, PostgreSQL en CI, contrato OpenAPI, exportación PDF, auditoría, rate limiting y controles de operación.
+- **Frontend:** 16/16 tareas principales implementadas y validadas por CI (100 %), incluida la integración de navegación entre módulos. La validación automatizada no equivale a despliegue productivo ni sustituye pruebas de aceptación con usuarios reales.
+- **Autenticación externa:** los flujos de autenticación pasaron CI, pero falta conectar y probar un proyecto Supabase real y el proveedor de correo.
+- **Producción:** todavía no está listo para producción. No hay proyecto Supabase real, proveedor de correo, hosting ni despliegue productivo conectados.
 
-## Alcance inicial
+## Producto y experiencia
 
-1. Investigaciones de mercado por país, ciudad y sector.
-2. Registro de competidores y comparación de información pública.
-3. Registro y análisis de productos y precios publicados.
-4. Seguimiento de tendencias con fecha y fuente.
-5. Identificación de oportunidades y riesgos.
-6. Informes con metodología, hallazgos, fuentes y fecha de consulta.
-7. Historial de investigaciones.
+Radar Comercial está dirigido a emprendedores y pequeñas empresas. Su identidad es profesional, analítica, clara y práctica, con azul profundo, turquesa de acento, grises y fondos claros.
 
-## Principios de desarrollo
+Promesa: “Información comercial organizada para tomar decisiones con más criterio”.
 
-- Modularidad: cada módulo mantiene responsabilidades claras.
-- Evidencia: los hallazgos deben distinguir datos observados, inferencias y recomendaciones.
-- Trazabilidad: registrar fuente, URL y fecha de consulta para cada dato externo.
-- Seguridad y privacidad desde el diseño.
-- No presentar datos estimados como datos verificados.
-- Probar cada módulo antes de integrarlo con los demás.
+## Arquitectura
 
-## Estructura inicial
+- `src/`: backend Fastify y módulos del servidor.
+- `apps/web/`: frontend Next.js App Router + React + TypeScript.
+- `docs/api/openapi.yaml`: contrato HTTP compartido.
+- `docs/frontend/implementation-plan.md`: plan de 16 tareas del frontend y progreso.
+- `docs/backend/implementation-plan.md`: entregables y límites del backend.
 
-```text
-docs/
-  architecture/
-  decisions/
-src/
-  modules/
-    research/
-      domain/
-tests/
-  modules/
-    research/
-```
+El frontend consume la API Fastify mediante HTTP. No accede directamente a PostgreSQL. Supabase Auth se integrará cuando exista un proyecto real configurado.
 
-La estructura crecerá a medida que se implementen módulos reales; no se crearán carpetas vacías solo para aparentar avance.
+## Backend: desarrollo local
 
-## Desarrollo local
+Consulta las instrucciones y variables de entorno en `.env.example`. Comandos principales: `npm install`, `npm test`, `npm run check`, `npm run db:migrate`.
 
-Requisito: Node.js 20 o superior.
+## Frontend: desarrollo local
 
-- `npm test`: ejecuta las pruebas automatizadas.
-- `npm run check`: comprueba la sintaxis de los archivos JavaScript.
+1. Instala Node.js 22 o superior.
+2. Entra en `apps/web`.
+3. Copia `.env.example` a `.env.local` y ajusta la URL de API cuando el backend esté disponible.
+4. Ejecuta `npm install`.
+5. Ejecuta `npm run dev` y abre `http://localhost:3001`.
 
-## Límites de la primera entrega
+Comprobaciones: `npm run check` y `npm run build`.
 
-El módulo inicial define y valida investigaciones. Aún no incluye autenticación, base de datos, extracción automática de sitios web, análisis con IA, dashboard ni exportación PDF. Esas capacidades se implementarán después de definir y probar sus contratos y arquitectura.
+## Seguridad
+
+- Nunca subas archivos `.env`, contraseñas, claves privadas, tokens ni claves service-role.
+- La API es la autoridad de autorización por workspace y rol.
+- La clave publicable de Supabase puede exponerse al cliente solo cuando se configure el proyecto; las claves privilegiadas nunca.
+- La presencia de un frontend no significa que exista una integración real ni un despliegue productivo.
+
+Consulta los planes en `docs/backend/implementation-plan.md` y `docs/frontend/implementation-plan.md`.

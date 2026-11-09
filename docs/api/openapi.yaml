@@ -1,0 +1,835 @@
+openapi: 3.1.0
+info:
+  title: Radar Comercial API
+  version: 1.0.0
+  description: >
+    Contrato HTTP de Radar Comercial. Los endpoints de negocio requieren un
+    JWT Bearer emitido por el proveedor de identidad configurado. Los datos
+    están aislados por workspace. Los análisis son descriptivos y no son
+    predicciones verificadas.
+servers:
+  - url: /
+    description: Host que sirve la API
+security:
+  - bearerAuth: []
+tags:
+  - name: Health
+    description: Estado del proceso y disponibilidad de dependencias.
+  - name: Identity
+    description: Identidad autenticada del usuario.
+  - name: Workspaces
+    description: Espacios de trabajo y permisos de acceso.
+  - name: Members
+    description: Miembros, roles y permisos de workspace.
+  - name: Invitations
+    description: Invitaciones de acceso a espacios de trabajo.
+  - name: Research
+    description: Investigaciones comerciales.
+  - name: Market intelligence
+    description: Competidores, productos, precios y observaciones de mercado.
+  - name: Reports
+    description: Análisis, snapshots, exportaciones y auditoría.
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Comprobar estado del servicio
+      operationId: health
+      security: []
+      responses:
+        '200':
+          description: Proceso activo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { const: ok }
+                  service: { type: string }
+                  timestamp: { type: string, format: date-time }
+  /ready:
+    get:
+      tags: [Health]
+      summary: Comprobar disponibilidad de dependencias
+      operationId: readiness
+      security: []
+      responses:
+        '200':
+          description: Servicio y base de datos disponibles
+        '503':
+          description: Dependencia de base de datos no disponible
+  /api/v1/me:
+    get:
+      tags: [Identity]
+      summary: Consultar identidad autenticada
+      operationId: getCurrentIdentity
+      responses:
+        '200':
+          description: Identidad autenticada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subject: { type: string }
+                  email: { type: [string, 'null'], format: email }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '503': { $ref: '#/components/responses/AuthNotConfigured' }
+  /api/v1/workspaces:
+    get:
+      tags: [Workspaces]
+      summary: Listar espacios de trabajo
+      operationId: listWorkspaces
+      responses:
+        '200': { $ref: '#/components/responses/WorkspaceList' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Workspaces]
+      summary: Crear espacio de trabajo
+      operationId: createWorkspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              additionalProperties: false
+              properties:
+                name: { type: string, minLength: 1, maxLength: 120 }
+      responses:
+        '201': { $ref: '#/components/responses/Workspace' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/v1/workspaces/{workspaceId}/access:
+    get:
+      tags: [Workspaces]
+      summary: Consultar acceso al espacio de trabajo
+      operationId: getWorkspaceAccess
+      parameters: [{ $ref: '#/components/parameters/workspaceId' }]
+      responses:
+        '200':
+          description: Acceso y rol del usuario
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/workspaces/{workspaceId}/members:
+    parameters: [{ $ref: '#/components/parameters/workspaceId' }]
+    get:
+      tags: [Members]
+      summary: Listar miembros del espacio de trabajo
+      operationId: listWorkspaceMembers
+      description: Solo owner y admin.
+      responses:
+        '200': { $ref: '#/components/responses/GenericList' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Members]
+      summary: Añadir miembro al espacio de trabajo
+      operationId: addWorkspaceMember
+      description: Añade una cuenta activa existente; no crea cuentas de autenticación.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, role]
+              additionalProperties: false
+              properties:
+                email: { type: string, format: email, maxLength: 254 }
+                role: { $ref: '#/components/schemas/AssignableRole' }
+      responses:
+        '201': { $ref: '#/components/responses/GenericData' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/workspaces/{workspaceId}/members/{userId}:
+    parameters:
+      - { $ref: '#/components/parameters/workspaceId' }
+      - { $ref: '#/components/parameters/userId' }
+    patch:
+      tags: [Members]
+      summary: Actualizar rol de un miembro
+      operationId: updateWorkspaceMemberRole
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              additionalProperties: false
+              properties:
+                role: { $ref: '#/components/schemas/Role' }
+      responses:
+        '200': { $ref: '#/components/responses/GenericData' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      tags: [Members]
+      summary: Eliminar miembro del espacio de trabajo
+      operationId: removeWorkspaceMember
+      responses:
+        '200': { $ref: '#/components/responses/GenericData' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/workspaces/{workspaceId}/invitations:
+    parameters: [{ $ref: '#/components/parameters/workspaceId' }]
+    get:
+      tags: [Invitations]
+      summary: Listar invitaciones pendientes
+      operationId: listWorkspaceInvitations
+      description: Solo owner y admin; no expone hashes de tokens.
+      parameters:
+        - { $ref: '#/components/parameters/limit100' }
+      responses:
+        '200': { $ref: '#/components/responses/GenericList' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Invitations]
+      summary: Crear invitación de acceso
+      operationId: createWorkspaceInvitation
+      description: Devuelve el token una sola vez. La entrega por correo no está configurada.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, role]
+              additionalProperties: false
+              properties:
+                email: { type: string, format: email, maxLength: 254 }
+                role: { $ref: '#/components/schemas/AssignableRole' }
+      responses:
+        '201': { $ref: '#/components/responses/GenericData' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/workspaces/{workspaceId}/invitations/{invitationId}:
+    parameters:
+      - { $ref: '#/components/parameters/workspaceId' }
+      - { $ref: '#/components/parameters/invitationId' }
+    delete:
+      tags: [Invitations]
+      summary: Revocar invitación de acceso
+      operationId: revokeWorkspaceInvitation
+      responses:
+        '200': { $ref: '#/components/responses/GenericData' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/invitations/accept:
+    post:
+      tags: [Invitations]
+      summary: Aceptar invitación de acceso
+      operationId: acceptWorkspaceInvitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              additionalProperties: false
+              properties:
+                token: { type: string, minLength: 32, maxLength: 128 }
+      responses:
+        '200': { $ref: '#/components/responses/GenericData' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '410': { description: Invitación expirada o revocada }
+  /api/v1/workspaces/{workspaceId}/researches:
+    parameters: [{ $ref: '#/components/parameters/workspaceId' }]
+    get:
+      tags: [Research]
+      summary: Listar investigaciones
+      operationId: listResearches
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [draft, in_progress, completed] }
+        - { $ref: '#/components/parameters/limit100' }
+      responses:
+        '200': { $ref: '#/components/responses/GenericList' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Research]
+      summary: Crear investigación
+      operationId: createResearch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResearchInput' }
+      responses:
+        '201': { $ref: '#/components/responses/GenericData' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/workspaces/{workspaceId}/researches/{researchId}:
+    parameters:
+      - { $ref: '#/components/parameters/workspaceId' }
+      - { $ref: '#/components/parameters/researchId' }
+    get:
+      tags: [Research]
+      summary: Consultar investigación
+      operationId: getResearch
+      responses:
+        '200': { $ref: '#/components/responses/GenericData' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Research]
+      summary: Actualizar investigación
+      operationId: updateResearch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResearchPatch' }
+      responses:
+        '200': { $ref: '#/components/responses/GenericData' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Research]
+      summary: Archivar investigación
+      operationId: archiveResearch
+      responses:
+        '204': { description: Investigación archivada }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/workspaces/{workspaceId}/competitors:
+    parameters: [{ $ref: '#/components/parameters/workspaceId' }]
+    get:
+      tags: [Market intelligence]
+      summary: Listar competidores
+      operationId: listCompetitors
+      parameters: [{ $ref: '#/components/parameters/limit100' }]
+      responses:
+        '200': { $ref: '#/components/responses/GenericList' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Market intelligence]
+      summary: Crear competidor
+      operationId: createCompetitor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CompetitorInput' }
+      responses:
+        '201': { $ref: '#/components/responses/GenericData' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/workspaces/{workspaceId}/competitors/{competitorId}:
+    parameters:
+      - { $ref: '#/components/parameters/workspaceId' }
+      - { $ref: '#/components/parameters/competitorId' }
+    patch:
+      tags: [Market intelligence]
+      summary: Actualizar competidor
+      operationId: updateCompetitor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CompetitorPatch' }
+      responses:
+        '200': { $ref: '#/components/responses/GenericData' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Market intelligence]
+      summary: Archivar competidor
+      operationId: archiveCompetitor
+      responses:
+        '200': { $ref: '#/components/responses/GenericData' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/workspaces/{workspaceId}/products:
+    parameters: [{ $ref: '#/components/parameters/workspaceId' }]
+    get:
+      tags: [Market intelligence]
+      summary: Listar productos y servicios
+      operationId: listProducts
+      parameters:
+        - { $ref: '#/components/parameters/limit100' }
+        - name: competitorId
+          in: query
+          schema: { $ref: '#/components/schemas/UUID' }
+        - name: researchId
+          in: query
+          schema: { $ref: '#/components/schemas/UUID' }
+      responses:
+        '200': { $ref: '#/components/responses/GenericList' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Market intelligence]
+      summary: Crear producto o servicio
+      operationId: createProduct
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProductInput' }
+      responses:
+        '201': { $ref: '#/components/responses/GenericData' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/workspaces/{workspaceId}/products/{productId}:
+    parameters:
+      - { $ref: '#/components/parameters/workspaceId' }
+      - { $ref: '#/components/parameters/productId' }
+    patch:
+      tags: [Market intelligence]
+      summary: Actualizar producto o servicio
+      operationId: updateProduct
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProductPatch' }
+      responses:
+        '200': { $ref: '#/components/responses/GenericData' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Market intelligence]
+      summary: Archivar producto o servicio
+      operationId: archiveProduct
+      responses:
+        '200': { $ref: '#/components/responses/GenericData' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/workspaces/{workspaceId}/products/{productId}/prices:
+    parameters:
+      - { $ref: '#/components/parameters/workspaceId' }
+      - { $ref: '#/components/parameters/productId' }
+    get:
+      tags: [Market intelligence]
+      summary: Consultar historial de precios
+      operationId: listPriceObservations
+      parameters: [{ $ref: '#/components/parameters/limit100' }]
+      responses:
+        '200': { $ref: '#/components/responses/GenericList' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Market intelligence]
+      summary: Registrar observación de precio
+      operationId: createPriceObservation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PriceInput' }
+      responses:
+        '201': { $ref: '#/components/responses/GenericData' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/workspaces/{workspaceId}/researches/{researchId}/observations:
+    parameters:
+      - { $ref: '#/components/parameters/workspaceId' }
+      - { $ref: '#/components/parameters/researchId' }
+    get:
+      tags: [Market intelligence]
+      summary: Listar observaciones de mercado
+      operationId: listMarketObservations
+      parameters:
+        - { $ref: '#/components/parameters/limit100' }
+        - name: competitorId
+          in: query
+          schema: { $ref: '#/components/schemas/UUID' }
+        - name: type
+          in: query
+          schema: { type: string, enum: [strength, weakness, promotion, customer_experience, strategy, opportunity, risk, other] }
+      responses:
+        '200': { $ref: '#/components/responses/GenericList' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Market intelligence]
+      summary: Registrar observación de mercado
+      operationId: createMarketObservation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ObservationInput' }
+      responses:
+        '201': { $ref: '#/components/responses/GenericData' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/workspaces/{workspaceId}/researches/{researchId}/analysis:
+    get:
+      tags: [Market intelligence]
+      summary: Consultar análisis de mercado
+      operationId: getMarketAnalysis
+      parameters:
+        - { $ref: '#/components/parameters/workspaceId' }
+        - { $ref: '#/components/parameters/researchId' }
+      responses:
+        '200': { $ref: '#/components/responses/GenericData' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/workspaces/{workspaceId}/researches/{researchId}/report:
+    get:
+      tags: [Reports]
+      summary: Previsualizar informe comercial
+      operationId: previewMarketReport
+      parameters:
+        - { $ref: '#/components/parameters/workspaceId' }
+        - { $ref: '#/components/parameters/researchId' }
+      responses:
+        '200': { $ref: '#/components/responses/GenericData' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/workspaces/{workspaceId}/researches/{researchId}/reports:
+    parameters:
+      - { $ref: '#/components/parameters/workspaceId' }
+      - { $ref: '#/components/parameters/researchId' }
+    get:
+      tags: [Reports]
+      summary: Listar versiones guardadas del informe
+      operationId: listReportSnapshots
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        '200': { $ref: '#/components/responses/GenericList' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Reports]
+      summary: Crear versión inmutable del informe
+      operationId: createReportSnapshot
+      responses:
+        '201': { $ref: '#/components/responses/GenericData' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/workspaces/{workspaceId}/researches/{researchId}/reports/{reportId}:
+    parameters:
+      - { $ref: '#/components/parameters/workspaceId' }
+      - { $ref: '#/components/parameters/researchId' }
+      - { $ref: '#/components/parameters/reportId' }
+    get:
+      tags: [Reports]
+      summary: Consultar versión del informe
+      operationId: getReportSnapshot
+      responses:
+        '200': { $ref: '#/components/responses/GenericData' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/workspaces/{workspaceId}/researches/{researchId}/reports/{reportId}/pdf:
+    get:
+      tags: [Reports]
+      summary: Exportar informe en PDF
+      operationId: exportReportPdf
+      parameters:
+        - { $ref: '#/components/parameters/workspaceId' }
+        - { $ref: '#/components/parameters/researchId' }
+        - { $ref: '#/components/parameters/reportId' }
+      responses:
+        '200':
+          description: Documento PDF
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { description: La huella de integridad del snapshot no coincide }
+  /api/v1/workspaces/{workspaceId}/audit-logs:
+    get:
+      tags: [Reports]
+      summary: Consultar registro de auditoría
+      operationId: listAuditLogs
+      description: Solo owner y admin. Paginación por cursor estable (created_at, id).
+      parameters:
+        - { $ref: '#/components/parameters/workspaceId' }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+        - name: cursor
+          in: query
+          description: Cursor opaco devuelto en la página anterior.
+          schema: { type: string, maxLength: 512 }
+      responses:
+        '200':
+          description: Página de eventos de auditoría.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, nextCursor]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, event_type, resource_type, metadata, created_at]
+                      properties:
+                        id: { type: string, format: uuid }
+                        event_type: { type: string }
+                        resource_type: { type: string }
+                        resource_id: { type: [string, 'null'], format: uuid }
+                        metadata: { type: object, additionalProperties: true }
+                        created_at: { type: string, format: date-time }
+                  nextCursor: { type: [string, 'null'] }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/workspaces/{workspaceId}/audit-logs/export:
+    get:
+      tags: [Reports]
+      summary: Exportar una página del registro de auditoría en NDJSON
+      operationId: exportAuditLogs
+      description: Solo owner y admin. Exportación acotada por página; el digest SHA-256 corresponde exactamente al cuerpo NDJSON devuelto. Continuar con el cursor de la cabecera X-Audit-Export-Next-Cursor.
+      parameters:
+        - { $ref: '#/components/parameters/workspaceId' }
+        - { $ref: '#/components/parameters/limit100' }
+        - name: cursor
+          in: query
+          description: Cursor opaco de la página anterior.
+          schema: { type: string, maxLength: 512 }
+      responses:
+        '200':
+          description: Página NDJSON con digest y contador verificables.
+          headers:
+            X-Audit-Export-SHA256:
+              description: SHA-256 hexadecimal del cuerpo exacto de la respuesta.
+              schema: { type: string, minLength: 64, maxLength: 64 }
+            X-Audit-Export-Count:
+              description: Número de eventos incluidos en esta página.
+              schema: { type: integer, minimum: 0, maximum: 100 }
+            X-Audit-Export-Next-Cursor:
+              description: Cursor para solicitar la siguiente página; ausente cuando no hay más eventos.
+              schema: { type: string, maxLength: 512 }
+          content:
+            application/x-ndjson:
+              schema: { type: string }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    workspaceId:
+      name: workspaceId
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/UUID' }
+    userId:
+      name: userId
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/UUID' }
+    invitationId:
+      name: invitationId
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/UUID' }
+    researchId:
+      name: researchId
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/UUID' }
+    competitorId:
+      name: competitorId
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/UUID' }
+    productId:
+      name: productId
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/UUID' }
+    reportId:
+      name: reportId
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/UUID' }
+    limit100:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+  schemas:
+    UUID:
+      type: string
+      format: uuid
+    Role:
+      type: string
+      enum: [owner, admin, analyst, viewer]
+    AssignableRole:
+      type: string
+      enum: [admin, analyst, viewer]
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error: { type: string }
+        message: { type: string }
+    ResearchInput:
+      type: object
+      required: [title, country, sector, objective]
+      additionalProperties: false
+      properties:
+        title: { type: string, minLength: 1, maxLength: 120 }
+        country: { type: string, minLength: 1, maxLength: 80 }
+        city: { type: [string, 'null'], maxLength: 100 }
+        sector: { type: string, minLength: 1, maxLength: 100 }
+        objective: { type: string, minLength: 1, maxLength: 1000 }
+        status: { type: string, enum: [draft, in_progress, completed] }
+    ResearchPatch:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        title: { type: string, minLength: 1, maxLength: 120 }
+        country: { type: string, minLength: 1, maxLength: 80 }
+        city: { type: [string, 'null'], maxLength: 100 }
+        sector: { type: string, minLength: 1, maxLength: 100 }
+        objective: { type: string, minLength: 1, maxLength: 1000 }
+        status: { type: string, enum: [draft, in_progress, completed] }
+    CompetitorInput:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 160 }
+        websiteUrl: { type: [string, 'null'], format: uri }
+        location: { type: [string, 'null'], maxLength: 180 }
+        description: { type: [string, 'null'], maxLength: 1000 }
+    CompetitorPatch:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 160 }
+        websiteUrl: { type: [string, 'null'], format: uri }
+        location: { type: [string, 'null'], maxLength: 180 }
+        description: { type: [string, 'null'], maxLength: 1000 }
+    ProductInput:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        competitorId: { oneOf: [{ $ref: '#/components/schemas/UUID' }, { type: 'null' }] }
+        researchId: { oneOf: [{ $ref: '#/components/schemas/UUID' }, { type: 'null' }] }
+        name: { type: string, minLength: 1, maxLength: 160 }
+        category: { type: [string, 'null'], maxLength: 120 }
+        description: { type: [string, 'null'], maxLength: 1000 }
+        productUrl: { type: [string, 'null'], format: uri }
+    ProductPatch:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        competitorId: { oneOf: [{ $ref: '#/components/schemas/UUID' }, { type: 'null' }] }
+        researchId: { oneOf: [{ $ref: '#/components/schemas/UUID' }, { type: 'null' }] }
+        name: { type: string, minLength: 1, maxLength: 160 }
+        category: { type: [string, 'null'], maxLength: 120 }
+        description: { type: [string, 'null'], maxLength: 1000 }
+        productUrl: { type: [string, 'null'], format: uri }
+    PriceInput:
+      type: object
+      required: [price, currency, observedOn]
+      additionalProperties: false
+      properties:
+        price: { oneOf: [{ type: number, minimum: 0 }, { type: string, pattern: '^[0-9]+(\.[0-9]+)?$' }] }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        observedOn: { type: string, format: date }
+        sourceName: { type: [string, 'null'], maxLength: 160 }
+        sourceUrl: { type: [string, 'null'], format: uri }
+        notes: { type: [string, 'null'], maxLength: 1000 }
+    ObservationInput:
+      type: object
+      required: [type, title, content, observedOn]
+      additionalProperties: false
+      properties:
+        competitorId: { oneOf: [{ $ref: '#/components/schemas/UUID' }, { type: 'null' }] }
+        type: { type: string, enum: [strength, weakness, promotion, customer_experience, strategy, opportunity, risk, other] }
+        title: { type: string, minLength: 1, maxLength: 180 }
+        content: { type: string, minLength: 1, maxLength: 3000 }
+        sourceName: { type: [string, 'null'], maxLength: 180 }
+        sourceUrl: { type: [string, 'null'], format: uri }
+        observedOn: { type: string, format: date }
+        confidence: { type: string, enum: [low, medium, high], default: medium }
+  responses:
+    BadRequest:
+      description: Solicitud inválida
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Unauthorized:
+      description: Token ausente, inválido o expirado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    AuthNotConfigured:
+      description: La autenticación no está configurada en el servidor
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Sin permisos para esta operación
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Conflict:
+      description: Conflicto de estado o duplicado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    GenericData:
+      description: Resultado de una operación
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data: {}
+    GenericList:
+      description: Colección de resultados
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [data]
+            properties:
+              data:
+                type: array
+                items: {}
+    Workspace:
+      description: Workspace creado
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { type: object }
+    WorkspaceList:
+      description: Workspaces del usuario autenticado
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { type: array, items: { type: object } }

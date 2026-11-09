@@ -21,7 +21,7 @@ El frontend se desarrolla como una aplicación web responsive dentro de `apps/we
 | 5 | Dashboard principal | Resumen, actividad, investigaciones recientes, métricas y navegación privada | Completada por CI |
 | 6 | Espacios de trabajo y administración | Selector de workspace, miembros, roles, invitaciones y preferencias | Completada por CI |
 | 7 | Crear investigación | Formulario, ubicación, país/ciudad, sector, objetivo y validaciones | Completada por CI |
-| 8 | Centro de investigación | Detalle, estado, observaciones, seguimiento y navegación por investigación | Pendiente |
+| 8 | Centro de investigación | Listado por workspace, filtros, ficha, estado, observaciones y seguimiento | Completada por CI |
 | 9 | Competidores | Registro, listado, detalle, edición, archivo y comparación | Pendiente |
 | 10 | Productos y precios | Catálogo, moneda, unidad, historial y comparación de precios | Pendiente |
 | 11 | Tendencias | Evolución temporal y variaciones descriptivas con datos disponibles | Pendiente |
@@ -49,7 +49,7 @@ Las 16 tareas agrupan aproximadamente 40–50 subtareas verificables. El porcent
 ## Progreso
 
 - Backend: 29/29 entregables principales (100 %).
-- Frontend: **7/16 tareas principales implementadas y validadas por CI (43,75 %)**.
+- Frontend: **8/16 tareas principales implementadas y validadas por CI (50 %)**.
 - Tarea 1: estructura técnica creada y validada por CI.
 - Tarea 2: sistema visual y componentes compartidos implementados y validados por CI.
 - Tarea 3: landing pública implementada y validada en CI [42560159154](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42560159154) y [42560163862](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42560163862).
@@ -57,7 +57,8 @@ Las 16 tareas agrupan aproximadamente 40–50 subtareas verificables. El porcent
 - Tarea 5: dashboard privado con comprobación de sesión, consulta de workspaces e investigaciones, métricas por estado, investigaciones recientes, estados de carga/error/vacío, navegación responsive y cierre de sesión. Frontend typecheck y build aprobados; CI integral con backend y PostgreSQL también aprobada en [42562868031](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42562868031) y [42562872699](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42562872699).
 - Tarea 6: administración de espacios de trabajo y equipos; consulta/creación de workspaces, miembros, roles e invitaciones, incluida revocación y copia del token. Backend/PostgreSQL y frontend typecheck/build aprobados en CI [42563218224](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42563218224). El envío automático de correos sigue pendiente de proveedor externo.
 - Tarea 7: formulario de creación de investigaciones con workspace, título, país, ciudad/región, sector, objetivo y estado inicial; CI integral aprobada en [42563524680](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42563524680).
-- Siguiente: tarea 8, centro de investigación.
+- Tarea 8: centro de investigación con listado por workspace, búsqueda y filtros por estado/título/sector/ubicación; ficha individual, cambio de estado, registro y timeline de observaciones con fecha, fuente, URL y nivel de confianza. Frontend typecheck/build y pruebas backend con PostgreSQL, restauración de backup firmado y validación OpenAPI aprobados en CI [42564481005](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42564481005).
+- Siguiente: tarea 9, competidores.
 - Producto completo: no se calcula como promedio simple de backend y frontend; se reportarán ambos por separado.
 
 ## Dependencias externas pendientes

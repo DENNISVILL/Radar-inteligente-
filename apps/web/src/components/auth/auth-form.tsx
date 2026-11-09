@@ -71,7 +71,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
       } else {
         const { error: authError } = await supabase.auth.updateUser({ password });
         if (authError) throw authError;
-        setMessage("Contraseña actualizada correctamente. Ya puedes iniciar sesión.");
+        setMessage("Contraseña actualizada correctamente. Tu sesión sigue activa.");
         setPassword("");
         setConfirmPassword("");
       }
@@ -91,8 +91,10 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         <h1 id="auth-title">{content.title}</h1>
         <p className="auth-description">{content.description}</p>
         <form className="auth-form" onSubmit={handleSubmit}>
-          <label className="auth-label" htmlFor="email">Correo electrónico</label>
-          <input className="auth-input" id="email" type="email" autoComplete="email" required maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} placeholder="nombre@empresa.com" />
+          {mode !== "update" && <>
+            <label className="auth-label" htmlFor="email">Correo electrónico</label>
+            <input className="auth-input" id="email" type="email" autoComplete="email" required maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} placeholder="nombre@empresa.com" />
+          </>}
           {mode !== "recover" && <>
             <label className="auth-label" htmlFor="password">Contraseña</label>
             <input className="auth-input" id="password" type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} required minLength={mode === "login" ? 1 : 10} value={password} onChange={(event) => setPassword(event.target.value)} placeholder={mode === "login" ? "Tu contraseña" : "Mínimo 10 caracteres"} />

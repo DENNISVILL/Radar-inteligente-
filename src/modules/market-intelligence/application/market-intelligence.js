@@ -22,4 +22,5 @@ export function validateMarketProductUpdate(x){if(!x||typeof x!=="object"||Array
 
 
 // Compatibilidad temporal mientras los consumidores migran al módulo market-evidence.
-export {listMarketObservations,createMarketObservation,validateMarketObservation} from "../../market-evidence/application/observations.js";
+export {listMarketObservations,createMarketObservation} from "../../market-evidence/application/observations.js";
+export {validateMarketObservation} from "../../market-evidence/domain/observation.js";

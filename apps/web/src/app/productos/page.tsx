@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { preferredWorkspaceId, rememberWorkspaceId } from "@/lib/workspace-selection";
 
 type Workspace = { id?: string; workspaceId?: string; name?: string };
 type Competitor = { id: string; name: string };
@@ -79,7 +80,7 @@ export default function ProductsPage() {
         const spaces = result.data ?? [];
         if (!active) return;
         setWorkspaces(spaces);
-        setWorkspaceId(spaces[0]?.id ?? spaces[0]?.workspaceId ?? "");
+        const preferred=preferredWorkspaceId(spaces);setWorkspaceId(preferred);rememberWorkspaceId(preferred);
       } catch (cause) { if (active) setError(cause instanceof Error ? cause.message : "No fue posible cargar espacios."); }
       finally { if (active) setLoading(false); }
     }
@@ -199,7 +200,7 @@ export default function ProductsPage() {
           {error && <div className="dashboard-state dashboard-state--error" role="alert">{error}</div>}
           {notice && <div className="dashboard-state" role="status">{notice}</div>}
           <section className="dashboard-panel product-toolbar">
-            <div><label htmlFor="product-workspace">Espacio de trabajo</label><select id="product-workspace" value={workspaceId} onChange={event => setWorkspaceId(event.target.value)}>{workspaces.map((space,index) => { const id=space.id??space.workspaceId??""; return <option key={id||index} value={id}>{space.name??"Espacio"}</option>; })}</select></div>
+            <div><label htmlFor="product-workspace">Espacio de trabajo</label><select id="product-workspace" value={workspaceId} onChange={event => {setWorkspaceId(event.target.value);rememberWorkspaceId(event.target.value)}}>{workspaces.map((space,index) => { const id=space.id??space.workspaceId??""; return <option key={id||index} value={id}>{space.name??"Espacio"}</option>; })}</select></div>
             <div><label htmlFor="product-search">Buscar</label><input id="product-search" value={search} onChange={event=>setSearch(event.target.value)} placeholder="Nombre, categoría o descripción…"/></div>
             <div><label htmlFor="product-category">Categoría</label><select id="product-category" value={categoryFilter} onChange={event=>setCategoryFilter(event.target.value)}><option value="all">Todas</option>{categories.map(category=><option key={category} value={category}>{category}</option>)}</select></div>
           </section>

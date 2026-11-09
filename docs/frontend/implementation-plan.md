@@ -20,7 +20,7 @@ El frontend se desarrolla como una aplicación web responsive dentro de `apps/we
 | 4 | Autenticación y acceso | Inicio de sesión, registro, recuperación, confirmación y actualización de contraseña | Código y CI completados; integración real pendiente |
 | 5 | Dashboard principal | Resumen, actividad, investigaciones recientes, métricas y navegación privada | Completada por CI |
 | 6 | Espacios de trabajo y administración | Selector de workspace, miembros, roles, invitaciones y preferencias | Completada por CI |
-| 7 | Crear investigación | Formulario, ubicación, país/ciudad, sector, objetivo y validaciones | Pendiente |
+| 7 | Crear investigación | Formulario, ubicación, país/ciudad, sector, objetivo y validaciones | Completada por CI |
 | 8 | Centro de investigación | Detalle, estado, observaciones, seguimiento y navegación por investigación | Pendiente |
 | 9 | Competidores | Registro, listado, detalle, edición, archivo y comparación | Pendiente |
 | 10 | Productos y precios | Catálogo, moneda, unidad, historial y comparación de precios | Pendiente |
@@ -49,14 +49,15 @@ Las 16 tareas agrupan aproximadamente 40–50 subtareas verificables. El porcent
 ## Progreso
 
 - Backend: 29/29 entregables principales (100 %).
-- Frontend: **6/16 tareas principales implementadas y validadas por CI (37,5 %)**.
+- Frontend: **7/16 tareas principales implementadas y validadas por CI (43,75 %)**.
 - Tarea 1: estructura técnica creada y validada por CI.
 - Tarea 2: sistema visual y componentes compartidos implementados y validados por CI.
 - Tarea 3: landing pública implementada y validada en CI [42560159154](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42560159154) y [42560163862](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42560163862).
 - Tarea 4: login, registro, recuperación y actualización de contraseña; confirmación de enlaces Supabase; cliente Supabase opcional; helper `/api/v1/me`. Validada por CI [42562516137](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42562516137) y [42562511741](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42562511741). La conexión real de Supabase sigue pendiente.
 - Tarea 5: dashboard privado con comprobación de sesión, consulta de workspaces e investigaciones, métricas por estado, investigaciones recientes, estados de carga/error/vacío, navegación responsive y cierre de sesión. Frontend typecheck y build aprobados; CI integral con backend y PostgreSQL también aprobada en [42562868031](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42562868031) y [42562872699](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42562872699).
 - Tarea 6: administración de espacios de trabajo y equipos; consulta/creación de workspaces, miembros, roles e invitaciones, incluida revocación y copia del token. Backend/PostgreSQL y frontend typecheck/build aprobados en CI [42563218224](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42563218224). El envío automático de correos sigue pendiente de proveedor externo.
-- Siguiente: tarea 7, crear investigación.
+- Tarea 7: formulario de creación de investigaciones con workspace, título, país, ciudad/región, sector, objetivo y estado inicial; CI integral aprobada en [42563524680](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42563524680).
+- Siguiente: tarea 8, centro de investigación.
 - Producto completo: no se calcula como promedio simple de backend y frontend; se reportarán ambos por separado.
 
 ## Dependencias externas pendientes

@@ -2,70 +2,68 @@
 
 ## Alcance y criterio de avance
 
-El backend tiene **29 de 29 entregables principales completados (100 %)**. Esto no equivale a despliegue productivo: Supabase real, correo, hosting, alertas, backups externos y otros puntos operativos siguen dependiendo de configuración externa.
+El backend tiene **29/29 entregables principales completados (100 %)**. El frontend tiene **16/16 tareas principales implementadas y validadas por CI (100 %)**. Son métricas separadas: ninguna equivale por sí sola a despliegue productivo.
 
-El frontend se desarrolla como una aplicación web responsive dentro de `apps/web`, con posibilidad de evolucionar a PWA. Comparte el contrato HTTP documentado en `docs/api/openapi.yaml`.
+El frontend vive en `apps/web` y utiliza Next.js App Router, React y TypeScript. Consume el contrato HTTP documentado en `docs/api/openapi.yaml` mediante la API Fastify. La API conserva la autoridad de autenticación/autorización multiempresa; el navegador no accede directamente a PostgreSQL.
 
-**Stack:** Next.js App Router, React, TypeScript y Supabase Auth cuando se configure el proyecto real. El cliente consume la API Fastify; no accede directamente a tablas PostgreSQL ni replica reglas de autorización del servidor.
-
-**Identidad visual:** profesional, analítica, clara y práctica; azul profundo, turquesa de acento, grises y fondos claros. Nombre visible: Radar Comercial. Promesa: “Información comercial organizada para tomar decisiones con más criterio”.
+Identidad visual: profesional, analítica y clara; azul profundo, turquesa, grises y fondos claros.
 
 ## Las 16 tareas principales
 
-| N.º | Tarea | Alcance principal | Estado |
+| N.º | Tarea | Alcance implementado | Estado |
 |---:|---|---|---|
-| 1 | Estructura técnica del frontend | Next.js, TypeScript, configuración, carpetas modulares, entorno y CI | Completada |
-| 2 | Sistema visual y componentes base | Tokens, tipografía, colores, botones, campos, tarjetas, tablas, estados y navegación | Completada |
-| 3 | Landing pública | Presentación, propuesta de valor, capacidades, beneficios y acceso | Completada |
-| 4 | Autenticación y acceso | Inicio de sesión, registro, recuperación, confirmación y actualización de contraseña | Código y CI completados; integración real pendiente |
-| 5 | Dashboard principal | Resumen, actividad, investigaciones recientes, métricas y navegación privada | Completada por CI |
-| 6 | Espacios de trabajo y administración | Selector de workspace, miembros, roles, invitaciones y preferencias | Completada por CI |
-| 7 | Crear investigación | Formulario, ubicación, país/ciudad, sector, objetivo y validaciones | Completada por CI |
-| 8 | Centro de investigación | Listado por workspace, filtros, ficha, estado, observaciones y seguimiento | Completada por CI |
-| 9 | Competidores | Registro, listado, detalle, edición, archivo y comparación | Completada por CI |
-| 10 | Productos y precios | Catálogo, moneda, unidad, historial y comparación de precios | Completada y validada por CI |
-| 11 | Tendencias | Evolución temporal y variaciones descriptivas con datos disponibles | Completada y validada por CI |
-| 12 | Oportunidades y riesgos | Hallazgos, evidencia asociada, nivel de confianza y seguimiento | Completada y validada por CI |
-| 13 | Fuentes y evidencias | Fuente, URL, fecha, notas, confiabilidad y trazabilidad | Pendiente |
-| 14 | Informes y PDF | Vista de informe, versiones, descarga y estados de generación | Pendiente |
-| 15 | Historial, perfil y auditoría | Historial de investigaciones/informes, perfil y registro de acciones según permisos | Pendiente |
-| 16 | Integración y aceptación final | Conexión API, manejo de errores, responsive, accesibilidad, pruebas y revisión integral | Pendiente |
+| 1 | Estructura técnica | Next.js, TypeScript, configuración, carpetas modulares, entorno y CI | Completada y validada |
+| 2 | Sistema visual y componentes | Tokens, tipografía, colores, componentes, estados y navegación | Completada y validada |
+| 3 | Landing pública | Presentación, propuesta de valor, capacidades y acceso | Completada y validada |
+| 4 | Autenticación y acceso | Login, registro, recuperación, confirmación y actualización de contraseña | Código y CI completados; Supabase real pendiente |
+| 5 | Dashboard principal | Resumen, actividad, investigaciones recientes, métricas y navegación privada | Completada y validada |
+| 6 | Workspaces y administración | Espacios, miembros, roles, invitaciones y preferencias | Completada y validada |
+| 7 | Crear investigación | Formulario de investigación, ubicación, sector, objetivo y validaciones | Completada y validada |
+| 8 | Centro de investigación | Listado, filtros, detalle, estados, observaciones y seguimiento | Completada y validada |
+| 9 | Competidores | Registro, búsqueda, edición, archivo y comparación | Completada y validada |
+| 10 | Productos y precios | Catálogo, asociación con competidores, registro e historial de precios | Completada y validada |
+| 11 | Tendencias | Vista descriptiva de tendencias con los datos disponibles | Completada y validada |
+| 12 | Oportunidades y riesgos | Registro, filtros, confianza y evidencia asociada | Completada y validada |
+| 13 | Fuentes y evidencias | Registro centralizado desde observaciones y precios, búsqueda, filtros y enlaces | Completada y validada |
+| 14 | Informes y PDF | Vista previa, snapshots inmutables, historial, integridad y descarga PDF | Completada y validada |
+| 15 | Historial, perfil y auditoría | Historial y consulta de registros disponibles según permisos | Completada y validada |
+| 16 | Integración y aceptación técnica | Navegación entre módulos, comprobaciones de frontend y backend, CI integral | Completada y validada |
 
-Las 16 tareas agrupan aproximadamente 40–50 subtareas verificables. El porcentaje se calcula por tareas principales implementadas y validadas por CI. Las dependencias externas se informan por separado y no se simulan.
+## Evidencia de validación
 
-## Reglas técnicas
+Las ejecuciones integrales recientes reportaron ambos jobs exitosos:
 
-- Mantener módulos independientes y responsabilidades claras; no concentrar la aplicación en un archivo gigante.
-- Separar componentes compartidos, servicios HTTP, autenticación, tipos y utilidades.
-- Tipar los contratos de respuesta y petición con el OpenAPI existente.
-- Enviar el access token vigente como Bearer; el SDK de autenticación administrará la renovación de sesión cuando Supabase esté configurado.
-- El frontend no guarda ni recibe service-role keys, secretos de servidor o credenciales PostgreSQL.
-- La API sigue siendo la autoridad de autorización multiempresa y permisos. Ocultar botones en la interfaz no reemplaza los controles del backend.
-- Los estados de carga, vacío, error, falta de permisos y conexión deben ser explícitos.
-- Priorizar diseño responsive, accesibilidad por teclado y contraste legible.
-- No simular datos reales ni mostrar como conectado un servicio externo que no esté configurado.
-- Cada tarea requiere implementación, comprobaciones automatizadas y CI aprobada antes de marcarse completa.
+- Tarea 12, oportunidades y riesgos: [CI 42567603889](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42567603889).
+- Tarea 13, fuentes y evidencias: [CI 42568414767](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42568414767).
+- Tarea 14, informes y PDF: [CI 42568707876](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42568707876).
+- Tarea 15, historial y auditoría: [CI 42568900619](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42568900619).
+- Integración de tarea 16: [CI 42569255825](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42569255825).
+- Revalidación de rama: [CI 42569409465](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42569409465) y [CI 42569404926](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42569404926).
 
-## Progreso
+Los jobs revisados incluyen frontend TypeScript/compilación de producción y backend/PostgreSQL. La CI no sustituye pruebas de aceptación con credenciales, datos y servicios reales.
 
-- Backend: 29/29 entregables principales (100 %).
-- Frontend: **16/16 tareas principales implementadas y validadas por CI (100 %)**.
-- Tarea 1: estructura técnica creada y validada por CI.
-- Tarea 2: sistema visual y componentes compartidos implementados y validados por CI.
-- Tarea 3: landing pública implementada y validada en CI [42560159154](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42560159154) y [42560163862](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42560163862).
-- Tarea 4: login, registro, recuperación y actualización de contraseña; confirmación de enlaces Supabase; cliente Supabase opcional; helper `/api/v1/me`. Validada por CI [42562516137](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42562516137) y [42562511741](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42562511741). La conexión real de Supabase sigue pendiente.
-- Tarea 5: dashboard privado con comprobación de sesión, consulta de workspaces e investigaciones, métricas por estado, investigaciones recientes, estados de carga/error/vacío, navegación responsive y cierre de sesión. Frontend typecheck y build aprobados; CI integral con backend y PostgreSQL también aprobada en [42562868031](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42562868031) y [42562872699](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42562872699).
-- Tarea 6: administración de espacios de trabajo y equipos; consulta/creación de workspaces, miembros, roles e invitaciones, incluida revocación y copia del token. Backend/PostgreSQL y frontend typecheck/build aprobados en CI [42563218224](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42563218224). El envío automático de correos sigue pendiente de proveedor externo.
-- Tarea 7: formulario de creación de investigaciones con workspace, título, país, ciudad/región, sector, objetivo y estado inicial; CI integral aprobada en [42563524680](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42563524680).
-- Tarea 8: centro de investigación con listado por workspace, búsqueda y filtros por estado/título/sector/ubicación; ficha individual, cambio de estado, registro y timeline de observaciones con fecha, fuente, URL y nivel de confianza. Frontend typecheck/build y pruebas backend con PostgreSQL, restauración de backup firmado y validación OpenAPI aprobados en CI [42564481005](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42564481005).
-- Tarea 9: módulo de competidores con registro, búsqueda, edición, archivo y comparación descriptiva de hasta dos registros. CI frontend TypeScript/build y backend/PostgreSQL, backup firmado/restauración y OpenAPI aprobados en [42565334887](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42565334887).
-- Tarea 12: registro y consulta de oportunidades/riesgos por investigación, métricas, filtros, búsqueda, nivel de confianza y enlaces de evidencia. Usa exclusivamente el endpoint existente de observaciones y sus tipos `opportunity`/`risk`; implementación en `e082031293271fda82ec4f5549f0b886dd208cbf`, CI en ejecución.\n- Siguiente después de validar tarea 12: tarea 13, fuentes y evidencias.
-- Producto completo: no se calcula como promedio simple de backend y frontend; se reportarán ambos por separado.
+## Reglas técnicas y de seguridad
 
-## Dependencias externas pendientes
+- Mantener módulos independientes; evitar concentrar la aplicación en archivos monolíticos.
+- Tipar peticiones y respuestas con el contrato OpenAPI existente.
+- Enviar el token vigente como Bearer a la API.
+- No exponer claves service-role, secretos de servidor ni credenciales PostgreSQL al cliente.
+- No duplicar en frontend las reglas de autorización del backend. La API valida permisos por workspace y rol.
+- Mostrar estados de carga, vacío, error y falta de permisos.
+- Mantener navegación responsive y controles accesibles por teclado.
+- No presentar servicios externos como conectados si no han sido configurados y probados.
+- No inventar endpoints ni datos de negocio para completar pantallas.
 
-- Proyecto Supabase real, URL y clave publicable para activar y probar autenticación real.
-- Proveedor de correo transaccional para invitaciones.
-- Hosting y dominio para staging/producción.
+## Dependencias y pendientes antes de producción
 
-No se inventarán credenciales ni se marcarán integraciones externas como listas sin pruebas reales.
+La implementación frontend y la CI están completas, pero quedan pasos de integración/operación externa:
+
+1. Crear/configurar el proyecto Supabase real y verificar URL, clave publicable, redirect URLs, plantillas de correo y flujos de sesión.
+2. Configurar proveedor de correo transaccional para invitaciones.
+3. Configurar hosting, dominio, TLS y variables de entorno de staging/producción.
+4. Ejecutar pruebas de aceptación con roles owner/admin/analyst/viewer y más de un workspace.
+5. Probar creación y edición de investigaciones, competidores, productos, precios, observaciones, informes y descarga PDF con datos reales.
+6. Probar responsive en teléfonos y tabletas, accesibilidad y comportamiento ante errores/redes lentas.
+7. Revisar logs, backups, restauración, monitoreo, límites de uso y política de privacidad antes de abrir el servicio a usuarios.
+
+**Estado final:** backend 29/29 (100 %); frontend 16/16 (100 %). El producto todavía no debe anunciarse como desplegado ni listo para producción hasta completar los pasos externos y la aceptación real.

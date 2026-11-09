@@ -16,7 +16,7 @@ function safeRedirectPath(value: string | null, origin: string): string {
   try {
     const target = new URL(value, origin);
     if (target.origin !== origin) return "/dashboard";
-    return \`${target.pathname}${target.search}${target.hash}\`;
+    return target.pathname + target.search + target.hash;
   } catch {
     return "/dashboard";
   }

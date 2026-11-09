@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { preferredWorkspaceId, rememberWorkspaceId } from "@/lib/workspace-selection";
@@ -38,17 +38,19 @@ export default function WorkspacesPage(){
   const [inviteEmail,setInviteEmail]=useState("");
   const [inviteRole,setInviteRole]=useState("analyst");
   const [inviteToken,setInviteToken]=useState("");
+  const workspaceLoadRequest=useRef(0);
 
   const selectedWorkspace=workspaces.find(w=>(w.id??w.workspaceId)===selected);
   const loadWorkspaceData=useCallback(async(id:string,accessToken:string)=>{
+    const requestId=++workspaceLoadRequest.current;
     setSelected(id);rememberWorkspaceId(id);setMembers([]);setInvitations([]);setError("");setNotice("");
     try{
       const [m,i]=await Promise.all([
         request<ApiEnvelope<Member[]>>(`/api/v1/workspaces/${encodeURIComponent(id)}/members`,accessToken),
         request<ApiEnvelope<Invitation[]>>(`/api/v1/workspaces/${encodeURIComponent(id)}/invitations?limit=100`,accessToken)
       ]);
-      setMembers(m.data??[]);setInvitations(i.data??[]);
-    }catch(cause){setError(cause instanceof Error?cause.message:"No fue posible cargar los miembros.");}
+      if(requestId===workspaceLoadRequest.current){setMembers(m.data??[]);setInvitations(i.data??[]);}
+    }catch(cause){if(requestId===workspaceLoadRequest.current)setError(cause instanceof Error?cause.message:"No fue posible cargar los miembros.");}
   },[]);
 
   const load=useCallback(async()=>{

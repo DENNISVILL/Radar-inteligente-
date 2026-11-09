@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type AuthMode = "login" | "register" | "recover" | "update";
@@ -13,6 +14,7 @@ const copy = {
 } satisfies Record<AuthMode, { eyebrow: string; title: string; description: string; submit: string }>;
 
 export function AuthForm({ mode }: { mode: AuthMode }) {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -33,11 +35,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
       setError("La contraseña debe tener al menos 10 caracteres.");
       return;
     }
-    if (mode === "register" && password !== confirmPassword) {
-      setError("Las contraseñas no coinciden.");
-      return;
-    }
-    if (mode === "update" && password !== confirmPassword) {
+    if ((mode === "register" || mode === "update") && password !== confirmPassword) {
       setError("Las contraseñas no coinciden.");
       return;
     }
@@ -47,7 +45,8 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
       if (mode === "login") {
         const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
         if (authError) throw authError;
-        setMessage("Sesión iniciada correctamente. El panel principal se habilitará en la siguiente etapa del frontend.");
+        router.replace("/dashboard");
+        router.refresh();
       } else if (mode === "register") {
         const { data, error: authError } = await supabase.auth.signUp({
           email,
@@ -55,9 +54,8 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           options: { emailRedirectTo: `${window.location.origin}/auth/confirm` },
         });
         if (authError) throw authError;
-        setMessage(data.session
-          ? "Cuenta creada. La sesión está activa."
-          : "Solicitud recibida. Si la confirmación por correo está habilitada, revisa tu bandeja de entrada.");
+        setMessage(data.session ? "Cuenta creada. La sesión está activa." : "Solicitud recibida. Si la confirmación por correo está habilitada, revisa tu bandeja de entrada.");
+        if (data.session) router.replace("/dashboard");
       } else if (mode === "recover") {
         const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/auth/confirm?next=/actualizar-contrasena`,

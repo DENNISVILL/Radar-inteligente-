@@ -25,63 +25,6 @@ export async function createMarketObservation(db,w,u,researchId,x){const r=await
 const observationTypes=["strength","weakness","promotion","customer_experience","strategy","opportunity","risk","other"];
 export function validateMarketObservation(x){if(!x||typeof x!=="object"||Array.isArray(x))return "El cuerpo debe ser un objeto.";const allowed=["competitorId","type","title","content","sourceName","sourceUrl","observedOn","confidence"];if(Object.keys(x).some(k=>!allowed.includes(k)))return "Hay campos no permitidos.";if(x.competitorId!=null&&typeof x.competitorId!=="string")return "El competidor no es válido.";if(!observationTypes.includes(x.type))return "El tipo de observación no es válido.";if(typeof x.title!=="string"||!x.title.trim()||x.title.trim().length>180)return "El título es obligatorio y admite hasta 180 caracteres.";if(typeof x.content!=="string"||!x.content.trim()||x.content.trim().length>3000)return "El contenido es obligatorio y admite hasta 3000 caracteres.";if(typeof x.observedOn!=="string"||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(x.observedOn)||(()=>{const d=new Date(x.observedOn+"T00:00:00Z");return Number.isNaN(d.valueOf())||d.toISOString().slice(0,10)!==x.observedOn;})())return "La fecha debe ser una fecha real en formato AAAA-MM-DD.";if(x.confidence!==undefined&&!["low","medium","high"].includes(x.confidence))return "El nivel de confianza no es válido.";for(const [k,m] of [["sourceName",180]]){const e=optionalText(x[k],m,k);if(e)return e;if(x[k])x[k]=x[k].trim();}x.title=x.title.trim();x.content=x.content.trim();return safeUrl(x.sourceUrl,"sourceUrl");}
 
-/**
- * Rule-based market analysis. Every query is scoped to both workspace and research.
- * It summarizes recorded evidence; it does not claim to be an AI forecast.
- */
-export async function getMarketAnalysis(db,workspaceId,researchId){
- const [competitors,products,signals]=await Promise.all([
-  db.query(`SELECT c.id AS competitor_id,c.name,
-   COUNT(o.id)::int AS observations_count,
-   COUNT(o.id) FILTER (WHERE o.observation_type='strength')::int AS strengths_count,
-   COUNT(o.id) FILTER (WHERE o.observation_type='weakness')::int AS weaknesses_count,
-   COUNT(o.id) FILTER (WHERE o.observation_type='promotion')::int AS promotions_count,
-   COUNT(o.id) FILTER (WHERE o.observation_type='risk')::int AS risks_count,
-   COUNT(o.id) FILTER (WHERE o.observation_type='opportunity')::int AS opportunities_count,
-   MAX(o.observed_on) AS last_observed_on
-   FROM competitors c LEFT JOIN market_observations o
-    ON o.competitor_id=c.id AND o.workspace_id=c.workspace_id AND o.research_id=$2
-   WHERE c.workspace_id=$1 AND c.status='active'
-   GROUP BY c.id,c.name ORDER BY observations_count DESC,c.name`,[workspaceId,researchId]),
-  db.query(`SELECT p.id AS product_id,p.competitor_id,c.name AS competitor_name,p.name AS product_name,p.category,
-   po.currency,COUNT(po.id)::int AS price_points,MIN(po.price)::numeric AS min_price,
-   MAX(po.price)::numeric AS max_price,AVG(po.price)::numeric(14,2) AS average_price,
-   (ARRAY_AGG(po.price ORDER BY po.observed_on DESC,po.created_at DESC) FILTER (WHERE po.id IS NOT NULL))[1] AS latest_price,
-   MAX(po.observed_on) AS last_price_date
-   FROM market_products p LEFT JOIN competitors c ON c.id=p.competitor_id AND c.workspace_id=p.workspace_id
-   LEFT JOIN price_observations po ON po.product_id=p.id AND po.workspace_id=p.workspace_id
-   WHERE p.workspace_id=$1 AND p.research_id=$2 AND p.status='active'
-   GROUP BY p.id,p.competitor_id,c.name,p.name,p.category,po.currency ORDER BY p.name,po.currency`,[workspaceId,researchId]),
-  db.query(`SELECT COUNT(*)::int AS total_observations,
-   COUNT(*) FILTER (WHERE observation_type='strength')::int AS strengths,
-   COUNT(*) FILTER (WHERE observation_type='weakness')::int AS weaknesses,
-   COUNT(*) FILTER (WHERE observation_type='promotion')::int AS promotions,
-   COUNT(*) FILTER (WHERE observation_type='customer_experience')::int AS customer_experiences,
-   COUNT(*) FILTER (WHERE observation_type='strategy')::int AS strategies,
-   COUNT(*) FILTER (WHERE observation_type='opportunity')::int AS opportunities,
-   COUNT(*) FILTER (WHERE observation_type='risk')::int AS risks,
-   COUNT(*) FILTER (WHERE source_url IS NOT NULL)::int AS sourced_observations,
-   MAX(observed_on) AS last_observed_on
-   FROM market_observations WHERE workspace_id=$1 AND research_id=$2`,[workspaceId,researchId])
- ]);
- const summary=signals.rows[0]??{};
- const suggestions=[];
- if(Number(summary.weaknesses)>0)suggestions.push({code:"COMPETITOR_WEAKNESSES",priority:"review",title:"Revisar debilidades detectadas",detail:`Se registraron ${summary.weaknesses} observaciones de debilidad. Contrástalas con fuentes y necesidades de clientes.`});
- if(Number(summary.promotions)>0)suggestions.push({code:"PROMOTION_PRESSURE",priority:"review",title:"Evaluar presión promocional",detail:`Hay ${summary.promotions} observaciones de promociones. Compara su vigencia, condiciones y precios antes de reaccionar.`});
- if(Number(summary.opportunities)>0)suggestions.push({code:"RECORDED_OPPORTUNITIES",priority:"high",title:"Validar oportunidades registradas",detail:`Hay ${summary.opportunities} oportunidades anotadas. Priorízalas según demanda, coste y capacidad operativa.`});
- if(Number(summary.risks)>0)suggestions.push({code:"RECORDED_RISKS",priority:"high",title:"Revisar riesgos identificados",detail:`Se registraron ${summary.risks} riesgos que conviene evaluar y asignar a un responsable.`});
- const pricesByCurrency=new Map();
- for(const product of products.rows){
-  if(product.latest_price===null||product.latest_price===undefined||!product.currency)continue;
-  const group=pricesByCurrency.get(product.currency)??[];
-  group.push(product);
-  pricesByCurrency.set(product.currency,group);
- }
- for(const [currency,items] of pricesByCurrency){
-  if(items.length<2)continue;
-  const sorted=[...items].sort((a,b)=>Number(a.latest_price)-Number(b.latest_price));
-  suggestions.push({code:"PRICE_SPREAD",priority:"review",title:`Comparar precios registrados (${currency})`,detail:`Entre los ${items.length} productos con precios observados en ${currency}, el menor último precio es ${sorted[0].latest_price} y el mayor es ${sorted.at(-1).latest_price} ${currency}. Verifica que sean productos comparables.`});
- }
- if(Number(summary.total_observations)>0&&Number(summary.sourced_observations)<Number(summary.total_observations))suggestions.push({code:"SOURCE_COVERAGE",priority:"review",title:"Completar fuentes verificables",detail:`${Number(summary.total_observations)-Number(summary.sourced_observations)} observaciones no tienen un enlace de fuente registrado.`});
- return {summary,competitors:competitors.rows,products:products.rows,suggestions,methodology:"Análisis descriptivo basado únicamente en los registros guardados en esta investigación. Las sugerencias son reglas de revisión, no predicciones ni conclusiones automáticas sobre el mercado."};
-}
+
+// Compatibilidad temporal para consumidores anteriores; la implementación vive en market-analysis.
+export { getMarketAnalysis } from "../../market-analysis/application/market-analysis.js";

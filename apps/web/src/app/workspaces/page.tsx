@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { preferredWorkspaceId, rememberWorkspaceId } from "@/lib/workspace-selection";
 
 type Workspace = { id?: string; workspaceId?: string; name?: string; createdAt?: string };
 type Member = { id?: string; userId?: string; email?: string; role?: "owner" | "admin" | "analyst" | "viewer"; name?: string };
@@ -40,7 +41,7 @@ export default function WorkspacesPage(){
 
   const selectedWorkspace=workspaces.find(w=>(w.id??w.workspaceId)===selected);
   const loadWorkspaceData=useCallback(async(id:string,accessToken:string)=>{
-    setSelected(id);setMembers([]);setInvitations([]);setError("");setNotice("");
+    setSelected(id);rememberWorkspaceId(id);setMembers([]);setInvitations([]);setError("");setNotice("");
     try{
       const [m,i]=await Promise.all([
         request<ApiEnvelope<Member[]>>(`/api/v1/workspaces/${encodeURIComponent(id)}/members`,accessToken),
@@ -59,7 +60,7 @@ export default function WorkspacesPage(){
     try{
       const result=await request<ApiEnvelope<Workspace[]>>("/api/v1/workspaces",session.access_token);
       const items=result.data??[];setWorkspaces(items);
-      const first=items[0];const id=first?.id??first?.workspaceId;
+      const id=preferredWorkspaceId(items);
       if(id) await loadWorkspaceData(id,session.access_token);
     }catch(cause){setError(cause instanceof Error?cause.message:"No fue posible cargar los espacios de trabajo.");}
     finally{setLoading(false);}

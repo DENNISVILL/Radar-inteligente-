@@ -19,7 +19,7 @@ async function buildApp({role="owner",accessibleWorkspaces=[workspaceA],research
     return {rows:accessibleWorkspaces.includes(workspaceId)?[{workspace_id:workspaceId,workspace_name:"Workspace",role}]:[]};
    }
    if(sql.includes("INSERT INTO users"))return {rows:[{id:"local-user",email:"user@example.test",status:"active"}]};
-   if(sql.includes("INSERT INTO researches"))return {rows:[{id:researchId,workspace_id:values[0],created_by:values[1],title:values[2],status:"draft"}]};
+   if(sql.includes("INSERT INTO researches"))return {rows:[{id:researchId,workspace_id:values[0],created_by:values[1],title:values[2],status:values[7]??"draft"}]};
    if(sql.startsWith("UPDATE researches SET status='archived'"))return {rowCount:researchExists?1:0,rows:researchExists?[{id:researchId}]:[]};
    if(sql.startsWith("UPDATE researches SET"))return {rows:researchExists?[{id:researchId,workspace_id:values[0],title:values[2]??"Actualizado",status:"draft"}]:[]};
    if(sql.includes("FROM researches")){
@@ -43,6 +43,20 @@ test("research list is scoped to the authorized workspace",async()=>{
   assert.equal(response.json().data[0].workspace_id,workspaceA);
   const query=calls.find(call=>call.sql.includes("FROM researches"));
   assert.deepEqual(query.values,[workspaceA,50]);
+ }finally{await app.close();}
+});
+
+test("research creation persists the selected initial status",async()=>{
+ const {app,calls}=await buildApp();
+ try{
+  const response=await app.inject({method:"POST",url:`/api/v1/workspaces/${workspaceA}/researches`,payload:{
+   title:"Estudio en progreso",country:"Ecuador",sector:"Retail",objective:"Analizar el mercado",status:"in_progress"
+  }});
+  assert.equal(response.statusCode,201);
+  assert.equal(response.json().data.status,"in_progress");
+  const insert=calls.find(call=>call.sql.includes("INSERT INTO researches"));
+  assert.equal(insert.values[7],"in_progress");
+  assert.match(insert.sql,/objective,status\) VALUES \(\$1,\$2,\$3,\$4,\$5,\$6,\$7,\$8\)/);
  }finally{await app.close();}
 });
 
@@ -225,7 +239,7 @@ test("research creation rolls back when its audit event cannot be written",async
   }});
   assert.equal(response.statusCode,500);
   assert.ok(calls.some(call=>call.sql==="BEGIN"));
-  assert.ok(calls.some(call=>call.sql==="INSERT INTO researches (workspace_id,created_by,title,country,city,sector,objective) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id,workspace_id,created_by,title,country,city,sector,objective,status,created_at,updated_at"));
+  assert.ok(calls.some(call=>call.sql==="INSERT INTO researches (workspace_id,created_by,title,country,city,sector,objective,status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id,workspace_id,created_by,title,country,city,sector,objective,status,created_at,updated_at"));
   assert.ok(calls.some(call=>call.sql==="ROLLBACK"));
   assert.equal(calls.some(call=>call.sql==="COMMIT"),false);
  }finally{await app.close();}

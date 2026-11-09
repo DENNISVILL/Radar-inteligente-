@@ -27,6 +27,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState("");
+  const [accessToken, setAccessToken] = useState("");
   const [researches, setResearches] = useState<Research[]>([]);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -43,11 +46,16 @@ export default function DashboardPage() {
       }
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { router.replace("/login"); return; }
-      if (active) setEmail(session.user.email ?? "");
+      if (active) {
+        setEmail(session.user.email ?? "");
+        setAccessToken(session.access_token);
+      }
       try {
         const result = await apiGet<{ data: Workspace[] }>("/api/v1/workspaces", session.access_token);
-        const first = result.data?.[0] ?? null;
+        const items = result.data ?? [];
+        const first = items[0] ?? null;
         if (!active) return;
+        setWorkspaces(items);
         setWorkspace(first);
         if (!first) {
           setNotice("Todavía no tienes un espacio de trabajo. La creación y administración se habilitarán en la siguiente fase.");
@@ -60,6 +68,7 @@ export default function DashboardPage() {
           setLoading(false);
           return;
         }
+        setSelectedWorkspaceId(workspaceId);
         const list = await apiGet<{ data: Research[] }>(`/api/v1/workspaces/${encodeURIComponent(workspaceId)}/researches?limit=10`, session.access_token);
         if (active) setResearches(list.data ?? []);
       } catch (cause) {
@@ -107,13 +116,35 @@ export default function DashboardPage() {
       if (!response.ok || !payload?.data) {
         throw new Error(payload?.message ?? "No fue posible crear el espacio de trabajo.");
       }
-      setWorkspace(payload.data);
+      const created = payload.data;
+      const createdId = created.id ?? created.workspaceId;
+      if (!createdId) throw new Error("El espacio se creó, pero la API no devolvió un identificador válido.");
+      setWorkspaces((current) => [...current, created]);
+      setWorkspace(created);
+      setSelectedWorkspaceId(createdId);
+      setResearches([]);
       setWorkspaceName("");
       setNotice("Espacio de trabajo creado correctamente. Ya puedes comenzar a organizar tus investigaciones.");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Ocurrió un error al crear el espacio.");
     } finally {
       setCreatingWorkspace(false);
+    }
+  }
+
+  async function selectWorkspace(workspaceId: string) {
+    const next = workspaces.find((item) => (item.id ?? item.workspaceId) === workspaceId) ?? null;
+    setSelectedWorkspaceId(workspaceId);
+    setWorkspace(next);
+    setResearches([]);
+    setError("");
+    setNotice("");
+    if (!workspaceId || !accessToken) return;
+    try {
+      const list = await apiGet<{ data: Research[] }>(`/api/v1/workspaces/${encodeURIComponent(workspaceId)}/researches?limit=10`, accessToken);
+      if (selectedWorkspaceId === workspaceId) setResearches(list.data ?? []);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "No fue posible cargar las investigaciones del espacio.");
     }
   }
 
@@ -166,6 +197,7 @@ export default function DashboardPage() {
               <input id="workspace-name" name="workspaceName" type="text" maxLength={120} required value={workspaceName} onChange={(event) => setWorkspaceName(event.target.value)} placeholder="Ej. Mi empresa" />
               <button type="submit" disabled={creatingWorkspace}>{creatingWorkspace ? "Creando…" : "Crear espacio"}</button>
             </form>}
+            {workspaces.length > 1 && <div className="dashboard-workspace-picker"><label htmlFor="dashboard-workspace">Espacio de trabajo</label><select id="dashboard-workspace" value={selectedWorkspaceId} onChange={(event) => void selectWorkspace(event.target.value)}>{workspaces.map((item, index) => { const id = item.id ?? item.workspaceId ?? ""; return <option key={id || index} value={id}>{item.name ?? "Espacio sin nombre"}</option>; })}</select></div>}
             <div className="dashboard-section-heading"><div><h2>Resumen de actividad</h2><p>Datos del espacio de trabajo seleccionado.</p></div><span>{workspace?.name ?? "Sin espacio de trabajo"}</span></div>
             <div className="dashboard-metrics">
               <article><span className="metric-icon">⌕</span><small>Investigaciones visibles</small><strong>{researches.length}</strong><em>Últimos 10 registros</em></article>

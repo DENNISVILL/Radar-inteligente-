@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { preferredWorkspaceId, rememberWorkspaceId } from "@/lib/workspace-selection";
 
 type Workspace = { id?: string; workspaceId?: string; name?: string };
 type Competitor = {
@@ -79,7 +80,7 @@ export default function CompetitorsPage() {
         const spaces = result.data ?? [];
         if (!active) return;
         setWorkspaces(spaces);
-        setWorkspaceId(spaces[0]?.id ?? spaces[0]?.workspaceId ?? "");
+        const preferred=preferredWorkspaceId(spaces);setWorkspaceId(preferred);rememberWorkspaceId(preferred);
       } catch (cause) {
         if (active) setError(cause instanceof Error ? cause.message : "No fue posible cargar tus espacios.");
       } finally {
@@ -232,7 +233,7 @@ export default function CompetitorsPage() {
           {notice && <div className="dashboard-state" role="status">{notice}</div>}
 
           <section className="dashboard-panel competitor-toolbar">
-            <div><label htmlFor="competitor-workspace">Espacio de trabajo</label><select id="competitor-workspace" value={workspaceId} onChange={event => setWorkspaceId(event.target.value)}>{workspaces.map((space, index) => { const id = space.id ?? space.workspaceId ?? ""; return <option key={id || index} value={id}>{space.name ?? "Espacio"}</option>; })}</select></div>
+            <div><label htmlFor="competitor-workspace">Espacio de trabajo</label><select id="competitor-workspace" value={workspaceId} onChange={event => {setWorkspaceId(event.target.value);rememberWorkspaceId(event.target.value)}}>{workspaces.map((space, index) => { const id = space.id ?? space.workspaceId ?? ""; return <option key={id || index} value={id}>{space.name ?? "Espacio"}</option>; })}</select></div>
             <div><label htmlFor="competitor-search">Buscar competidor</label><input id="competitor-search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Nombre, ubicación o descripción…"/></div>
           </section>
 

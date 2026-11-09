@@ -67,3 +67,12 @@ La implementación frontend y la CI están completas, pero quedan pasos de integ
 7. Revisar logs, backups, restauración, monitoreo, límites de uso y política de privacidad antes de abrir el servicio a usuarios.
 
 **Estado final:** backend 29/29 (100 %); frontend 16/16 (100 %). El producto todavía no debe anunciarse como desplegado ni listo para producción hasta completar los pasos externos y la aceptación real.
+
+
+## Refuerzo posterior de selección de espacios
+
+- Se centralizó la preferencia de espacio en `apps/web/src/lib/workspace-selection.ts`, conservando el identificador seleccionado en el navegador y validándolo contra los espacios accesibles devueltos por la API.
+- Dashboard, administración de espacios, investigaciones, competidores, productos, tendencias, oportunidades, fuentes, informes e historial inicializan su contexto desde esa preferencia y actualizan la preferencia al cambiar de espacio.
+- Se agregaron protecciones contra respuestas asíncronas antiguas al cambiar de espacio en el dashboard y en la administración de espacios.
+- El estado vacío del dashboard ahora enlaza al formulario real de creación de investigación; dejó de mostrar un botón deshabilitado que sugería que esa función aún no existía.
+- Estas mejoras están sujetas a la misma CI de frontend/backend; todavía requieren aceptación manual con más de un workspace y cuentas con roles distintos.

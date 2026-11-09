@@ -76,3 +76,11 @@ La implementación frontend y la CI están completas, pero quedan pasos de integ
 - Se agregaron protecciones contra respuestas asíncronas antiguas al cambiar de espacio en el dashboard y en la administración de espacios.
 - El estado vacío del dashboard ahora enlaza al formulario real de creación de investigación; dejó de mostrar un botón deshabilitado que sugería que esa función aún no existía.
 - Estas mejoras están sujetas a la misma CI de frontend/backend; todavía requieren aceptación manual con más de un workspace y cuentas con roles distintos.
+
+
+## Consistencia del estado inicial de investigación
+
+- El formulario permite seleccionar el estado inicial `draft` o `in_progress`.
+- La ruta HTTP ya validaba el campo `status`, pero la operación de persistencia no lo incluía en el INSERT y PostgreSQL aplicaba siempre el valor por defecto `draft`.
+- Se corrigió la operación de creación para persistir el estado recibido y mantener `draft` como valor predeterminado cuando el cliente no lo envía.
+- Se añadió una prueba HTTP que comprueba la persistencia del estado `in_progress`; la suite CI debe confirmar el cambio.

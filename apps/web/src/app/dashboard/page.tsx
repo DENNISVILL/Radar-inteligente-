@@ -4,6 +4,7 @@ import Link from "next/link";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { preferredWorkspaceId, rememberWorkspaceId } from "@/lib/workspace-selection";
 
 type Workspace = { id?: string; workspaceId?: string; name?: string };
 type Research = { id?: string; title?: string; country?: string; city?: string | null; sector?: string; status?: "draft" | "in_progress" | "completed"; updatedAt?: string; createdAt?: string };
@@ -36,7 +37,6 @@ export default function DashboardPage() {
   const [workspaceName, setWorkspaceName] = useState("");
   const [creatingWorkspace, setCreatingWorkspace] = useState(false);
   const workspaceRequestId = useRef(0);
-  const workspaceStorageKey = "radar-comercial:selected-workspace";
 
   useEffect(() => {
     let active = true;
@@ -55,8 +55,8 @@ export default function DashboardPage() {
       try {
         const result = await apiGet<{ data: Workspace[] }>("/api/v1/workspaces", session.access_token);
         const items = result.data ?? [];
-        const savedId = window.localStorage.getItem(workspaceStorageKey);
-        const first = items.find((item) => (item.id ?? item.workspaceId) === savedId) ?? items[0] ?? null;
+        const preferredId = preferredWorkspaceId(items);
+        const first = items.find((item) => (item.id ?? item.workspaceId) === preferredId) ?? items[0] ?? null;
         if (!active) return;
         setWorkspaces(items);
         setWorkspace(first);
@@ -72,7 +72,7 @@ export default function DashboardPage() {
           return;
         }
         setSelectedWorkspaceId(workspaceId);
-        window.localStorage.setItem(workspaceStorageKey, workspaceId);
+        rememberWorkspaceId(workspaceId);
         const requestId = ++workspaceRequestId.current;
         const list = await apiGet<{ data: Research[] }>(`/api/v1/workspaces/${encodeURIComponent(workspaceId)}/researches?limit=10`, session.access_token);
         if (active && requestId === workspaceRequestId.current) setResearches(list.data ?? []);
@@ -128,7 +128,7 @@ export default function DashboardPage() {
       setWorkspaces((current) => [...current, created]);
       setWorkspace(created);
       setSelectedWorkspaceId(createdId);
-      window.localStorage.setItem(workspaceStorageKey, createdId);
+      rememberWorkspaceId(createdId);
       setResearches([]);
       setWorkspaceName("");
       setNotice("Espacio de trabajo creado correctamente. Ya puedes comenzar a organizar tus investigaciones.");
@@ -143,7 +143,7 @@ export default function DashboardPage() {
     const next = workspaces.find((item) => (item.id ?? item.workspaceId) === workspaceId) ?? null;
     const requestId = ++workspaceRequestId.current;
     setSelectedWorkspaceId(workspaceId);
-    window.localStorage.setItem(workspaceStorageKey, workspaceId);
+    rememberWorkspaceId(workspaceId);
     setWorkspace(next);
     setResearches([]);
     setError("");

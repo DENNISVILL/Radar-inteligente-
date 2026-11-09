@@ -126,9 +126,18 @@ export default function WorkspacesPage(){
       <Link className="dashboard-brand" href="/"><span className="brand-mark"><i/><i/><i/></span><span className="brand-name">radar<span>comercial</span></span></Link>
       <p className="dashboard-nav-label">ADMINISTRACIÓN</p>
       <nav className="dashboard-nav" aria-label="Navegación principal">
-        <Link href="/dashboard"><span>▦</span> Resumen</Link>
-        <a className="is-active" href="/workspaces"><span>⌘</span> Espacios y equipo</a>
-      </nav>
+          <a href="/dashboard"><span>▦</span> Resumen</a>
+          <a href="/investigaciones"><span>◎</span> Investigaciones</a>
+          <a href="/investigaciones/nueva"><span>＋</span> Crear investigación</a>
+          <a href="/competidores"><span>◇</span> Competidores</a>
+          <a href="/productos"><span>▤</span> Productos y precios</a>
+          <a href="/tendencias"><span>↗</span> Tendencias</a>
+          <a href="/oportunidades"><span>◇</span> Oportunidades y riesgos</a>
+          <a href="/fuentes"><span>⌁</span> Fuentes y evidencias</a>
+          <a href="/informes"><span>▤</span> Informes y PDF</a>
+          <a href="/historial"><span>◷</span> Historial y auditoría</a>
+          <a className="is-active" href="/workspaces"><span>⌘</span> Espacios y equipo</a>
+        </nav>
       <div className="dashboard-sidebar-bottom"><span className="dashboard-avatar">R</span><div><strong>Radar Comercial</strong><small>Administración</small></div><button type="button" onClick={signOut} aria-label="Cerrar sesión">↗</button></div>
     </aside>
     <section className="dashboard-main">

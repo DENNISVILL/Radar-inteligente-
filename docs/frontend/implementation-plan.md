@@ -23,8 +23,8 @@ El frontend se desarrolla como una aplicación web responsive dentro de `apps/we
 | 7 | Crear investigación | Formulario, ubicación, país/ciudad, sector, objetivo y validaciones | Completada por CI |
 | 8 | Centro de investigación | Listado por workspace, filtros, ficha, estado, observaciones y seguimiento | Completada por CI |
 | 9 | Competidores | Registro, listado, detalle, edición, archivo y comparación | Completada por CI |
-| 10 | Productos y precios | Catálogo, moneda, unidad, historial y comparación de precios | Pendiente |
-| 11 | Tendencias | Evolución temporal y variaciones descriptivas con datos disponibles | Pendiente |
+| 10 | Productos y precios | Catálogo, moneda, unidad, historial y comparación de precios | Completada y validada por CI |
+| 11 | Tendencias | Evolución temporal y variaciones descriptivas con datos disponibles | Implementada; CI pendiente |
 | 12 | Oportunidades y riesgos | Hallazgos, evidencia asociada, nivel de confianza y seguimiento | Pendiente |
 | 13 | Fuentes y evidencias | Fuente, URL, fecha, notas, confiabilidad y trazabilidad | Pendiente |
 | 14 | Informes y PDF | Vista de informe, versiones, descarga y estados de generación | Pendiente |
@@ -49,7 +49,7 @@ Las 16 tareas agrupan aproximadamente 40–50 subtareas verificables. El porcent
 ## Progreso
 
 - Backend: 29/29 entregables principales (100 %).
-- Frontend: **9/16 tareas principales implementadas y validadas por CI (56,25 %)**.
+- Frontend: **10/16 tareas principales implementadas y validadas por CI (62,5 %)**.
 - Tarea 1: estructura técnica creada y validada por CI.
 - Tarea 2: sistema visual y componentes compartidos implementados y validados por CI.
 - Tarea 3: landing pública implementada y validada en CI [42560159154](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42560159154) y [42560163862](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42560163862).
@@ -59,7 +59,7 @@ Las 16 tareas agrupan aproximadamente 40–50 subtareas verificables. El porcent
 - Tarea 7: formulario de creación de investigaciones con workspace, título, país, ciudad/región, sector, objetivo y estado inicial; CI integral aprobada en [42563524680](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42563524680).
 - Tarea 8: centro de investigación con listado por workspace, búsqueda y filtros por estado/título/sector/ubicación; ficha individual, cambio de estado, registro y timeline de observaciones con fecha, fuente, URL y nivel de confianza. Frontend typecheck/build y pruebas backend con PostgreSQL, restauración de backup firmado y validación OpenAPI aprobados en CI [42564481005](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42564481005).
 - Tarea 9: módulo de competidores con registro, búsqueda, edición, archivo y comparación descriptiva de hasta dos registros. CI frontend TypeScript/build y backend/PostgreSQL, backup firmado/restauración y OpenAPI aprobados en [42565334887](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42565334887).
-- Siguiente: tarea 10, productos y precios.
+- Siguiente: tarea 12, oportunidades y riesgos.
 - Producto completo: no se calcula como promedio simple de backend y frontend; se reportarán ambos por separado.
 
 ## Dependencias externas pendientes

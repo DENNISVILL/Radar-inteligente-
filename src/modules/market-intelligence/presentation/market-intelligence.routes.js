@@ -2,7 +2,9 @@ import {ensureIdentityUser} from "../../identity/application/identity-user.js";
 import {canAccessWorkspace,findWorkspaceAccess} from "../../identity/application/workspace-access.js";
 import {executeAuditedMutation} from "../application/audit-transaction.js";
 import {getMarketAnalysis} from "../../market-analysis/application/market-analysis.js";
-import {archiveCompetitor,archiveMarketProduct,createCompetitor,createMarketProduct,createPriceObservation,getCompetitor,getMarketProduct,listCompetitors,listMarketProducts,listPriceObservations,listMarketObservations,createMarketObservation,validateMarketObservation,updateCompetitor,updateMarketProduct,validateCompetitor,validateCompetitorUpdate,validateMarketProduct,validateMarketProductUpdate,validatePriceObservation} from "../application/market-intelligence.js";
+import {listMarketObservations,createMarketObservation} from "../../market-evidence/application/observations.js";
+import {validateMarketObservation} from "../../market-evidence/domain/observation.js";
+import {archiveCompetitor,archiveMarketProduct,createCompetitor,createMarketProduct,createPriceObservation,getCompetitor,getMarketProduct,listCompetitors,listMarketProducts,listPriceObservations,updateCompetitor,updateMarketProduct,validateCompetitor,validateCompetitorUpdate,validateMarketProduct,validateMarketProductUpdate,validatePriceObservation} from "../application/market-intelligence.js";
 
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const writers=["owner","admin","analyst"];

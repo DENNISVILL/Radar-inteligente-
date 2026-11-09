@@ -159,7 +159,7 @@ export default function DashboardPage() {
           {error && <div className="dashboard-state dashboard-state--error" role="alert">{error}</div>}
           {!loading && !error && <>
             {notice && <div className="dashboard-state" role="status">{notice}</div>}
-            {!workspace && <form className="dashboard-state" onSubmit={createWorkspace}>
+            {!workspace && <form className="dashboard-workspace-create" onSubmit={createWorkspace}>
               <strong>Crear tu espacio de trabajo</strong>
               <p>El espacio es el lugar donde se guardarán tus investigaciones y donde podrás incorporar a tu equipo.</p>
               <label htmlFor="workspace-name">Nombre del espacio</label>

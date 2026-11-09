@@ -84,3 +84,11 @@ La implementación frontend y la CI están completas, pero quedan pasos de integ
 - La ruta HTTP ya validaba el campo `status`, pero la operación de persistencia no lo incluía en el INSERT y PostgreSQL aplicaba siempre el valor por defecto `draft`.
 - Se corrigió la operación de creación para persistir el estado recibido y mantener `draft` como valor predeterminado cuando el cliente no lo envía.
 - Se añadió una prueba HTTP que comprueba la persistencia del estado `in_progress`; la suite CI debe confirmar el cambio.
+
+## Edición y archivo desde la ficha de investigación
+
+- La ficha de investigación permite editar título, país, ciudad/región, sector y objetivo mediante PATCH al recurso del workspace activo.
+- La acción de archivar solicita confirmación y utiliza DELETE, que aplica archivo lógico (status = archived) en lugar de eliminar físicamente el registro.
+- Los controles muestran estados de guardado y errores devueltos por la API; el backend sigue siendo la autoridad de permisos por rol y workspace.
+- La pantalla actualiza el resumen tras guardar y vuelve al listado al archivar.
+- La CI verifica compilación y pruebas automatizadas; todavía se requiere aceptación manual con cuentas reales de cada rol y más de un workspace.

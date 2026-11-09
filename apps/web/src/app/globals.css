@@ -58,3 +58,10 @@
 .dashboard-workspace-create input:focus{outline:none;border-color:#168a91;box-shadow:0 0 0 3px #168a9117}
 .dashboard-workspace-create button{justify-self:start;padding:10px 14px;border:0;border-radius:6px;background:#102a43;color:#fff;font-size:10px;font-weight:750;cursor:pointer}
 .dashboard-workspace-create button:disabled{opacity:.5;cursor:not-allowed}
+
+/* Dashboard workspace selector */
+.dashboard-workspace-picker{display:grid;grid-template-columns:minmax(150px,220px) minmax(220px,1fr);align-items:center;gap:12px;margin:14px 0;padding:13px 15px;border:1px solid #e3ecef;border-radius:7px;background:#fff}
+.dashboard-workspace-picker label{color:#547184;font-size:10px;font-weight:750}
+.dashboard-workspace-picker select{width:100%;min-width:0;padding:10px 11px;border:1px solid #dce6eb;border-radius:6px;background:#fff;color:#244b68;font:inherit;font-size:11px}
+.dashboard-workspace-picker select:focus{outline:none;border-color:#168a91;box-shadow:0 0 0 3px #168a9117}
+@media(max-width:600px){.dashboard-workspace-picker{grid-template-columns:1fr;gap:7px}}

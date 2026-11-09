@@ -142,7 +142,7 @@ export default function DashboardPage() {
     if (!workspaceId || !accessToken) return;
     try {
       const list = await apiGet<{ data: Research[] }>(`/api/v1/workspaces/${encodeURIComponent(workspaceId)}/researches?limit=10`, accessToken);
-      if (selectedWorkspaceId === workspaceId) setResearches(list.data ?? []);
+      setResearches(list.data ?? []);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "No fue posible cargar las investigaciones del espacio.");
     }

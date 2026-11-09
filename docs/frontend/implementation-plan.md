@@ -16,8 +16,8 @@ El frontend se desarrolla como una aplicación web responsive con posibilidad de
 |---:|---|---|---|
 | 1 | Estructura técnica del frontend | Next.js, TypeScript, configuración, carpetas modulares, entorno y CI | Completada |
 | 2 | Sistema visual y componentes base | Tokens, tipografía, colores, botones, campos, tarjetas, tablas, estados y navegación | Completada |
-| 3 | Landing pública | Presentación, propuesta de valor, capacidades, beneficios y acceso | Pendiente |
-| 4 | Autenticación y acceso | Inicio de sesión, registro, recuperación, invitaciones y sesiones Supabase | Pendiente |
+| 3 | Landing pública | Presentación, propuesta de valor, capacidades, beneficios y acceso | Completada |
+| 4 | Autenticación y acceso | Inicio de sesión, registro, recuperación, invitaciones y sesiones Supabase | En desarrollo |
 | 5 | Dashboard principal | Resumen, actividad, investigaciones recientes y accesos rápidos | Pendiente |
 | 6 | Espacios de trabajo y administración | Selector de workspace, miembros, roles, invitaciones y preferencias | Pendiente |
 | 7 | Crear investigación | Formulario, ubicación, país/ciudad, sector, objetivo y validaciones | Pendiente |
@@ -49,16 +49,16 @@ Las 16 tareas agrupan aproximadamente 40–50 subtareas verificables. El porcent
 ## Progreso
 
 - Backend: 29/29 entregables principales (100 %).
-- Frontend: 2/16 tareas principales completadas (12,5 %).
+- Frontend: 3/16 tareas principales completadas (18,75 %).
 - Tarea 1: estructura técnica creada y validada por CI (instalación, TypeScript y build de producción).
 - Tarea 2: sistema visual y componentes compartidos implementados; CI de corrección aprobada en [ejecución 42559725643](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42559725643).
-- Tarea 3: siguiente en desarrollo; landing pública.
+- Tarea 3: landing pública implementada y validada en CI [42560159154](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42560159154) y [42560163862](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42560163862).
 - Producto completo: no se calcula como promedio simple de backend y frontend; se reportarán ambos por separado.
 
 ## Dependencias externas pendientes
 
-- Proyecto Supabase real, URL y clave publicable para autenticación.
+- Proyecto Supabase real, URL y clave publicable para activar autenticación real.
 - Proveedor de correo transaccional para invitaciones.
 - Hosting y dominio para staging/producción.
 
-No se inventarán credenciales ni se marcarán integraciones externas como listas sin pruebas reales.
+La tarea 4 está preparando los flujos de autenticación, pero no se considera conectada hasta configurar y probar el proyecto Supabase real. No se inventarán credenciales ni se marcarán integraciones externas como listas sin pruebas reales.

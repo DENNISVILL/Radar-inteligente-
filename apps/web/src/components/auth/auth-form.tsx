@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -21,6 +21,12 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("error");
+    if (code === "auth_callback") setError("El enlace de confirmación o recuperación no es válido o ya venció. Solicita uno nuevo.");
+    if (code === "supabase_not_configured") setError("La autenticación todavía no está configurada en este entorno.");
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

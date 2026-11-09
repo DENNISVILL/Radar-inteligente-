@@ -1,0 +1,49 @@
+:root {
+  color-scheme: light;
+  --radar-navy: #102a43;
+  --radar-teal: #168a91;
+  --radar-ink: #243b53;
+  --radar-muted: #627d98;
+  --radar-surface: #f5f8fa;
+  --radar-border: #d9e2ec;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; margin: 0; }
+body {
+  background: var(--radar-surface);
+  color: var(--radar-ink);
+  font-family: Arial, Helvetica, sans-serif;
+}
+.startup {
+  width: min(720px, calc(100% - 40px));
+  margin: 12vh auto;
+  padding: clamp(28px, 6vw, 64px);
+  border: 1px solid var(--radar-border);
+  border-radius: 20px;
+  background: #fff;
+}
+.startup__eyebrow {
+  color: var(--radar-teal);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .16em;
+}
+.startup h1 {
+  max-width: 560px;
+  margin: 24px 0 16px;
+  color: var(--radar-navy);
+  font-size: clamp(32px, 6vw, 52px);
+  line-height: 1.08;
+}
+.startup__description {
+  max-width: 560px;
+  color: var(--radar-muted);
+  font-size: 17px;
+  line-height: 1.7;
+}
+.startup__status {
+  margin-top: 36px;
+  color: var(--radar-teal);
+  font-size: 13px;
+  font-weight: 700;
+}

@@ -92,3 +92,4 @@ La implementación frontend y la CI están completas, pero quedan pasos de integ
 - Los controles muestran estados de guardado y errores devueltos por la API; el backend sigue siendo la autoridad de permisos por rol y workspace.
 - La pantalla actualiza el resumen tras guardar y vuelve al listado al archivar.
 - La CI verifica compilación y pruebas automatizadas; todavía se requiere aceptación manual con cuentas reales de cada rol y más de un workspace.
+- La ficha consulta el rol del workspace activo: `viewer` recibe una vista de solo lectura y no ve controles de edición, archivo ni creación de observaciones; los roles de escritura conservan esas acciones, siempre sujetas a autorización del backend.

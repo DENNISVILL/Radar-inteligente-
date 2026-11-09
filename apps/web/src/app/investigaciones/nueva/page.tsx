@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { preferredWorkspaceId, rememberWorkspaceId } from "@/lib/workspace-selection";
 
 type Workspace = { id?: string; workspaceId?: string; name?: string };
 type Envelope<T> = { data: T };
@@ -64,8 +65,8 @@ export default function NewResearchPage() {
         const items = result.data ?? [];
         if (active) {
           setWorkspaces(items);
-          const firstId = items[0]?.id ?? items[0]?.workspaceId ?? "";
-          setWorkspaceId(firstId);
+          const firstId = preferredWorkspaceId(items);
+          setWorkspaceId(firstId); rememberWorkspaceId(firstId);
           if (!firstId) setError("Primero debes crear o recibir acceso a un espacio de trabajo.");
         }
       } catch (cause) {
@@ -137,7 +138,7 @@ export default function NewResearchPage() {
         </section> : !loading && <form className="dashboard-panel research-form" onSubmit={submit}>
           <div className="research-form-heading"><div><h2>Información principal</h2><p>Los campos marcados con * son obligatorios.</p></div><span className="research-step-label">01 / 01</span></div>
           <div className="research-field research-field--wide"><label htmlFor="research-title">Nombre de la investigación *</label><input id="research-title" required minLength={1} maxLength={120} value={title} onChange={e=>setTitle(e.target.value)} placeholder="Ej. Análisis del mercado de cafeterías en Quito"/><small>Usa un nombre claro que identifique el mercado o la pregunta central.</small></div>
-          <div className="research-field"><label htmlFor="research-workspace">Espacio de trabajo *</label><select id="research-workspace" required value={workspaceId} onChange={e=>setWorkspaceId(e.target.value)} disabled={workspaces.length===0}>{workspaces.map((w,index)=>{const id=w.id??w.workspaceId??"";return <option key={id||index} value={id}>{w.name??"Espacio sin nombre"}</option>})}</select></div>
+          <div className="research-field"><label htmlFor="research-workspace">Espacio de trabajo *</label><select id="research-workspace" required value={workspaceId} onChange={e=>{setWorkspaceId(e.target.value);rememberWorkspaceId(e.target.value)}} disabled={workspaces.length===0}>{workspaces.map((w,index)=>{const id=w.id??w.workspaceId??"";return <option key={id||index} value={id}>{w.name??"Espacio sin nombre"}</option>})}</select></div>
           <div className="research-field"><label htmlFor="research-status">Estado inicial</label><select id="research-status" value={status} onChange={e=>setStatus(e.target.value as "draft"|"in_progress")}><option value="draft">Borrador</option><option value="in_progress">En progreso</option></select></div>
           <div className="research-form-divider"><span>Ubicación y sector</span></div>
           <div className="research-field"><label htmlFor="research-country">País *</label><input id="research-country" required maxLength={80} value={country} onChange={e=>setCountry(e.target.value)} placeholder="Ej. Ecuador"/></div>

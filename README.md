@@ -5,7 +5,7 @@ Plataforma de investigación e inteligencia comercial para organizar evidencia, 
 ## Estado del proyecto
 
 - **Backend:** 29/29 entregables principales completados (100 %), con pruebas automatizadas, PostgreSQL en CI, contrato OpenAPI, exportación PDF, auditoría, rate limiting y controles de operación.
-- **Frontend:** 11/16 tareas principales implementadas y validadas por CI (68,75 %): estructura, sistema visual, landing, autenticación inicial, dashboard, administración de espacios/equipos, creación de investigaciones, centro de investigación, competidores, productos/precios y tendencias descriptivas.
+- **Frontend:** 12/16 tareas principales implementadas y validadas por CI (75 %): estructura, sistema visual, landing, autenticación inicial, dashboard, administración de espacios/equipos, creación de investigaciones, centro de investigación, competidores, productos/precios, tendencias descriptivas y oportunidades/riesgos. El registro centralizado de fuentes y evidencias está implementado y pendiente de validación CI.
 - **Autenticación externa:** los flujos de autenticación pasaron CI, pero falta conectar y probar un proyecto Supabase real y el proveedor de correo.
 - **Producción:** todavía no está listo para producción. No hay proyecto Supabase real, proveedor de correo, hosting ni despliegue productivo conectados.
 

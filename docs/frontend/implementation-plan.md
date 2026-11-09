@@ -15,7 +15,7 @@ El frontend se desarrolla como una aplicación web responsive con posibilidad de
 | N.º | Tarea | Alcance principal | Estado |
 |---:|---|---|---|
 | 1 | Estructura técnica del frontend | Next.js, TypeScript, configuración, carpetas modulares, entorno y CI | Completada |
-| 2 | Sistema visual y componentes base | Tokens, tipografía, colores, botones, campos, tarjetas, tablas, estados y navegación | Pendiente |
+| 2 | Sistema visual y componentes base | Tokens, tipografía, colores, botones, campos, tarjetas, tablas, estados y navegación | Completada |
 | 3 | Landing pública | Presentación, propuesta de valor, capacidades, beneficios y acceso | Pendiente |
 | 4 | Autenticación y acceso | Inicio de sesión, registro, recuperación, invitaciones y sesiones Supabase | Pendiente |
 | 5 | Dashboard principal | Resumen, actividad, investigaciones recientes y accesos rápidos | Pendiente |
@@ -49,8 +49,10 @@ Las 16 tareas agrupan aproximadamente 40–50 subtareas verificables. El porcent
 ## Progreso
 
 - Backend: 29/29 entregables principales (100 %).
-- Frontend: 1/16 tareas principales completadas (6,25 %).
+- Frontend: 2/16 tareas principales completadas (12,5 %).
 - Tarea 1: estructura técnica creada y validada por CI (instalación, TypeScript y build de producción).
+- Tarea 2: sistema visual y componentes compartidos implementados; CI de corrección aprobada en [ejecución 42559725643](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42559725643).
+- Tarea 3: siguiente en desarrollo; landing pública.
 - Producto completo: no se calcula como promedio simple de backend y frontend; se reportarán ambos por separado.
 
 ## Dependencias externas pendientes

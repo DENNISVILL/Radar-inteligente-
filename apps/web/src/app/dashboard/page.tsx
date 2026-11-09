@@ -84,8 +84,16 @@ export default function DashboardPage() {
         <p className="dashboard-nav-label">ESPACIO DE TRABAJO</p>
         <nav className="dashboard-nav" aria-label="Navegación principal">
           <a className="is-active" href="/dashboard"><span>▦</span> Resumen</a>
-          <a href="#investigaciones"><span>⌕</span> Investigaciones</a>
-          <a href="#actividad"><span>◷</span> Actividad reciente</a>
+          <a href="/investigaciones"><span>◎</span> Investigaciones</a>
+          <a href="/investigaciones/nueva"><span>＋</span> Crear investigación</a>
+          <a href="/competidores"><span>◇</span> Competidores</a>
+          <a href="/productos"><span>▤</span> Productos y precios</a>
+          <a href="/tendencias"><span>↗</span> Tendencias</a>
+          <a href="/oportunidades"><span>◇</span> Oportunidades y riesgos</a>
+          <a href="/fuentes"><span>⌁</span> Fuentes y evidencias</a>
+          <a href="/informes"><span>▤</span> Informes y PDF</a>
+          <a href="/historial"><span>◷</span> Historial y auditoría</a>
+          <a href="/workspaces"><span>⌘</span> Espacios y equipo</a>
         </nav>
         <div className="dashboard-sidebar-bottom">
           <span className="dashboard-avatar">{email ? email.slice(0,1).toUpperCase() : "U"}</span>

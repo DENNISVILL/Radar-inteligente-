@@ -10,7 +10,7 @@ export async function getResearch(db,workspaceId,researchId) {
  const r=await db.query("SELECT id,workspace_id,created_by,title,country,city,sector,objective,status,created_at,updated_at FROM researches WHERE workspace_id=$1 AND id=$2 AND status<>'archived' LIMIT 1",[workspaceId,researchId]); return r.rows[0]??null;
 }
 export async function createResearch(db,workspaceId,userId,input) {
- const r=await db.query("INSERT INTO researches (workspace_id,created_by,title,country,city,sector,objective) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id,workspace_id,created_by,title,country,city,sector,objective,status,created_at,updated_at",[workspaceId,userId,input.title,input.country,input.city??null,input.sector,input.objective]); return r.rows[0];
+ const r=await db.query("INSERT INTO researches (workspace_id,created_by,title,country,city,sector,objective,status) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id,workspace_id,created_by,title,country,city,sector,objective,status,created_at,updated_at",[workspaceId,userId,input.title,input.country,input.city??null,input.sector,input.objective,input.status??"draft"]); return r.rows[0];
 }
 export async function updateResearch(db,workspaceId,researchId,input) {
  const values=[workspaceId,researchId],sets=[];

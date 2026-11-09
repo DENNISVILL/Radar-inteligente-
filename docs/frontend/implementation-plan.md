@@ -4,11 +4,11 @@
 
 El backend tiene **29 de 29 entregables principales completados (100 %)**. Esto no equivale a despliegue productivo: Supabase real, correo, hosting, alertas, backups externos y otros puntos operativos siguen dependiendo de configuración externa.
 
-El frontend se desarrolla como una aplicación web responsive con posibilidad de evolucionar a PWA. Se mantiene separado del backend dentro de `apps/web`, pero comparte el contrato HTTP documentado en `docs/api/openapi.yaml`.
+El frontend se desarrolla como una aplicación web responsive dentro de `apps/web`, con posibilidad de evolucionar a PWA. Comparte el contrato HTTP documentado en `docs/api/openapi.yaml`.
 
-**Stack acordado:** Next.js App Router, React, TypeScript y Supabase Auth cuando se configure el proyecto real. El cliente consumirá la API Fastify; no accederá directamente a tablas PostgreSQL ni replicará reglas de autorización del servidor.
+**Stack:** Next.js App Router, React, TypeScript y Supabase Auth cuando se configure el proyecto real. El cliente consume la API Fastify; no accede directamente a tablas PostgreSQL ni replica reglas de autorización del servidor.
 
-**Identidad visual acordada:** profesional, analítica, clara y práctica; azul profundo, turquesa de acento, grises y fondos claros. Nombre visible: Radar Comercial. Promesa: “Información comercial organizada para tomar decisiones con más criterio”.
+**Identidad visual:** profesional, analítica, clara y práctica; azul profundo, turquesa de acento, grises y fondos claros. Nombre visible: Radar Comercial. Promesa: “Información comercial organizada para tomar decisiones con más criterio”.
 
 ## Las 16 tareas principales
 
@@ -17,8 +17,8 @@ El frontend se desarrolla como una aplicación web responsive con posibilidad de
 | 1 | Estructura técnica del frontend | Next.js, TypeScript, configuración, carpetas modulares, entorno y CI | Completada |
 | 2 | Sistema visual y componentes base | Tokens, tipografía, colores, botones, campos, tarjetas, tablas, estados y navegación | Completada |
 | 3 | Landing pública | Presentación, propuesta de valor, capacidades, beneficios y acceso | Completada |
-| 4 | Autenticación y acceso | Inicio de sesión, registro, recuperación, confirmación y actualización de contraseña | Implementada y validada por CI; integración real pendiente |
-| 5 | Dashboard principal | Resumen, actividad, investigaciones recientes, métricas y navegación privada | Implementado inicialmente; CI pendiente |
+| 4 | Autenticación y acceso | Inicio de sesión, registro, recuperación, confirmación y actualización de contraseña | Código y CI completados; integración real pendiente |
+| 5 | Dashboard principal | Resumen, actividad, investigaciones recientes, métricas y navegación privada | Completada por CI |
 | 6 | Espacios de trabajo y administración | Selector de workspace, miembros, roles, invitaciones y preferencias | Pendiente |
 | 7 | Crear investigación | Formulario, ubicación, país/ciudad, sector, objetivo y validaciones | Pendiente |
 | 8 | Centro de investigación | Detalle, estado, observaciones, seguimiento y navegación por investigación | Pendiente |
@@ -49,13 +49,12 @@ Las 16 tareas agrupan aproximadamente 40–50 subtareas verificables. El porcent
 ## Progreso
 
 - Backend: 29/29 entregables principales (100 %).
-- Frontend: **4/16 tareas principales validadas por CI (25 %)**.
+- Frontend: **5/16 tareas principales implementadas y validadas por CI (31,25 %)**.
 - Tarea 1: estructura técnica creada y validada por CI.
 - Tarea 2: sistema visual y componentes compartidos implementados y validados por CI.
 - Tarea 3: landing pública implementada y validada en CI [42560159154](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42560159154) y [42560163862](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42560163862).
 - Tarea 4: login, registro, recuperación y actualización de contraseña; confirmación de enlaces Supabase; cliente Supabase opcional; helper `/api/v1/me`. Validada por CI [42562516137](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42562516137) y [42562511741](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42562511741). La conexión real de Supabase sigue pendiente.
-- Tarea 5: dashboard inicial con sesión Supabase, consulta de workspaces e investigaciones, métricas de estado, tabla/lista reciente, estados de carga/error/vacío y cierre de sesión. Implementación inicial en CI pendiente.
-- CI de actualización documental [42562766635](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42562766635) y [42562761119](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42562761119): ambas aprobadas.
+- Tarea 5: dashboard privado con comprobación de sesión, consulta de workspaces e investigaciones, métricas por estado, investigaciones recientes, estados de carga/error/vacío, navegación responsive y cierre de sesión. Frontend typecheck y build aprobados; CI integral con backend y PostgreSQL también aprobada en [42562868031](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42562868031) y [42562872699](https://github.com/DENNISVILL/Radar-inteligente-/actions/runs/42562872699).
 - Producto completo: no se calcula como promedio simple de backend y frontend; se reportarán ambos por separado.
 
 ## Dependencias externas pendientes

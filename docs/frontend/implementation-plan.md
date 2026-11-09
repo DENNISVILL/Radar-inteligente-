@@ -14,7 +14,7 @@ El frontend se desarrolla como una aplicación web responsive con posibilidad de
 
 | N.º | Tarea | Alcance principal | Estado |
 |---:|---|---|---|
-| 1 | Estructura técnica del frontend | Next.js, TypeScript, configuración, carpetas modulares, entorno y CI | En validación |
+| 1 | Estructura técnica del frontend | Next.js, TypeScript, configuración, carpetas modulares, entorno y CI | Completada |
 | 2 | Sistema visual y componentes base | Tokens, tipografía, colores, botones, campos, tarjetas, tablas, estados y navegación | Pendiente |
 | 3 | Landing pública | Presentación, propuesta de valor, capacidades, beneficios y acceso | Pendiente |
 | 4 | Autenticación y acceso | Inicio de sesión, registro, recuperación, invitaciones y sesiones Supabase | Pendiente |
@@ -49,8 +49,8 @@ Las 16 tareas agrupan aproximadamente 40–50 subtareas verificables. El porcent
 ## Progreso
 
 - Backend: 29/29 entregables principales (100 %).
-- Frontend: 0/16 tareas principales completadas (0 %) al inicio de esta fase.
-- Tarea 1: estructura técnica creada; pendiente validación CI del primer commit frontend.
+- Frontend: 1/16 tareas principales completadas (6,25 %).
+- Tarea 1: estructura técnica creada y validada por CI (instalación, TypeScript y build de producción).
 - Producto completo: no se calcula como promedio simple de backend y frontend; se reportarán ambos por separado.
 
 ## Dependencias externas pendientes

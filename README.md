@@ -5,7 +5,7 @@ Plataforma de investigación e inteligencia comercial para organizar evidencia, 
 ## Estado del proyecto
 
 - **Backend:** 29/29 entregables principales completados (100 %), con pruebas automatizadas, PostgreSQL en CI, contrato OpenAPI, exportación PDF, auditoría, rate limiting y controles de operación.
-- **Frontend:** fase iniciada; 16 tareas principales documentadas. La tarea 1 (estructura técnica) está creada y pendiente de validación CI.
+- **Frontend:** fase iniciada; 1/16 tareas principales completadas (6,25 %). La estructura técnica Next.js/TypeScript pasó typecheck y build de producción en CI.
 - **Producción:** todavía no está listo para producción. No hay proyecto Supabase real, proveedor de correo, hosting ni despliegue productivo conectados.
 
 ## Producto y experiencia
